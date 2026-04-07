@@ -1,7 +1,7 @@
 import ky from "ky";
 import { removeTokenCookie } from "@/lib/cookies";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8087/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8088/api/v1";
 
 export const api = ky.create({
   prefixUrl: API_URL,
@@ -15,11 +15,6 @@ export const api = ky.create({
         if (token) {
           request.headers.set("Authorization", `Bearer ${token}`);
         }
-
-        const tenantId = localStorage.getItem("tenant_id");
-        if (tenantId) {
-          request.headers.set("X-Company-ID", tenantId);
-        }
       },
     ],
     afterResponse: [
@@ -28,6 +23,7 @@ export const api = ky.create({
         if (response.status === 401 && typeof window !== "undefined") {
           localStorage.removeItem("access_token");
           localStorage.removeItem("tenant_id");
+          localStorage.removeItem("tenant_snapshot");
           removeTokenCookie();
           window.location.href = "/login";
         }

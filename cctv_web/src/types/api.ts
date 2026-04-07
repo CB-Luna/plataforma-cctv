@@ -3,6 +3,7 @@
 // POST /auth/login response
 export interface LoginResponse {
   access_token: string;
+  companies: Company[];
   user: User;
 }
 
@@ -10,12 +11,13 @@ export interface User {
   id: string;
   tenant_id: string;
   email: string;
+  avatar_url?: string | null;
   first_name: string;
   last_name: string;
-  phone: string;
+  phone?: string | null;
   is_active: boolean;
   email_verified: boolean;
-  last_login_at: string;
+  last_login_at?: string | null;
   created_at: string;
 }
 
@@ -23,7 +25,7 @@ export interface User {
 export interface MeResponse {
   user: User;
   companies: Company[];
-  roles: Role;
+  roles: Role[];
   permissions: Permission[];
 }
 
@@ -31,13 +33,16 @@ export interface Company {
   id: string;
   name: string;
   slug: string;
-  primary_color: string;
-  secondary_color: string;
-  tertiary_color: string;
+  domain?: string;
+  logo_url?: string | null;
+  primary_color?: string;
+  secondary_color?: string;
+  tertiary_color?: string;
   is_active: boolean;
-  subscription_plan: string;
-  max_users: number;
-  max_clients: number;
+  settings?: Record<string, unknown>;
+  subscription_plan?: string;
+  max_users?: number;
+  max_clients?: number;
 }
 
 export interface Role {

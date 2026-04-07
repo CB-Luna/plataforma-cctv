@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, TicketIcon, AlertTriangle, Clock, CheckCircle } from "lucide-react";
 import {
   listTickets,
   getTicketStats,
@@ -12,6 +13,7 @@ import {
   changeTicketStatus,
   assignTicket,
 } from "@/lib/api/tickets";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { Ticket } from "@/types/api";
 import { DataTable } from "@/components/data-table";
 import { ExportButton } from "@/components/shared/export-button";
@@ -20,17 +22,31 @@ import { TicketDialog, type TicketFormValues } from "./ticket-dialog";
 import { AssignDialog, StatusDialog } from "./ticket-actions";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/ui/stats-card";
-import { Plus, TicketIcon, AlertTriangle, Clock, CheckCircle } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
 
 export default function TicketsPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { canAny } = usePermissions();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [assignTarget, setAssignTarget] = useState<Ticket | null>(null);
   const [statusTarget, setStatusTarget] = useState<Ticket | null>(null);
+
+  const canCreateTicket = canAny("tickets.create", "tickets:create:own", "tickets:create:all");
+  const canEditTicket = canAny("tickets.update", "tickets:update:own", "tickets:update:all");
+  const canAssignTicket = canAny("tickets.assign", "tickets:assign:own", "tickets:assign:all");
+  const canChangeStatus = canAny(
+    "tickets.update",
+    "tickets.update:own",
+    "tickets:update:own",
+    "tickets:update:all",
+    "tickets.close",
+    "tickets:close:own",
+    "tickets:close:all",
+  );
+  const canDeleteTicket = canAny("tickets.delete", "tickets:delete:own", "tickets:delete:all");
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["tickets"],
@@ -81,7 +97,7 @@ export default function TicketsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       setAssignTarget(null);
-      toast.success("Técnico asignado");
+      toast.success("TÃ©cnico asignado");
     },
     onError: () => toast.error("Error al asignar"),
   });
@@ -98,20 +114,28 @@ export default function TicketsPage() {
     onError: () => toast.error("Error al cambiar estado"),
   });
 
-  const columns = getColumns({
-    onView: (ticket) => router.push(`/tickets/${ticket.id}`),
-    onEdit: (ticket) => {
-      setEditingTicket(ticket);
-      setDialogOpen(true);
+  const columns = getColumns(
+    {
+      onView: (ticket) => router.push(`/tickets/${ticket.id}`),
+      onEdit: (ticket) => {
+        setEditingTicket(ticket);
+        setDialogOpen(true);
+      },
+      onAssign: (ticket) => setAssignTarget(ticket),
+      onChangeStatus: (ticket) => setStatusTarget(ticket),
+      onDelete: (ticket) => {
+        if (confirm(`Â¿Eliminar ticket "${ticket.ticket_number}"?`)) {
+          deleteMutation.mutate(ticket.id);
+        }
+      },
     },
-    onAssign: (ticket) => setAssignTarget(ticket),
-    onChangeStatus: (ticket) => setStatusTarget(ticket),
-    onDelete: (ticket) => {
-      if (confirm(`¿Eliminar ticket "${ticket.ticket_number}"?`)) {
-        deleteMutation.mutate(ticket.id);
-      }
+    {
+      canEdit: canEditTicket,
+      canAssign: canAssignTicket,
+      canChangeStatus,
+      canDelete: canDeleteTicket,
     },
-  });
+  );
 
   function handleSubmit(values: TicketFormValues) {
     if (editingTicket) {
@@ -126,19 +150,20 @@ export default function TicketsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
-          <p className="text-muted-foreground">Gestión de tickets de soporte técnico</p>
+          <p className="text-muted-foreground">GestiÃ³n de tickets de soporte tÃ©cnico</p>
         </div>
-        <Button onClick={() => { setEditingTicket(null); setDialogOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo ticket
-        </Button>
+        {canCreateTicket && (
+          <Button onClick={() => { setEditingTicket(null); setDialogOpen(true); }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo ticket
+          </Button>
+        )}
       </div>
 
-      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatsCard title="Abiertos" value={stats?.open_count ?? 0} icon={TicketIcon} color="blue" />
         <StatsCard title="En progreso" value={stats?.in_progress_count ?? 0} icon={Clock} color="amber" />
-        <StatsCard title="Críticos" value={stats?.critical_count ?? 0} icon={AlertTriangle} color="red" />
+        <StatsCard title="CrÃ­ticos" value={stats?.critical_count ?? 0} icon={AlertTriangle} color="red" />
         <StatsCard title="Completados" value={stats?.completed_count ?? 0} icon={CheckCircle} color="green" />
       </div>
 
@@ -146,21 +171,25 @@ export default function TicketsPage() {
         columns={columns}
         data={tickets as Ticket[]}
         isLoading={isLoading}
-        searchPlaceholder="Buscar tickets…"
+        searchPlaceholder="Buscar ticketsâ€¦"
         emptyState={
           <EmptyState
             icon={TicketIcon}
             title="No hay tickets"
-            description="Crea un ticket de soporte para comenzar el seguimiento."
-            action={{ label: "Nuevo Ticket", onClick: () => { setEditingTicket(null); setDialogOpen(true); } }}
+            description={
+              canCreateTicket
+                ? "Crea un ticket de soporte para comenzar el seguimiento."
+                : "No hay tickets visibles para este tenant y tu perfil no puede registrar nuevos."
+            }
+            action={canCreateTicket ? { label: "Nuevo Ticket", onClick: () => { setEditingTicket(null); setDialogOpen(true); } } : undefined}
           />
         }
         toolbar={
           <ExportButton
-            data={(tickets as Ticket[]) as unknown as Record<string, unknown>[]}
+            data={tickets as unknown as Record<string, unknown>[]}
             columns={[
               { header: "Folio", accessorKey: "folio" },
-              { header: "Título", accessorKey: "title" },
+              { header: "TÃ­tulo", accessorKey: "title" },
               { header: "Estado", accessorKey: "status" },
               { header: "Prioridad", accessorKey: "priority" },
               { header: "Creado", accessorKey: "created_at" },

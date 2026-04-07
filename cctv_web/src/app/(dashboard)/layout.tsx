@@ -1,29 +1,38 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { getMe } from "@/lib/api/auth";
+import { getRouteAccessRule } from "@/lib/auth/access-control";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AccessDeniedState } from "@/components/auth/access-denied-state";
 import { Toaster } from "@/components/ui/sonner";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
+  const companies = useAuthStore((s) => s.companies);
   const setProfile = useAuthStore((s) => s.setProfile);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const hasAnyPermission = useAuthStore((s) => s.hasAnyPermission);
   const setCompany = useTenantStore((s) => s.setCompany);
   const currentCompany = useTenantStore((s) => s.currentCompany);
   const collapsed = useSidebarStore((s) => s.collapsed);
   const mobileOpen = useSidebarStore((s) => s.mobileOpen);
   const setMobileOpen = useSidebarStore((s) => s.setMobileOpen);
+  const [isHydrating, setIsHydrating] = useState(true);
+
+  const routeAccessRule = useMemo(() => getRouteAccessRule(pathname), [pathname]);
+  const hasRouteAccess = !routeAccessRule || hasAnyPermission(...routeAccessRule.anyOf);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -31,47 +40,76 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
 
-    // Hydrate profile if we only have a token (page reload)
-    if (!user) {
-      getMe()
-        .then((me) => {
-          setProfile(me.user, me.companies, me.permissions);
-          if (!currentCompany && me.companies.length > 0) {
-            setCompany(me.companies[0]);
-          }
-        })
-        .catch(() => {
+    async function hydrateSession() {
+      try {
+        const me = await getMe();
+        setProfile(me.user, me.companies, me.permissions);
+
+        const activeCompany = me.companies[0];
+        if (!activeCompany) {
           clearAuth();
           router.replace("/login");
-        });
-    }
-  }, [isAuthenticated, user, router, setProfile, clearAuth, setCompany, currentCompany]);
+          return;
+        }
 
-  if (!isAuthenticated) return null;
+        setCompany(activeCompany);
+        setIsHydrating(false);
+      } catch {
+        clearAuth();
+        router.replace("/login");
+      }
+    }
+
+    if (!user) {
+      void hydrateSession();
+      return;
+    }
+
+    const activeCompany = companies[0];
+    if (!activeCompany) {
+      void hydrateSession();
+      return;
+    }
+
+    if (!currentCompany || currentCompany.id !== activeCompany.id || currentCompany.id !== user.tenant_id) {
+      setCompany(activeCompany);
+    }
+
+    setIsHydrating(false);
+  }, [clearAuth, companies, currentCompany, isAuthenticated, router, setCompany, setProfile, user]);
+
+  if (!isAuthenticated || isHydrating) return null;
 
   return (
     <ThemeProvider>
       <div className="flex h-screen flex-col">
         <Header />
         <div className="flex flex-1 overflow-hidden">
-          {/* Desktop sidebar */}
           <aside
             className={cn(
               "hidden shrink-0 overflow-y-auto bg-sidebar-nav-bg transition-[width] duration-200 md:block",
-              collapsed ? "w-16" : "w-64"
+              collapsed ? "w-16" : "w-64",
             )}
           >
             <Sidebar collapsed={collapsed} />
           </aside>
 
-          {/* Mobile sidebar (Sheet) */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetContent side="left" className="w-64 bg-sidebar-nav-bg p-0" showCloseButton={false}>
               <Sidebar collapsed={false} onNavigate={() => setMobileOpen(false)} />
             </SheetContent>
           </Sheet>
 
-          <main className="flex-1 overflow-y-auto bg-bg-page p-4 md:p-6">{children}</main>
+          <main className="flex-1 overflow-y-auto bg-bg-page p-4 md:p-6">
+            {hasRouteAccess ? (
+              children
+            ) : (
+              <AccessDeniedState
+                title={routeAccessRule?.title ?? "Sin acceso"}
+                description={routeAccessRule?.description ?? "Tu rol no tiene permisos para entrar a esta sección."}
+              />
+            )}
+          </main>
         </div>
         <Toaster richColors position="top-right" />
       </div>

@@ -1,22 +1,22 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { z } from "zod";
+import { Camera, Shield, Monitor, Eye, EyeOff, Loader2 } from "lucide-react";
 import { login, getMe } from "@/lib/api/auth";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, Shield, Monitor, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(1, "La contraseña es requerida"),
+  email: z.string().email("Email invÃ¡lido"),
+  password: z.string().min(1, "La contraseÃ±a es requerida"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -24,25 +24,34 @@ type LoginForm = z.infer<typeof loginSchema>;
 const demoUsers = [
   { name: "Admin", email: "admin@demo.com", password: "Password123!", role: "Super Admin", color: "from-sky-500 to-blue-600", bg: "bg-sky-50 dark:bg-sky-950/30", border: "border-sky-500", ring: "ring-sky-200 dark:ring-sky-800" },
   { name: "Operador", email: "operator@demo.com", password: "Password123!", role: "Operador", color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-800" },
-  { name: "Técnico", email: "tech@demo.com", password: "Password123!", role: "Técnico", color: "from-amber-500 to-orange-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-500", ring: "ring-amber-200 dark:ring-amber-800" },
+  { name: "TÃ©cnico", email: "tech@demo.com", password: "Password123!", role: "TÃ©cnico", color: "from-amber-500 to-orange-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-500", ring: "ring-amber-200 dark:ring-amber-800" },
   { name: "Viewer", email: "viewer@demo.com", password: "Password123!", role: "Solo Lectura", color: "from-violet-500 to-purple-600", bg: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-500", ring: "ring-violet-200 dark:ring-violet-800" },
 ];
 
 const features = [
   { icon: Camera, label: "Monitoreo 24/7", desc: "Vigilancia continua de toda tu infraestructura" },
-  { icon: Shield, label: "Multi-sucursal", desc: "Gestiona múltiples sitios desde un solo panel" },
-  { icon: Monitor, label: "Gestión inteligente", desc: "Tickets, SLA y pólizas automatizados" },
+  { icon: Shield, label: "Multi-sucursal", desc: "Gestiona mÃºltiples sitios desde un solo panel" },
+  { icon: Monitor, label: "GestiÃ³n inteligente", desc: "Tickets, SLA y pÃ³lizas automatizados" },
 ];
 
 export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const setProfile = useAuthStore((s) => s.setProfile);
+  const setPendingTenantSelection = useAuthStore((s) => s.setPendingTenantSelection);
+  const clearPendingTenantSelection = useAuthStore((s) => s.clearPendingTenantSelection);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setCompany = useTenantStore((s) => s.setCompany);
+  const currentCompany = useTenantStore((s) => s.currentCompany);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
+
+  const redirectTo = useMemo(() => {
+    if (typeof window === "undefined") return "/dashboard";
+    const requestedRedirect = new URLSearchParams(window.location.search).get("redirect");
+    return requestedRedirect?.startsWith("/") ? requestedRedirect : "/dashboard";
+  }, []);
 
   const {
     register,
@@ -53,25 +62,43 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  useEffect(() => {
+    if (isAuthenticated && currentCompany) {
+      router.replace(redirectTo);
+    }
+  }, [currentCompany, isAuthenticated, redirectTo, router]);
+
   async function onSubmit(data: LoginForm) {
     setError(null);
+
     try {
       const res = await login(data.email, data.password);
+
+      if (res.companies.length > 1) {
+        setPendingTenantSelection({
+          email: data.email,
+          password: data.password,
+          companies: res.companies,
+          redirectTo,
+        });
+        router.push(`/select-company?redirect=${encodeURIComponent(redirectTo)}`);
+        return;
+      }
+
+      if (res.companies.length === 0) {
+        setError("El usuario no tiene una empresa activa disponible para iniciar sesiÃ³n");
+        return;
+      }
+
+      clearPendingTenantSelection();
       setAuth(res.access_token, res.user);
 
       const me = await getMe();
       setProfile(me.user, me.companies, me.permissions);
-
-      if (me.companies.length > 1) {
-        router.push("/select-company");
-      } else {
-        if (me.companies.length === 1) {
-          setCompany(me.companies[0]);
-        }
-        router.push("/dashboard");
-      }
+      setCompany(me.companies[0] ?? res.companies[0]);
+      router.push(redirectTo);
     } catch {
-      setError("Credenciales inválidas o servidor no disponible");
+      setError("Credenciales invÃ¡lidas o servidor no disponible");
     }
   }
 
@@ -83,9 +110,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left panel — Brand */}
       <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-10 lg:flex lg:w-[60%]">
-        {/* Grid pattern overlay */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -94,49 +119,43 @@ export default function LoginPage() {
           }}
         />
 
-        {/* Top — Logo */}
         <div className="relative z-10 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/20">
             <Camera className="h-5 w-5 text-sky-400" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">SyMTickets CCTV</h1>
-            <p className="text-xs text-slate-400">Plataforma de Gestión CCTV</p>
+            <p className="text-xs text-slate-400">Plataforma de GestiÃ³n CCTV</p>
           </div>
         </div>
 
-        {/* Center — Hero */}
         <div className="relative z-10 space-y-8">
           <div className="max-w-lg space-y-4">
             <h2 className="text-4xl font-bold leading-tight text-white">
               Control total de tu<br />infraestructura CCTV
             </h2>
             <p className="text-lg text-slate-300">
-              Monitorea cámaras, gestiona tickets y administra pólizas desde una sola plataforma multi-tenant.
+              Monitorea cÃ¡maras, gestiona tickets y administra pÃ³lizas desde una sola plataforma multi-tenant.
             </p>
           </div>
 
-          {/* Features grid */}
           <div className="grid max-w-lg grid-cols-3 gap-4">
-            {features.map((f) => (
-              <div key={f.label} className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                <f.icon className="mb-3 h-6 w-6 text-sky-400" />
-                <p className="text-sm font-semibold text-white">{f.label}</p>
-                <p className="mt-1 text-xs text-slate-400">{f.desc}</p>
+            {features.map((feature) => (
+              <div key={feature.label} className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                <feature.icon className="mb-3 h-6 w-6 text-sky-400" />
+                <p className="text-sm font-semibold text-white">{feature.label}</p>
+                <p className="mt-1 text-xs text-slate-400">{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Bottom — Attribution */}
         <div className="relative z-10">
-          <p className="text-xs text-slate-500">© 2026 SyMTickets · Gestión de infraestructura CCTV</p>
+          <p className="text-xs text-slate-500">Â© 2026 SyMTickets Â· GestiÃ³n de infraestructura CCTV</p>
         </div>
       </div>
 
-      {/* Right panel — Form */}
       <div className="flex flex-1 flex-col items-center justify-center bg-gray-50 px-6 py-12 dark:bg-gray-950">
-        {/* Mobile logo */}
         <div className="mb-8 flex items-center gap-3 lg:hidden">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900">
             <Camera className="h-5 w-5 text-sky-400" />
@@ -148,7 +167,7 @@ export default function LoginPage() {
           <div className="mb-6 text-center">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Accede a tu cuenta</h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Ingresa tus credenciales para continuar
+              Ingresa tus credenciales para resolver tu empresa activa y continuar
             </p>
           </div>
 
@@ -169,12 +188,12 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+              <Label htmlFor="password">ContraseÃ±a</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   autoComplete="current-password"
                   className="h-11 pr-10"
                   {...register("password")}
@@ -211,51 +230,52 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Demo user presets */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground dark:bg-gray-900">o accede rápido</span>
+                <span className="bg-white px-2 text-muted-foreground dark:bg-gray-900">o accede rÃ¡pido</span>
               </div>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              {demoUsers.map((u) => {
-                const isSelected = selectedDemo === u.email;
+              {demoUsers.map((demoUser) => {
+                const isSelected = selectedDemo === demoUser.email;
                 return (
                   <button
-                    key={u.email}
+                    key={demoUser.email}
                     type="button"
-                    onClick={() => selectDemoUser(u)}
+                    onClick={() => selectDemoUser(demoUser)}
                     className={cn(
                       "relative flex flex-col items-center gap-2.5 rounded-xl border-2 p-4 transition-all duration-200",
                       isSelected
-                        ? `${u.border} ${u.bg} ${u.ring} ring-2 shadow-md`
-                        : "border-transparent bg-gray-50 hover:border-gray-200 hover:shadow-sm dark:bg-gray-800 dark:hover:border-gray-600"
+                        ? `${demoUser.border} ${demoUser.bg} ${demoUser.ring} ring-2 shadow-md`
+                        : "border-transparent bg-gray-50 hover:border-gray-200 hover:shadow-sm dark:bg-gray-800 dark:hover:border-gray-600",
                     )}
                   >
-                    {/* Avatar circle */}
-                    <div className={cn(
-                      "flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br text-sm font-bold text-white shadow-sm",
-                      u.color
-                    )}>
-                      {u.name.charAt(0)}
+                    <div
+                      className={cn(
+                        "flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br text-sm font-bold text-white shadow-sm",
+                        demoUser.color,
+                      )}
+                    >
+                      {demoUser.name.charAt(0)}
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-semibold">{u.name}</p>
-                      <span className={cn(
-                        "mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
-                        isSelected
-                          ? "bg-white/80 text-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                          : "bg-gray-200/60 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
-                      )}>
-                        {u.role}
+                      <p className="text-sm font-semibold">{demoUser.name}</p>
+                      <span
+                        className={cn(
+                          "mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
+                          isSelected
+                            ? "bg-white/80 text-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                            : "bg-gray-200/60 text-gray-500 dark:bg-gray-700 dark:text-gray-400",
+                        )}
+                      >
+                        {demoUser.role}
                       </span>
                     </div>
-                    {/* Selected check */}
                     {isSelected && (
                       <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-white shadow-sm">
                         <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>

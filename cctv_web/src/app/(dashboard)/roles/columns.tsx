@@ -1,6 +1,8 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { MoreHorizontal, Pencil, Shield, Trash2 } from "lucide-react";
+import type { RoleAdmin } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,8 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Shield, Trash2 } from "lucide-react";
-import type { RoleAdmin } from "@/types/api";
 
 interface ColumnActions {
   onEdit: (role: RoleAdmin) => void;
@@ -18,20 +18,24 @@ interface ColumnActions {
   onDelete: (role: RoleAdmin) => void;
 }
 
-export function getColumns(actions: ColumnActions): ColumnDef<RoleAdmin>[] {
-  return [
+interface ColumnCapabilities {
+  canEdit: boolean;
+  canManagePermissions: boolean;
+  canDelete: boolean;
+}
+
+export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilities): ColumnDef<RoleAdmin>[] {
+  const columns: ColumnDef<RoleAdmin>[] = [
     {
       accessorKey: "name",
       header: "Nombre",
-      cell: ({ row }) => (
-        <div className="font-medium">{row.original.name}</div>
-      ),
+      cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
     },
     {
       accessorKey: "description",
-      header: "Descripción",
+      header: "DescripciÃ³n",
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.description || "—"}</span>
+        <span className="text-muted-foreground">{row.original.description || "â€”"}</span>
       ),
     },
     {
@@ -47,13 +51,16 @@ export function getColumns(actions: ColumnActions): ColumnDef<RoleAdmin>[] {
     {
       accessorKey: "created_at",
       header: "Creado",
-      cell: ({ row }) =>
-        new Date(row.original.created_at).toLocaleDateString("es"),
+      cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString("es"),
     },
-    {
+  ];
+
+  if (capabilities.canEdit || capabilities.canManagePermissions || capabilities.canDelete) {
+    columns.push({
       id: "actions",
       cell: ({ row }) => {
         const role = row.original;
+
         return (
           <DropdownMenu>
             <DropdownMenuTrigger>
@@ -62,13 +69,17 @@ export function getColumns(actions: ColumnActions): ColumnDef<RoleAdmin>[] {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => actions.onEdit(role)}>
-                <Pencil className="mr-2 h-4 w-4" /> Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onPermissions(role)}>
-                <Shield className="mr-2 h-4 w-4" /> Permisos
-              </DropdownMenuItem>
-              {!role.is_system && (
+              {capabilities.canEdit && (
+                <DropdownMenuItem onClick={() => actions.onEdit(role)}>
+                  <Pencil className="mr-2 h-4 w-4" /> Editar
+                </DropdownMenuItem>
+              )}
+              {capabilities.canManagePermissions && (
+                <DropdownMenuItem onClick={() => actions.onPermissions(role)}>
+                  <Shield className="mr-2 h-4 w-4" /> Permisos
+                </DropdownMenuItem>
+              )}
+              {capabilities.canDelete && !role.is_system && (
                 <DropdownMenuItem
                   className="text-destructive"
                   onClick={() => actions.onDelete(role)}
@@ -80,6 +91,8 @@ export function getColumns(actions: ColumnActions): ColumnDef<RoleAdmin>[] {
           </DropdownMenu>
         );
       },
-    },
-  ];
+    });
+  }
+
+  return columns;
 }

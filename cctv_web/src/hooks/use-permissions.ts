@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuthStore } from "@/stores/auth-store";
-import { useCallback } from "react";
 
 /**
  * Hook RBAC — Fase 1.10
@@ -11,27 +10,9 @@ import { useCallback } from "react";
 export function usePermissions() {
   const permissions = useAuthStore((s) => s.permissions);
   const user = useAuthStore((s) => s.user);
-
-  const can = useCallback(
-    (code: string): boolean => {
-      // Super-admin bypasses all checks
-      if (permissions.some((p) => p.code === "super_admin" || p.code === "*")) {
-        return true;
-      }
-      return permissions.some((p) => p.code === code);
-    },
-    [permissions],
-  );
-
-  const canAny = useCallback(
-    (...codes: string[]): boolean => codes.some((c) => can(c)),
-    [can],
-  );
-
-  const canAll = useCallback(
-    (...codes: string[]): boolean => codes.every((c) => can(c)),
-    [can],
-  );
+  const can = useAuthStore((s) => s.hasPermission);
+  const canAny = useAuthStore((s) => s.hasAnyPermission);
+  const canAll = (...codes: string[]): boolean => codes.every((code) => can(code));
 
   return { can, canAny, canAll, permissions, user };
 }

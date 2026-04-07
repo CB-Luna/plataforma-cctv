@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { MoreHorizontal, Pencil, Key, ShieldCheck, UserX } from "lucide-react";
 import type { UserAdmin } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Key, ShieldCheck, UserX } from "lucide-react";
 
 interface ColumnActions {
   onEdit: (user: UserAdmin) => void;
@@ -20,8 +20,15 @@ interface ColumnActions {
   onDeactivate: (user: UserAdmin) => void;
 }
 
-export function getColumns(actions: ColumnActions): ColumnDef<UserAdmin>[] {
-  return [
+interface ColumnCapabilities {
+  canEdit: boolean;
+  canChangePassword: boolean;
+  canManageRoles: boolean;
+  canDeactivate: boolean;
+}
+
+export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilities): ColumnDef<UserAdmin>[] {
+  const columns: ColumnDef<UserAdmin>[] = [
     {
       accessorKey: "email",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
@@ -30,7 +37,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<UserAdmin>[] {
           {row.original.avatar_url ? (
             <img src={row.original.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
           ) : (
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
               {row.original.first_name?.[0]}{row.original.last_name?.[0]}
             </div>
           )}
@@ -43,8 +50,8 @@ export function getColumns(actions: ColumnActions): ColumnDef<UserAdmin>[] {
     },
     {
       accessorKey: "phone",
-      header: "Teléfono",
-      cell: ({ row }) => row.original.phone ?? "—",
+      header: "TelÃ©fono",
+      cell: ({ row }) => row.original.phone ?? "â€”",
     },
     {
       accessorKey: "is_active",
@@ -60,51 +67,67 @@ export function getColumns(actions: ColumnActions): ColumnDef<UserAdmin>[] {
       header: "Roles",
       cell: ({ row }) => (
         <div className="flex flex-wrap gap-1">
-          {row.original.roles?.map((r) => (
-            <Badge key={r.id} variant="outline" className="text-xs">{r.name}</Badge>
-          )) ?? "—"}
+          {row.original.roles?.map((role) => (
+            <Badge key={role.id} variant="outline" className="text-xs">{role.name}</Badge>
+          )) ?? "â€”"}
         </div>
       ),
     },
     {
       accessorKey: "last_login_at",
-      header: "Último acceso",
+      header: "Ãšltimo acceso",
       cell: ({ row }) =>
         row.original.last_login_at
           ? new Date(row.original.last_login_at).toLocaleDateString("es-MX")
           : "Nunca",
     },
-    {
+  ];
+
+  if (capabilities.canEdit || capabilities.canChangePassword || capabilities.canManageRoles || capabilities.canDeactivate) {
+    columns.push({
       id: "actions",
       cell: ({ row }) => {
         const user = row.original;
+
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 p-0 rounded-md hover:bg-accent">
+            <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => actions.onEdit(user)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onChangePassword(user)}>
-                <Key className="mr-2 h-4 w-4" />
-                Cambiar contraseña
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onManageRoles(user)}>
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                Gestionar roles
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => actions.onDeactivate(user)} className="text-destructive">
-                <UserX className="mr-2 h-4 w-4" />
-                Desactivar
-              </DropdownMenuItem>
+              {capabilities.canEdit && (
+                <DropdownMenuItem onClick={() => actions.onEdit(user)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </DropdownMenuItem>
+              )}
+              {capabilities.canChangePassword && (
+                <DropdownMenuItem onClick={() => actions.onChangePassword(user)}>
+                  <Key className="mr-2 h-4 w-4" />
+                  Cambiar contraseÃ±a
+                </DropdownMenuItem>
+              )}
+              {capabilities.canManageRoles && (
+                <DropdownMenuItem onClick={() => actions.onManageRoles(user)}>
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Gestionar roles
+                </DropdownMenuItem>
+              )}
+              {capabilities.canDeactivate && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => actions.onDeactivate(user)} className="text-destructive">
+                    <UserX className="mr-2 h-4 w-4" />
+                    Desactivar
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
       },
-    },
-  ];
+    });
+  }
+
+  return columns;
 }

@@ -2,6 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Building2, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   listTenants,
   createTenant,
@@ -17,13 +20,16 @@ import { getTenantColumns } from "../../tenants/columns";
 import { TenantDialog, type TenantFormValues } from "../../tenants/tenant-dialog";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "@/components/ui/stats-card";
-import { Plus, Building2, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
 
 export function TenantsTab() {
   const queryClient = useQueryClient();
+  const { canAny } = usePermissions();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+
+  const canCreateTenant = canAny("tenants.create", "tenants:create:all");
+  const canEditTenant = canAny("tenants.update", "tenants:update:all");
+  const canToggleTenant = canEditTenant;
 
   const { data: tenants = [], isLoading } = useQuery({
     queryKey: ["tenants"],
@@ -69,14 +75,20 @@ export function TenantsTab() {
 
   const columns = useMemo(
     () =>
-      getTenantColumns({
-        onEdit: (tenant) => {
-          setEditingTenant(tenant);
-          setDialogOpen(true);
+      getTenantColumns(
+        {
+          onEdit: (tenant) => {
+            setEditingTenant(tenant);
+            setDialogOpen(true);
+          },
+          onToggleActive: (tenant) => toggleActiveMutation.mutate(tenant),
         },
-        onToggleActive: (tenant) => toggleActiveMutation.mutate(tenant),
-      }),
-    [toggleActiveMutation],
+        {
+          canEdit: canEditTenant,
+          canToggleActive: canToggleTenant,
+        },
+      ),
+    [canEditTenant, canToggleTenant, toggleActiveMutation],
   );
 
   async function handleSubmit(data: TenantFormValues) {
@@ -92,11 +104,13 @@ export function TenantsTab() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Empresas del sistema</h3>
-          <p className="text-sm text-muted-foreground">Gestión de organizaciones multi-tenant</p>
+          <p className="text-sm text-muted-foreground">GestiÃ³n de organizaciones multi-tenant</p>
         </div>
-        <Button onClick={() => { setEditingTenant(null); setDialogOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" /> Nueva Empresa
-        </Button>
+        {canCreateTenant && (
+          <Button onClick={() => { setEditingTenant(null); setDialogOpen(true); }}>
+            <Plus className="mr-2 h-4 w-4" /> Nueva Empresa
+          </Button>
+        )}
       </div>
 
       {stats && (
@@ -118,7 +132,7 @@ export function TenantsTab() {
             icon={Building2}
             title="No hay empresas registradas"
             description="Registra tu primera empresa para comenzar."
-            action={{ label: "Nueva Empresa", onClick: () => { setEditingTenant(null); setDialogOpen(true); } }}
+            action={canCreateTenant ? { label: "Nueva Empresa", onClick: () => { setEditingTenant(null); setDialogOpen(true); } } : undefined}
           />
         }
       />

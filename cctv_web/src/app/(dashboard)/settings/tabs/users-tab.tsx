@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Users } from "lucide-react";
+import { usePermissions } from "@/hooks/use-permissions";
 import { DataTable } from "@/components/data-table/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Users } from "lucide-react";
 import { listUsers, updateUser, changePassword, deactivateUser, assignRole, removeRole } from "@/lib/api/users";
 import { listRoles } from "@/lib/api/roles";
 import { getColumns } from "../../users/columns";
@@ -14,12 +15,18 @@ import type { UserAdmin } from "@/types/api";
 
 export function UsersTab() {
   const queryClient = useQueryClient();
+  const { canAny } = usePermissions();
   const [editUser, setEditUser] = useState<UserAdmin | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [pwUser, setPwUser] = useState<UserAdmin | null>(null);
   const [pwDialogOpen, setPwDialogOpen] = useState(false);
   const [rolesUser, setRolesUser] = useState<UserAdmin | null>(null);
   const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
+
+  const canEditUser = canAny("users.update", "users:update:own", "users:update:all");
+  const canChangePassword = canEditUser;
+  const canManageRoles = canAny("roles.assign", "roles.update", "roles:update:own", "roles:update:all");
+  const canDeactivateUser = canAny("users.delete", "users:delete:own", "users:delete:all");
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
@@ -45,11 +52,11 @@ export function UsersTab() {
   const changePwMut = useMutation({
     mutationFn: ({ id, password }: { id: string; password: string }) => changePassword(id, { password }),
     onSuccess: () => {
-      toast.success("Contraseña cambiada");
+      toast.success("ContraseÃ±a cambiada");
       setPwDialogOpen(false);
       setPwUser(null);
     },
-    onError: () => toast.error("Error al cambiar contraseña"),
+    onError: () => toast.error("Error al cambiar contraseÃ±a"),
   });
 
   const deactivateMut = useMutation({
@@ -79,12 +86,20 @@ export function UsersTab() {
     onError: () => toast.error("Error al remover rol"),
   });
 
-  const columns = getColumns({
-    onEdit: (u) => { setEditUser(u); setEditDialogOpen(true); },
-    onChangePassword: (u) => { setPwUser(u); setPwDialogOpen(true); },
-    onManageRoles: (u) => { setRolesUser(u); setRolesDialogOpen(true); },
-    onDeactivate: (u) => { if (confirm(`¿Desactivar a ${u.first_name} ${u.last_name}?`)) deactivateMut.mutate(u.id); },
-  });
+  const columns = getColumns(
+    {
+      onEdit: (user) => { setEditUser(user); setEditDialogOpen(true); },
+      onChangePassword: (user) => { setPwUser(user); setPwDialogOpen(true); },
+      onManageRoles: (user) => { setRolesUser(user); setRolesDialogOpen(true); },
+      onDeactivate: (user) => { if (confirm(`Â¿Desactivar a ${user.first_name} ${user.last_name}?`)) deactivateMut.mutate(user.id); },
+    },
+    {
+      canEdit: canEditUser,
+      canChangePassword,
+      canManageRoles,
+      canDeactivate: canDeactivateUser,
+    },
+  );
 
   return (
     <div className="space-y-6">
@@ -96,29 +111,29 @@ export function UsersTab() {
           <EmptyState
             icon={Users}
             title="No hay usuarios"
-            description="Los usuarios se gestionan desde el sistema de autenticación."
+            description="Los usuarios se gestionan desde el sistema de autenticaciÃ³n."
           />
         }
       />
 
       <UserDialog
         open={editDialogOpen}
-        onOpenChange={(v) => { setEditDialogOpen(v); if (!v) setEditUser(null); }}
-        onSubmit={(vals) => editUser && updateMut.mutate({ id: editUser.id, data: vals })}
+        onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setEditUser(null); }}
+        onSubmit={(values) => editUser && updateMut.mutate({ id: editUser.id, data: values })}
         user={editUser}
         isLoading={updateMut.isPending}
       />
 
       <PasswordDialog
         open={pwDialogOpen}
-        onOpenChange={(v) => { setPwDialogOpen(v); if (!v) setPwUser(null); }}
-        onSubmit={(vals) => pwUser && changePwMut.mutate({ id: pwUser.id, password: vals.password })}
+        onOpenChange={(open) => { setPwDialogOpen(open); if (!open) setPwUser(null); }}
+        onSubmit={(values) => pwUser && changePwMut.mutate({ id: pwUser.id, password: values.password })}
         isLoading={changePwMut.isPending}
       />
 
       <RolesDialog
         open={rolesDialogOpen}
-        onOpenChange={(v) => { setRolesDialogOpen(v); if (!v) setRolesUser(null); }}
+        onOpenChange={(open) => { setRolesDialogOpen(open); if (!open) setRolesUser(null); }}
         user={rolesUser}
         allRoles={roles}
         onAssign={(roleId) => rolesUser && assignRoleMut.mutate({ userId: rolesUser.id, roleId })}

@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { MoreHorizontal, Eye, Pencil, UserPlus, RefreshCw, Trash2 } from "lucide-react";
 import type { Ticket } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Eye, Pencil, UserPlus, RefreshCw, Trash2 } from "lucide-react";
 
 interface ColumnActions {
   onView: (ticket: Ticket) => void;
@@ -19,6 +19,13 @@ interface ColumnActions {
   onAssign: (ticket: Ticket) => void;
   onChangeStatus: (ticket: Ticket) => void;
   onDelete: (ticket: Ticket) => void;
+}
+
+interface ColumnCapabilities {
+  canEdit: boolean;
+  canAssign: boolean;
+  canChangeStatus: boolean;
+  canDelete: boolean;
 }
 
 const priorityColors: Record<string, string> = {
@@ -53,19 +60,19 @@ const statusVariants: Record<string, "default" | "secondary" | "destructive" | "
 const typeLabels: Record<string, string> = {
   corrective: "Correctivo",
   preventive: "Preventivo",
-  installation: "Instalación",
+  installation: "InstalaciÃ³n",
   other: "Otro",
 };
 
-export function getColumns(actions: ColumnActions): ColumnDef<Ticket>[] {
-  return [
+export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilities): ColumnDef<Ticket>[] {
+  const columns: ColumnDef<Ticket>[] = [
     {
       accessorKey: "ticket_number",
       header: ({ column }) => <DataTableColumnHeader column={column} title="# Ticket" />,
       cell: ({ row }) => (
         <div>
-          <div className="font-mono font-medium text-sm">{row.original.ticket_number}</div>
-          <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+          <div className="font-mono text-sm font-medium">{row.original.ticket_number}</div>
+          <div className="max-w-[180px] truncate text-xs text-muted-foreground">
             {row.original.title}
           </div>
         </div>
@@ -82,10 +89,10 @@ export function getColumns(actions: ColumnActions): ColumnDef<Ticket>[] {
       accessorKey: "priority",
       header: "Prioridad",
       cell: ({ row }) => {
-        const p = row.original.priority;
+        const priority = row.original.priority;
         return (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${priorityColors[p] ?? ""}`}>
-            {p === "urgent" ? "Urgente" : p === "high" ? "Alta" : p === "medium" ? "Media" : "Baja"}
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${priorityColors[priority] ?? ""}`}>
+            {priority === "urgent" ? "Urgente" : priority === "high" ? "Alta" : priority === "medium" ? "Media" : "Baja"}
           </span>
         );
       },
@@ -102,7 +109,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Ticket>[] {
     {
       accessorKey: "client_name",
       header: "Cliente",
-      cell: ({ row }) => row.original.client_name ?? "—",
+      cell: ({ row }) => row.original.client_name ?? "â€”",
     },
     {
       accessorKey: "assigned_to_name",
@@ -114,10 +121,10 @@ export function getColumns(actions: ColumnActions): ColumnDef<Ticket>[] {
       header: "SLA",
       cell: ({ row }) => {
         const sla = row.original.sla_status;
-        if (!sla) return "—";
-        const breached = row.original.breached_sla;
+        if (!sla) return "â€”";
+
         return (
-          <Badge variant={breached ? "destructive" : "default"}>
+          <Badge variant={row.original.breached_sla ? "destructive" : "default"}>
             {sla}
           </Badge>
         );
@@ -128,13 +135,17 @@ export function getColumns(actions: ColumnActions): ColumnDef<Ticket>[] {
       header: ({ column }) => <DataTableColumnHeader column={column} title="Creado" />,
       cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString("es-MX"),
     },
-    {
+  ];
+
+  if (capabilities.canEdit || capabilities.canAssign || capabilities.canChangeStatus || capabilities.canDelete) {
+    columns.push({
       id: "actions",
       cell: ({ row }) => {
         const ticket = row.original;
+
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 p-0 rounded-md hover:bg-accent">
+            <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -142,27 +153,39 @@ export function getColumns(actions: ColumnActions): ColumnDef<Ticket>[] {
                 <Eye className="mr-2 h-4 w-4" />
                 Ver detalle
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onEdit(ticket)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onAssign(ticket)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Asignar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onChangeStatus(ticket)}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Cambiar estado
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => actions.onDelete(ticket)} className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Eliminar
-              </DropdownMenuItem>
+              {capabilities.canEdit && (
+                <DropdownMenuItem onClick={() => actions.onEdit(ticket)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </DropdownMenuItem>
+              )}
+              {capabilities.canAssign && (
+                <DropdownMenuItem onClick={() => actions.onAssign(ticket)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Asignar
+                </DropdownMenuItem>
+              )}
+              {capabilities.canChangeStatus && (
+                <DropdownMenuItem onClick={() => actions.onChangeStatus(ticket)}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Cambiar estado
+                </DropdownMenuItem>
+              )}
+              {capabilities.canDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => actions.onDelete(ticket)} className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
       },
-    },
-  ];
+    });
+  }
+
+  return columns;
 }

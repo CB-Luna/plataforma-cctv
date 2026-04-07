@@ -1,25 +1,29 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { MoreHorizontal, Pencil, Power, PowerOff } from "lucide-react";
 import type { Tenant } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Power, PowerOff } from "lucide-react";
 
 interface TenantColumnActions {
   onEdit: (tenant: Tenant) => void;
   onToggleActive: (tenant: Tenant) => void;
 }
 
-export function getTenantColumns(actions: TenantColumnActions): ColumnDef<Tenant>[] {
-  return [
+interface TenantColumnCapabilities {
+  canEdit: boolean;
+  canToggleActive: boolean;
+}
+
+export function getTenantColumns(actions: TenantColumnActions, capabilities: TenantColumnCapabilities): ColumnDef<Tenant>[] {
+  const columns: ColumnDef<Tenant>[] = [
     {
       accessorKey: "name",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Nombre" />,
@@ -45,13 +49,13 @@ export function getTenantColumns(actions: TenantColumnActions): ColumnDef<Tenant
     },
     {
       accessorKey: "max_users",
-      header: "Máx. Usuarios",
-      cell: ({ row }) => row.getValue<number>("max_users") ?? "—",
+      header: "MÃ¡x. Usuarios",
+      cell: ({ row }) => row.getValue<number>("max_users") ?? "â€”",
     },
     {
       accessorKey: "max_clients",
-      header: "Máx. Clientes",
-      cell: ({ row }) => row.getValue<number>("max_clients") ?? "—",
+      header: "MÃ¡x. Clientes",
+      cell: ({ row }) => row.getValue<number>("max_clients") ?? "â€”",
     },
     {
       accessorKey: "is_active",
@@ -66,14 +70,14 @@ export function getTenantColumns(actions: TenantColumnActions): ColumnDef<Tenant
       id: "colors",
       header: "Colores",
       cell: ({ row }) => {
-        const t = row.original;
+        const tenant = row.original;
         return (
           <div className="flex gap-1">
-            {[t.primary_color, t.secondary_color, t.tertiary_color]
+            {[tenant.primary_color, tenant.secondary_color, tenant.tertiary_color]
               .filter(Boolean)
-              .map((color, i) => (
+              .map((color, index) => (
                 <div
-                  key={i}
+                  key={index}
                   className="h-5 w-5 rounded-full border"
                   style={{ backgroundColor: color }}
                   title={color}
@@ -83,30 +87,40 @@ export function getTenantColumns(actions: TenantColumnActions): ColumnDef<Tenant
         );
       },
     },
-    {
+  ];
+
+  if (capabilities.canEdit || capabilities.canToggleActive) {
+    columns.push({
       id: "actions",
       cell: ({ row }) => {
         const tenant = row.original;
+
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md hover:bg-accent">
+            <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => actions.onEdit(tenant)}>
-                <Pencil className="mr-2 h-4 w-4" /> Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onToggleActive(tenant)}>
-                {tenant.is_active ? (
-                  <><PowerOff className="mr-2 h-4 w-4" /> Desactivar</>
-                ) : (
-                  <><Power className="mr-2 h-4 w-4" /> Activar</>
-                )}
-              </DropdownMenuItem>
+              {capabilities.canEdit && (
+                <DropdownMenuItem onClick={() => actions.onEdit(tenant)}>
+                  <Pencil className="mr-2 h-4 w-4" /> Editar
+                </DropdownMenuItem>
+              )}
+              {capabilities.canToggleActive && (
+                <DropdownMenuItem onClick={() => actions.onToggleActive(tenant)}>
+                  {tenant.is_active ? (
+                    <><PowerOff className="mr-2 h-4 w-4" /> Desactivar</>
+                  ) : (
+                    <><Power className="mr-2 h-4 w-4" /> Activar</>
+                  )}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
       },
-    },
-  ];
+    });
+  }
+
+  return columns;
 }
