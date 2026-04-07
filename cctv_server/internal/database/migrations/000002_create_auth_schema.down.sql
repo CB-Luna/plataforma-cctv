@@ -1,0 +1,19 @@
+-- 000002_create_auth_schema.down.sql
+-- Revertir schema de autenticación
+DROP INDEX IF EXISTS auth.idx_sessions_expires;
+DROP INDEX IF EXISTS auth.idx_sessions_tenant;
+DROP INDEX IF EXISTS auth.idx_sessions_user;
+DROP INDEX IF EXISTS auth.idx_refresh_tokens_expires;
+DROP INDEX IF EXISTS auth.idx_refresh_tokens_user;
+DROP INDEX IF EXISTS auth.idx_roles_tenant;
+DROP INDEX IF EXISTS auth.idx_users_tenant_active;
+DROP INDEX IF EXISTS auth.idx_users_tenant_email;
+DROP INDEX IF EXISTS auth.idx_users_tenant;
+DROP TABLE IF EXISTS auth.sessions;
+DROP TABLE IF EXISTS auth.refresh_tokens;
+DROP TABLE IF EXISTS auth.user_roles;
+DROP TABLE IF EXISTS auth.role_permissions;
+DROP TABLE IF EXISTS auth.permissions;
+DROP TABLE IF EXISTS auth.roles;
+DROP TABLE IF EXISTS auth.users;
+DROP SCHEMA IF EXISTS auth;

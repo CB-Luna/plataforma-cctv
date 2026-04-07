@@ -1,0 +1,5784 @@
+basePath: /api/v1
+definitions:
+  gin.H:
+    additionalProperties: {}
+    type: object
+  internal_handlers.AddCommentRequest:
+    properties:
+      comment:
+        example: Se programó visita para mañana a las 10:00
+        type: string
+      is_internal:
+        example: false
+        type: boolean
+    required:
+    - comment
+    type: object
+  internal_handlers.AdminMenuItemResponse:
+    properties:
+      badge_color:
+        type: string
+      badge_text:
+        type: string
+      children:
+        items:
+          $ref: '#/definitions/internal_handlers.MenuItemResponse'
+        type: array
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      display_order:
+        type: integer
+      icon:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_visible:
+        type: boolean
+      label:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      order_index:
+        type: integer
+      parent_id:
+        type: string
+      required_permission:
+        type: string
+      route:
+        type: string
+      template_count:
+        type: integer
+      template_id:
+        type: string
+      tenant_id:
+        type: string
+      title:
+        type: string
+    type: object
+  internal_handlers.AnalysisResponse:
+    properties:
+      analysis_type:
+        type: string
+      confidence_score:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: string
+      input_type:
+        type: string
+      is_correct:
+        type: boolean
+      is_verified:
+        type: boolean
+      model_used:
+        type: string
+      result:
+        additionalProperties: true
+        type: object
+    type: object
+  internal_handlers.AssignItemToTemplateRequest:
+    properties:
+      display_order:
+        type: integer
+      is_visible:
+        type: boolean
+      menu_item_id:
+        type: string
+    required:
+    - menu_item_id
+    type: object
+  internal_handlers.AssignItemsToTemplateRequest:
+    properties:
+      menu_item_ids:
+        items:
+          type: string
+        type: array
+    required:
+    - menu_item_ids
+    type: object
+  internal_handlers.AssignPermissionRequest:
+    properties:
+      permission_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    required:
+    - permission_id
+    type: object
+  internal_handlers.AssignRoleRequest:
+    properties:
+      role_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    required:
+    - role_id
+    type: object
+  internal_handlers.AssignTenantsRequest:
+    properties:
+      tenant_ids:
+        items:
+          type: string
+        type: array
+    required:
+    - tenant_ids
+    type: object
+  internal_handlers.AssignTicketRequest:
+    properties:
+      technician_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    required:
+    - technician_id
+    type: object
+  internal_handlers.CameraResponse:
+    properties:
+      area:
+        example: Entrada
+        type: string
+      area_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      bitrate_kbps:
+        example: 4096
+        type: integer
+      camera_model_name:
+        example: Hikvision DS-2CD2143G2-IU
+        type: string
+      camera_type:
+        example: dome
+        type: string
+      code:
+        example: CAM-001
+        type: string
+      comments:
+        example: Instalada en enero 2024
+        type: string
+      consecutive:
+        example: 1
+        type: integer
+      counting_enabled:
+        example: true
+        type: boolean
+      created_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      firmware_version:
+        example: 5.6.3
+        type: string
+      generation:
+        example: IP Gen 2
+        type: string
+      has_counting:
+        example: true
+        type: boolean
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      ip_address:
+        example: 192.168.1.101
+        type: string
+      ips:
+        example: 25
+        type: integer
+      is_active:
+        example: true
+        type: boolean
+      location_description:
+        example: Puerta principal de acceso
+        type: string
+      mac_address:
+        example: 00:1A:2B:3C:4D:5F
+        type: string
+      megapixels:
+        example: 4
+        type: number
+      model_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      name:
+        example: CAM-001 Entrada Principal
+        type: string
+      notes:
+        example: Cámara de alta resolución
+        type: string
+      nvr_server_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      project:
+        example: Proyecto Seguridad 2024
+        type: string
+      quality:
+        example: 80
+        type: integer
+      resolution:
+        example: 4MP
+        type: string
+      serial_number:
+        example: DS2CD2143G2IU123456
+        type: string
+      site_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      status:
+        example: active
+        type: string
+      tenant_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      updated_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      zone:
+        example: Zona A
+        type: string
+    type: object
+  internal_handlers.CameraStatsResponse:
+    properties:
+      active_cameras:
+        example: 440
+        type: integer
+      bullet_cameras:
+        example: 150
+        type: integer
+      counting_enabled:
+        example: 30
+        type: integer
+      dome_cameras:
+        example: 200
+        type: integer
+      inactive_cameras:
+        example: 10
+        type: integer
+      ptz_cameras:
+        example: 50
+        type: integer
+      total_cameras:
+        example: 450
+        type: integer
+    type: object
+  internal_handlers.ChangeStatusRequest:
+    properties:
+      reason:
+        example: Cancelado por el cliente
+        type: string
+      status:
+        description: open, assigned, in_progress, pending_parts, pending_client, completed,
+          closed, cancelled
+        example: in_progress
+        type: string
+    required:
+    - status
+    type: object
+  internal_handlers.ClientResponse:
+    properties:
+      address:
+        example: Av. Principal 123
+        type: string
+      city:
+        example: Ciudad de México
+        type: string
+      company_name:
+        example: Empresa CCTV SA de CV
+        type: string
+      country:
+        example: México
+        type: string
+      created_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      email:
+        example: contacto@empresa.com
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      legal_name:
+        example: Empresa CCTV Sociedad Anónima de Capital Variable
+        type: string
+      phone:
+        example: "5555551234"
+        type: string
+      postal_code:
+        example: "01000"
+        type: string
+      rfc:
+        example: ECC010101ABC
+        type: string
+      state:
+        example: CDMX
+        type: string
+      tenant_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      updated_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+    type: object
+  internal_handlers.ClientStatsResponse:
+    properties:
+      activeClients:
+        type: integer
+      inactiveClients:
+        type: integer
+      totalClients:
+        type: integer
+    type: object
+  internal_handlers.CommentResponse:
+    properties:
+      comment:
+        example: Se contactó al cliente para programar visita
+        type: string
+      created_at:
+        example: "2026-01-19T16:00:00Z"
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      is_internal:
+        example: false
+        type: boolean
+      user_name:
+        example: Juan Técnico
+        type: string
+    type: object
+  internal_handlers.CompanyResponse:
+    properties:
+      domain:
+        example: miempresa.com
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      logo_url:
+        example: https://example.com/logo.png
+        type: string
+      max_clients:
+        example: 200
+        type: integer
+      max_users:
+        example: 50
+        type: integer
+      name:
+        example: Mi Empresa
+        type: string
+      primary_color:
+        example: '#1976D2'
+        type: string
+      secondary_color:
+        example: '#424242'
+        type: string
+      settings:
+        additionalProperties: true
+        type: object
+      slug:
+        example: mi-empresa
+        type: string
+      subscription_plan:
+        example: premium
+        type: string
+      tertiary_color:
+        example: '#757575'
+        type: string
+    type: object
+  internal_handlers.CreateCameraRequest:
+    properties:
+      area:
+        type: string
+      area_id:
+        type: string
+      bitrate_kbps:
+        type: integer
+      camera_model_name:
+        type: string
+      camera_type:
+        type: string
+      code:
+        type: string
+      comments:
+        type: string
+      consecutive:
+        type: integer
+      counting_enabled:
+        type: boolean
+      firmware_version:
+        type: string
+      generation:
+        type: string
+      has_counting:
+        type: boolean
+      ip_address:
+        type: string
+      ips:
+        type: integer
+      location_description:
+        type: string
+      mac_address:
+        type: string
+      megapixels:
+        type: number
+      model_id:
+        type: string
+      name:
+        type: string
+      notes:
+        type: string
+      nvr_server_id:
+        type: string
+      project:
+        type: string
+      quality:
+        type: integer
+      resolution:
+        type: string
+      serial_number:
+        type: string
+      site_id:
+        type: string
+      status:
+        type: string
+      zone:
+        type: string
+    required:
+    - name
+    type: object
+  internal_handlers.CreateClientRequest:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      company_name:
+        type: string
+      email:
+        type: string
+      legal_name:
+        type: string
+      phone:
+        type: string
+      postal_code:
+        type: string
+      rfc:
+        type: string
+      state:
+        type: string
+    required:
+    - company_name
+    type: object
+  internal_handlers.CreateImportBatchRequest:
+    properties:
+      batch_name:
+        type: string
+      column_mapping:
+        additionalProperties:
+          type: string
+        type: object
+      data:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      source_filename:
+        type: string
+      source_type:
+        description: excel, csv, ocr_image
+        type: string
+      target_table:
+        description: nvr_servers, cameras
+        type: string
+    required:
+    - batch_name
+    - column_mapping
+    - data
+    - source_type
+    - target_table
+    type: object
+  internal_handlers.CreateMenuItemRequest:
+    properties:
+      badge_color:
+        example: primary
+        type: string
+      badge_text:
+        example: New
+        type: string
+      code:
+        example: new-module
+        type: string
+      description:
+        type: string
+      display_order:
+        example: 8
+        type: integer
+      icon:
+        example: extension
+        type: string
+      is_visible:
+        example: true
+        type: boolean
+      label:
+        example: Nuevo Módulo
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      parent_id:
+        type: string
+      required_permission:
+        example: module.read
+        type: string
+      route:
+        example: /new-module
+        type: string
+    required:
+    - code
+    - label
+    type: object
+  internal_handlers.CreateMenuTemplateRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  internal_handlers.CreateNvrServerRequest:
+    properties:
+      brand_id:
+        type: string
+      camera_channels:
+        type: integer
+      code:
+        type: string
+      edition:
+        type: string
+      gateway:
+        type: string
+      installation_date:
+        type: string
+      integration_connections:
+        type: integer
+      ip_address:
+        type: string
+      launch_date:
+        type: string
+      lpr_channels:
+        type: integer
+      mac_address:
+        type: string
+      model:
+        type: string
+      name:
+        type: string
+      notes:
+        type: string
+      os_name:
+        type: string
+      processor:
+        type: string
+      ram_gb:
+        type: integer
+      recording_days:
+        type: integer
+      service_code:
+        type: string
+      service_tag:
+        type: string
+      site_id:
+        type: string
+      status:
+        type: string
+      subnet_mask:
+        type: string
+      system_type:
+        type: string
+      total_storage_tb:
+        type: number
+      tpv_channels:
+        type: integer
+      vms_server_id:
+        type: string
+      vms_version:
+        type: string
+      warranty_expiry_date:
+        type: string
+    required:
+    - name
+    type: object
+  internal_handlers.CreatePermissionRequest:
+    properties:
+      code:
+        example: inventory.read
+        type: string
+      description:
+        example: Ver inventario
+        type: string
+      module:
+        example: inventory
+        type: string
+      scope:
+        description: '''own'', ''all'', or nil'
+        example: own
+        type: string
+    required:
+    - code
+    type: object
+  internal_handlers.CreateRoleRequest:
+    properties:
+      description:
+        example: Rol para operadores del sistema
+        type: string
+      is_system:
+        example: false
+        type: boolean
+      name:
+        example: Operador
+        type: string
+    required:
+    - name
+    type: object
+  internal_handlers.CreateStorageConfigurationRequest:
+    properties:
+      additional_config:
+        additionalProperties: true
+        type: object
+      api_key:
+        type: string
+      base_url:
+        type: string
+      bucket_name:
+        type: string
+      config_name:
+        type: string
+      database_name:
+        type: string
+      host:
+        type: string
+      is_default:
+        type: boolean
+      password_text:
+        type: string
+      port:
+        type: integer
+      project_id:
+        type: string
+      provider_id:
+        type: integer
+      region:
+        type: string
+      secret_key:
+        type: string
+      username:
+        type: string
+    required:
+    - config_name
+    - provider_id
+    type: object
+  internal_handlers.CreateTenantRequest:
+    properties:
+      domain:
+        example: miempresa.com
+        type: string
+      logo_url:
+        example: https://example.com/logo.png
+        type: string
+      max_clients:
+        example: 200
+        type: integer
+      max_users:
+        example: 50
+        type: integer
+      name:
+        example: Mi Empresa CCTV
+        type: string
+      primary_color:
+        example: '#1976D2'
+        type: string
+      secondary_color:
+        example: '#424242'
+        type: string
+      settings:
+        additionalProperties: true
+        type: object
+      slug:
+        example: mi-empresa
+        type: string
+      subscription_plan:
+        example: premium
+        type: string
+      tertiary_color:
+        example: '#757575'
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  internal_handlers.CreateTicketRequest:
+    properties:
+      client_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      description:
+        example: La cámara principal no muestra imagen
+        type: string
+      equipment_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      priority:
+        description: low, medium, high, urgent
+        example: medium
+        type: string
+      site_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      title:
+        example: Cámara sin señal
+        type: string
+      type:
+        description: corrective, preventive, installation, other
+        example: corrective
+        type: string
+    required:
+    - client_id
+    - site_id
+    - title
+    type: object
+  internal_handlers.DashboardSummaryResponse:
+    properties:
+      activeCameras:
+        type: integer
+      activeClients:
+        description: Clients
+        type: integer
+      activeNvrs:
+        description: Inventory
+        type: integer
+      activePolicies:
+        description: Policies
+        type: integer
+      activeUsers:
+        description: Users
+        type: integer
+      criticalTickets:
+        type: integer
+      currentMonthRevenue:
+        type: number
+      openTickets:
+        description: Tickets
+        type: integer
+      overdueAmount:
+        description: Billing
+        type: number
+      policiesExpiringSoon:
+        type: integer
+      slaCompliancePct:
+        type: number
+      totalFileSizeBytes:
+        description: Storage
+        type: integer
+      totalStorageTb:
+        type: number
+      usersOnlineToday:
+        type: integer
+    type: object
+  internal_handlers.DashboardTechnicianWorkload:
+    properties:
+      activeTickets:
+        type: integer
+      avgRating:
+        type: number
+      completedTickets:
+        type: integer
+      technicianId:
+        type: string
+      technicianName:
+        type: string
+      totalTickets:
+        type: integer
+    type: object
+  internal_handlers.DashboardTicketStatsResponse:
+    properties:
+      assignedCount:
+        type: integer
+      cancelledCount:
+        type: integer
+      completedCount:
+        type: integer
+      correctiveCount:
+        type: integer
+      criticalCount:
+        type: integer
+      emergencyCount:
+        type: integer
+      highPriorityCount:
+        type: integer
+      inProgressCount:
+        type: integer
+      openCount:
+        type: integer
+      preventiveCount:
+        type: integer
+      slaMetCount:
+        type: integer
+      slaMissedCount:
+        type: integer
+      totalCount:
+        type: integer
+    type: object
+  internal_handlers.ErrorResponse:
+    properties:
+      error:
+        example: error message
+        type: string
+    type: object
+  internal_handlers.ExecutiveSummaryResponse:
+    properties:
+      active_cameras:
+        example: 440
+        type: integer
+      active_nvr_servers:
+        example: 14
+        type: integer
+      average_recording_days:
+        example: 25
+        type: integer
+      total_cameras:
+        example: 450
+        type: integer
+      total_clients:
+        example: 50
+        type: integer
+      total_nvr_servers:
+        example: 15
+        type: integer
+      total_sites:
+        example: 75
+        type: integer
+      total_storage_tb:
+        example: 360.5
+        type: number
+    type: object
+  internal_handlers.FileResponse:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      file_hash:
+        type: string
+      file_size:
+        type: integer
+      filename:
+        type: string
+      id:
+        type: string
+      is_processed:
+        type: boolean
+      metadata:
+        additionalProperties: true
+        type: object
+      mime_type:
+        type: string
+      original_filename:
+        type: string
+      related_entity_id:
+        type: string
+      related_entity_type:
+        type: string
+      storage_provider:
+        type: string
+      storage_url:
+        type: string
+      tenant_id:
+        type: string
+      uploaded_by:
+        type: string
+    type: object
+  internal_handlers.FileStatsResponse:
+    properties:
+      total_files:
+        type: integer
+      total_storage_size_bytes:
+        type: integer
+    type: object
+  internal_handlers.ImportBatchDetailResponse:
+    properties:
+      batch:
+        $ref: '#/definitions/internal_handlers.ImportBatchResponse'
+      item_counts:
+        additionalProperties:
+          format: int64
+          type: integer
+        type: object
+    type: object
+  internal_handlers.ImportBatchItemResponse:
+    properties:
+      batch_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      created_at:
+        example: "2024-01-20T09:55:00Z"
+        type: string
+      created_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      error_message:
+        example: ""
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      processed_at:
+        example: "2024-01-20T10:01:00Z"
+        type: string
+      row_data:
+        additionalProperties: true
+        type: object
+      row_number:
+        example: 1
+        type: integer
+      status:
+        example: success
+        type: string
+    type: object
+  internal_handlers.ImportBatchResponse:
+    properties:
+      batch_name:
+        example: Import Cameras Q1 2024
+        type: string
+      column_mapping:
+        additionalProperties: true
+        type: object
+      completed_at:
+        example: "2024-01-20T10:05:00Z"
+        type: string
+      created_at:
+        example: "2024-01-20T09:55:00Z"
+        type: string
+      created_by:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      error_message:
+        example: ""
+        type: string
+      error_rows:
+        example: 5
+        type: integer
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      processed_rows:
+        example: 145
+        type: integer
+      source_filename:
+        example: cameras_import.xlsx
+        type: string
+      source_type:
+        example: excel
+        type: string
+      started_at:
+        example: "2024-01-20T10:00:00Z"
+        type: string
+      status:
+        example: completed
+        type: string
+      success_rows:
+        example: 140
+        type: integer
+      target_table:
+        example: cameras
+        type: string
+      tenant_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      total_rows:
+        example: 150
+        type: integer
+    type: object
+  internal_handlers.ImportStatsResponse:
+    properties:
+      completed_batches:
+        example: 20
+        type: integer
+      failed_batches:
+        example: 1
+        type: integer
+      pending_batches:
+        example: 3
+        type: integer
+      processing_batches:
+        example: 1
+        type: integer
+      total_batches:
+        example: 25
+        type: integer
+      total_rows_imported:
+        example: 5000
+        type: integer
+    type: object
+  internal_handlers.InventoryStatsResponse:
+    properties:
+      activeCameras:
+        type: integer
+      activeNvrs:
+        type: integer
+      totalCameras:
+        type: integer
+      totalNvrs:
+        type: integer
+      totalStorageTb:
+        type: number
+    type: object
+  internal_handlers.InvoiceStatsResponse:
+    properties:
+      currentMonthTotal:
+        type: number
+      lastMonthTotal:
+        type: number
+      overdueAmount:
+        type: number
+      overdueCount:
+        type: integer
+      paidAmount:
+        type: number
+      paidCount:
+        type: integer
+      pendingAmount:
+        type: number
+      pendingCount:
+        type: integer
+      totalInvoices:
+        type: integer
+    type: object
+  internal_handlers.ItemTemplateInfo:
+    properties:
+      description:
+        type: string
+      display_order:
+        type: integer
+      id:
+        type: string
+      is_default:
+        type: boolean
+      is_visible:
+        type: boolean
+      name:
+        type: string
+    type: object
+  internal_handlers.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: securePassword123
+        type: string
+      tenant_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  internal_handlers.LoginResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      companies:
+        items:
+          $ref: '#/definitions/internal_handlers.CompanyResponse'
+        type: array
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      user:
+        $ref: '#/definitions/internal_handlers.UserResponse'
+    type: object
+  internal_handlers.MenuBadge:
+    properties:
+      color:
+        example: error
+        type: string
+      value:
+        example: "5"
+        type: string
+    type: object
+  internal_handlers.MenuItem:
+    properties:
+      badge:
+        $ref: '#/definitions/internal_handlers.MenuBadge'
+      children:
+        items:
+          $ref: '#/definitions/internal_handlers.MenuItem'
+        type: array
+      icon:
+        example: dashboard
+        type: string
+      id:
+        example: dashboard
+        type: string
+      label:
+        example: Dashboard
+        type: string
+      order:
+        example: 1
+        type: integer
+      permission:
+        example: dashboard.read
+        type: string
+      route:
+        example: /dashboard
+        type: string
+    type: object
+  internal_handlers.MenuItemResponse:
+    properties:
+      badge_color:
+        type: string
+      badge_text:
+        type: string
+      children:
+        items:
+          $ref: '#/definitions/internal_handlers.MenuItemResponse'
+        type: array
+      code:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      display_order:
+        type: integer
+      icon:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_visible:
+        type: boolean
+      label:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      order_index:
+        type: integer
+      parent_id:
+        type: string
+      required_permission:
+        type: string
+      route:
+        type: string
+      template_id:
+        type: string
+      tenant_id:
+        type: string
+      title:
+        type: string
+    type: object
+  internal_handlers.MenuResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/internal_handlers.MenuItem'
+        type: array
+      user_info:
+        $ref: '#/definitions/internal_handlers.MenuUserInfo'
+    type: object
+  internal_handlers.MenuTemplateResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_default:
+        type: boolean
+      name:
+        type: string
+      tenant_count:
+        type: integer
+    type: object
+  internal_handlers.MenuUserInfo:
+    properties:
+      avatar:
+        type: string
+      email:
+        example: admin@demo.com
+        type: string
+      name:
+        example: Admin Sistema
+        type: string
+      role:
+        example: Administrador
+        type: string
+    type: object
+  internal_handlers.ModelConfigResponse:
+    properties:
+      capabilities:
+        additionalProperties: true
+        type: object
+      created_at:
+        type: string
+      default_max_tokens:
+        type: integer
+      default_temperature:
+        type: number
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_default:
+        type: boolean
+      max_requests_per_day:
+        type: integer
+      max_tokens_per_request:
+        type: integer
+      model_name:
+        type: string
+      monthly_budget_usd:
+        type: number
+      name:
+        type: string
+      provider:
+        type: string
+      tenant_id:
+        type: string
+    type: object
+  internal_handlers.NvrLicenseResponse:
+    properties:
+      channels:
+        example: 32
+        type: integer
+      created_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      expiry_date:
+        example: "2026-12-31"
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      license_key:
+        example: XXXX-XXXX-XXXX-XXXX
+        type: string
+      license_type:
+        example: professional
+        type: string
+      nvr_server_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    type: object
+  internal_handlers.NvrServerResponse:
+    properties:
+      brand_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      camera_channels:
+        example: 32
+        type: integer
+      code:
+        example: NVR-001
+        type: string
+      created_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      edition:
+        example: Professional
+        type: string
+      gateway:
+        example: 192.168.1.1
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      installation_date:
+        example: "2024-02-01"
+        type: string
+      integration_connections:
+        example: 10
+        type: integer
+      ip_address:
+        example: 192.168.1.100
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      launch_date:
+        example: "2024-01-15"
+        type: string
+      lpr_channels:
+        example: 2
+        type: integer
+      mac_address:
+        example: 00:1A:2B:3C:4D:5E
+        type: string
+      model:
+        example: Dell PowerEdge R640
+        type: string
+      name:
+        example: NVR Principal Sucursal Norte
+        type: string
+      notes:
+        example: Servidor principal de grabación
+        type: string
+      os_name:
+        example: Windows Server 2019
+        type: string
+      processor:
+        example: Intel Xeon Gold 6230
+        type: string
+      ram_gb:
+        example: 64
+        type: integer
+      recording_days:
+        example: 30
+        type: integer
+      service_code:
+        example: XYZ5678
+        type: string
+      service_tag:
+        example: ABC1234
+        type: string
+      site_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      status:
+        example: active
+        type: string
+      subnet_mask:
+        example: 255.255.255.0
+        type: string
+      system_type:
+        example: x64
+        type: string
+      tenant_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      total_storage_tb:
+        example: 24
+        type: number
+      tpv_channels:
+        example: 4
+        type: integer
+      updated_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      vms_server_id:
+        example: server123
+        type: string
+      vms_version:
+        example: 5.1.0
+        type: string
+      warranty_expiry_date:
+        example: "2027-01-15"
+        type: string
+    type: object
+  internal_handlers.NvrServerStatsResponse:
+    properties:
+      active_servers:
+        example: 14
+        type: integer
+      inactive_servers:
+        example: 1
+        type: integer
+      total_cameras:
+        example: 450
+        type: integer
+      total_servers:
+        example: 15
+        type: integer
+      total_storage_tb:
+        example: 360.5
+        type: number
+    type: object
+  internal_handlers.PermissionResponse:
+    properties:
+      code:
+        example: users.read
+        type: string
+      created_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      description:
+        example: Permite leer usuarios
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      module:
+        example: users
+        type: string
+    type: object
+  internal_handlers.PolicyStatsResponse:
+    properties:
+      activePolicies:
+        type: integer
+      expiredPolicies:
+        type: integer
+      expiringSoon:
+        type: integer
+      suspendedPolicies:
+        type: integer
+      totalMonthlyRevenue:
+        type: number
+      totalPolicies:
+        type: integer
+    type: object
+  internal_handlers.PromptTemplateResponse:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      max_tokens:
+        type: integer
+      name:
+        type: string
+      response_format:
+        type: string
+      system_prompt:
+        type: string
+      temperature:
+        type: number
+      user_prompt_template:
+        type: string
+      variables:
+        items:
+          type: string
+        type: array
+      version:
+        type: integer
+    type: object
+  internal_handlers.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      first_name:
+        example: Juan
+        type: string
+      last_name:
+        example: Pérez
+        type: string
+      password:
+        example: securePassword123
+        minLength: 8
+        type: string
+      phone:
+        example: "5551234567"
+        type: string
+      tenant_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - tenant_id
+    type: object
+  internal_handlers.ReorderMenuItemsRequest:
+    properties:
+      items:
+        items:
+          properties:
+            id:
+              type: string
+            order:
+              type: integer
+          required:
+          - id
+          - order
+          type: object
+        type: array
+    required:
+    - items
+    type: object
+  internal_handlers.RoleResponse:
+    properties:
+      created_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      description:
+        example: Rol con permisos administrativos
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      is_system:
+        example: false
+        type: boolean
+      name:
+        example: Administrador
+        type: string
+      tenant_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    type: object
+  internal_handlers.StorageConfigurationResponse:
+    properties:
+      additional_config:
+        additionalProperties: true
+        type: object
+      api_key:
+        type: string
+      base_url:
+        type: string
+      bucket_name:
+        type: string
+      config_name:
+        type: string
+      created_at:
+        type: string
+      database_name:
+        type: string
+      host:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      is_default:
+        type: boolean
+      module_mappings:
+        additionalProperties: true
+        type: object
+      password_text:
+        type: string
+      port:
+        type: integer
+      project_id:
+        type: string
+      provider_display_name:
+        type: string
+      provider_id:
+        type: integer
+      provider_name:
+        type: string
+      region:
+        type: string
+      secret_key:
+        type: string
+      tenant_id:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  internal_handlers.StorageProviderResponse:
+    properties:
+      configuration_schema:
+        additionalProperties: true
+        type: object
+      description:
+        type: string
+      display_name:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      provider_name:
+        type: string
+      provider_type:
+        type: string
+      supports_collections:
+        type: boolean
+    type: object
+  internal_handlers.TechnicianWorkloadResponse:
+    properties:
+      active_tickets:
+        example: 5
+        type: integer
+      high_tickets:
+        example: 2
+        type: integer
+      technician_email:
+        example: juan@empresa.com
+        type: string
+      technician_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      technician_name:
+        example: Juan Técnico
+        type: string
+      urgent_tickets:
+        example: 1
+        type: integer
+    type: object
+  internal_handlers.TemplateItemAssignment:
+    properties:
+      display_order:
+        type: integer
+      id:
+        type: string
+      is_visible:
+        type: boolean
+      item_code:
+        type: string
+      item_icon:
+        type: string
+      item_label:
+        type: string
+      item_route:
+        type: string
+      menu_item_id:
+        type: string
+      template_id:
+        type: string
+    type: object
+  internal_handlers.TenantBasicResponse:
+    properties:
+      id:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  internal_handlers.TenantResponse:
+    properties:
+      created_at:
+        type: string
+      domain:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      logo_url:
+        type: string
+      max_clients:
+        type: integer
+      max_users:
+        type: integer
+      name:
+        type: string
+      primary_color:
+        type: string
+      secondary_color:
+        type: string
+      settings:
+        additionalProperties: true
+        type: object
+      slug:
+        type: string
+      subscription_plan:
+        type: string
+      tertiary_color:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_handlers.TenantSettingsResponse:
+    properties:
+      created_at:
+        type: string
+      domain:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      logo_url:
+        type: string
+      max_clients:
+        type: integer
+      max_users:
+        type: integer
+      name:
+        type: string
+      primary_color:
+        type: string
+      secondary_color:
+        type: string
+      settings:
+        additionalProperties: true
+        type: object
+      slug:
+        type: string
+      subscription_plan:
+        type: string
+      tertiary_color:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_handlers.TenantStatsResponse:
+    properties:
+      active_tenants:
+        type: integer
+      total_tenants:
+        type: integer
+    type: object
+  internal_handlers.TicketDetailResponse:
+    properties:
+      assigned_to:
+        type: string
+      assigned_to_email:
+        type: string
+      assigned_to_name:
+        type: string
+      assigned_to_phone:
+        type: string
+      client_email:
+        type: string
+      client_id:
+        type: string
+      client_name:
+        type: string
+      client_phone:
+        type: string
+      completed_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      equipment_serial:
+        type: string
+      id:
+        type: string
+      priority:
+        type: string
+      rating:
+        type: integer
+      rating_comment:
+        type: string
+      reported_by:
+        type: string
+      reported_by_email:
+        type: string
+      reported_by_name:
+        type: string
+      resolution:
+        type: string
+      scheduled_date:
+        type: string
+      site_address:
+        type: string
+      site_city:
+        type: string
+      site_id:
+        type: string
+      site_name:
+        type: string
+      sla_deadline:
+        type: string
+      sla_hours:
+        type: integer
+      sla_met:
+        type: boolean
+      started_at:
+        type: string
+      status:
+        type: string
+      tenant_id:
+        type: string
+      ticket_number:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  internal_handlers.TicketResponse:
+    properties:
+      assigned_to:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      assigned_to_name:
+        example: Juan Técnico
+        type: string
+      client_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      client_name:
+        example: Empresa ABC
+        type: string
+      created_at:
+        example: "2026-01-19T15:00:00Z"
+        type: string
+      description:
+        example: La cámara de la entrada principal no muestra señal desde ayer
+        type: string
+      equipment_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      priority:
+        example: medium
+        type: string
+      reported_by:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      site_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      site_name:
+        example: Sucursal Norte
+        type: string
+      status:
+        example: open
+        type: string
+      tenant_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      ticket_number:
+        example: TKT-2026-00001
+        type: string
+      title:
+        example: Cámara sin señal en sucursal norte
+        type: string
+      type:
+        example: corrective
+        type: string
+      updated_at:
+        example: "2026-01-19T15:00:00Z"
+        type: string
+    type: object
+  internal_handlers.TicketStatsResponse:
+    properties:
+      assigned_count:
+        example: 15
+        type: integer
+      cancelled_count:
+        example: 2
+        type: integer
+      closed_count:
+        example: 30
+        type: integer
+      completed_count:
+        example: 50
+        type: integer
+      corrective_count:
+        example: 110
+        type: integer
+      high_count:
+        example: 20
+        type: integer
+      in_progress_count:
+        example: 20
+        type: integer
+      open_count:
+        example: 25
+        type: integer
+      pending_client_count:
+        example: 3
+        type: integer
+      pending_parts_count:
+        example: 5
+        type: integer
+      preventive_count:
+        example: 40
+        type: integer
+      total:
+        example: 150
+        type: integer
+      urgent_count:
+        example: 8
+        type: integer
+    type: object
+  internal_handlers.TicketTrendResponse:
+    properties:
+      completed:
+        type: integer
+      date:
+        type: string
+      opened:
+        type: integer
+      total:
+        type: integer
+    type: object
+  internal_handlers.TimelineEntryResponse:
+    properties:
+      created_at:
+        example: "2026-01-19T15:30:00Z"
+        type: string
+      description:
+        example: Status changed from open to assigned
+        type: string
+      event_type:
+        example: status_change
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      new_value:
+        example: assigned
+        type: string
+      old_value:
+        example: open
+        type: string
+      user_name:
+        example: Juan Admin
+        type: string
+    type: object
+  internal_handlers.UpdateItemInTemplateRequest:
+    properties:
+      display_order:
+        type: integer
+      is_visible:
+        type: boolean
+    type: object
+  internal_handlers.UpdateMenuItemRequest:
+    properties:
+      badge_color:
+        type: string
+      badge_text:
+        type: string
+      description:
+        type: string
+      display_order:
+        type: integer
+      icon:
+        type: string
+      is_active:
+        type: boolean
+      is_visible:
+        type: boolean
+      label:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      parent_id:
+        type: string
+      required_permission:
+        type: string
+      route:
+        type: string
+      template_id:
+        type: string
+      title:
+        type: string
+    type: object
+  internal_handlers.UpdateMenuTemplateRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  internal_handlers.UpdatePasswordRequest:
+    properties:
+      password:
+        example: NewSecurePass123
+        minLength: 8
+        type: string
+    required:
+    - password
+    type: object
+  internal_handlers.UpdateRoleRequest:
+    properties:
+      description:
+        example: Rol para operadores del sistema
+        type: string
+      name:
+        example: Operador
+        type: string
+    required:
+    - name
+    type: object
+  internal_handlers.UpdateSettingsRequest:
+    properties:
+      settings:
+        additionalProperties: true
+        type: object
+    required:
+    - settings
+    type: object
+  internal_handlers.UpdateStorageConfigurationRequest:
+    properties:
+      additional_config:
+        additionalProperties: true
+        type: object
+      api_key:
+        type: string
+      base_url:
+        type: string
+      bucket_name:
+        type: string
+      config_name:
+        type: string
+      database_name:
+        type: string
+      host:
+        type: string
+      is_active:
+        type: boolean
+      is_default:
+        type: boolean
+      password_text:
+        type: string
+      port:
+        type: integer
+      project_id:
+        type: string
+      region:
+        type: string
+      secret_key:
+        type: string
+      username:
+        type: string
+    required:
+    - config_name
+    type: object
+  internal_handlers.UpdateTenantRequest:
+    properties:
+      domain:
+        example: miempresa.com
+        type: string
+      logo_url:
+        example: https://example.com/logo.png
+        type: string
+      max_clients:
+        example: 200
+        type: integer
+      max_users:
+        example: 50
+        type: integer
+      name:
+        example: Mi Empresa CCTV
+        type: string
+      primary_color:
+        example: '#1976D2'
+        type: string
+      secondary_color:
+        example: '#424242'
+        type: string
+      settings:
+        additionalProperties: true
+        type: object
+      subscription_plan:
+        example: premium
+        type: string
+      tertiary_color:
+        example: '#757575'
+        type: string
+    required:
+    - name
+    type: object
+  internal_handlers.UpdateThemeRequest:
+    properties:
+      logo_url:
+        example: https://example.com/logo.png
+        type: string
+      primary_color:
+        example: '#1976D2'
+        type: string
+      secondary_color:
+        example: '#424242'
+        type: string
+      tertiary_color:
+        example: '#757575'
+        type: string
+    type: object
+  internal_handlers.UpdateTicketRequest:
+    properties:
+      description:
+        example: Se reemplazó el cable de video
+        type: string
+      equipment_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      priority:
+        example: high
+        type: string
+      scheduled_date:
+        example: "2026-01-25T10:00:00Z"
+        type: string
+      site_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      title:
+        example: Cámara reparada
+        type: string
+      type:
+        example: corrective
+        type: string
+    type: object
+  internal_handlers.UpdateUserRequest:
+    properties:
+      first_name:
+        example: Juan
+        type: string
+      last_name:
+        example: Pérez
+        type: string
+      phone:
+        example: "5551234567"
+        type: string
+    required:
+    - first_name
+    - last_name
+    type: object
+  internal_handlers.UsageStatsResponse:
+    properties:
+      failed_calls:
+        type: integer
+      successful_calls:
+        type: integer
+      total_api_calls:
+        type: integer
+      total_cost_usd:
+        type: number
+      total_tokens:
+        type: integer
+      usage_by_provider:
+        additionalProperties: true
+        type: object
+    type: object
+  internal_handlers.UserResponse:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      created_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      email_verified:
+        example: true
+        type: boolean
+      first_name:
+        example: Juan
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      last_login_at:
+        example: "2024-01-08T15:00:00Z"
+        type: string
+      last_name:
+        example: Pérez
+        type: string
+      phone:
+        example: "5551234567"
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/internal_handlers.RoleResponse'
+        type: array
+      tenant_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      tenant_name:
+        example: Empresa Demo
+        type: string
+    type: object
+  internal_handlers.UserStatsResponse:
+    properties:
+      activeUsers:
+        type: integer
+      inactiveUsers:
+        type: integer
+      loggedInMonth:
+        type: integer
+      loggedInToday:
+        type: integer
+      loggedInWeek:
+        type: integer
+      totalUsers:
+        type: integer
+    type: object
+  internal_handlers.UsersByRoleResponse:
+    properties:
+      roleName:
+        type: string
+      userCount:
+        type: integer
+    type: object
+  internal_handlers.ValidateImportDataRequest:
+    properties:
+      column_mapping:
+        additionalProperties:
+          type: string
+        type: object
+      sample_data:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      target_table:
+        type: string
+    required:
+    - column_mapping
+    - sample_data
+    - target_table
+    type: object
+  internal_handlers.ValidationResultResponse:
+    properties:
+      errors:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+      valid:
+        example: true
+        type: boolean
+      warnings:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@symtickets.com
+    name: API Support
+  description: API REST para sistema de gestión de tickets CCTV multi-tenant
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: SyMTickets CCTV API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token. Supports login without
+        tenant_id.
+      parameters:
+      - description: User credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      summary: Login user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidate user session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Get information about the authenticated user including roles and
+        permissions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user information
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user in the system
+      parameters:
+      - description: User registration information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /clients:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of all clients for the authenticated tenant
+      parameters:
+      - default: 20
+        description: Number of items to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.ClientResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all clients
+      tags:
+      - clients
+    post:
+      consumes:
+      - application/json
+      description: Create a new client for the authenticated tenant
+      parameters:
+      - description: Client information
+        in: body
+        name: client
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateClientRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new client
+      tags:
+      - clients
+  /clients/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific client
+      parameters:
+      - description: Client ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a client by ID
+      tags:
+      - clients
+  /dashboard/clients/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get client statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.ClientStatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get client statistics
+      tags:
+      - dashboard
+  /dashboard/inventory/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get NVR and camera statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.InventoryStatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get inventory statistics
+      tags:
+      - dashboard
+  /dashboard/invoices/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get invoice/billing statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.InvoiceStatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get invoice statistics
+      tags:
+      - dashboard
+  /dashboard/policies/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get policy statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.PolicyStatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get policy statistics
+      tags:
+      - dashboard
+  /dashboard/summary:
+    get:
+      consumes:
+      - application/json
+      description: Get executive summary with KPIs for all modules
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.DashboardSummaryResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get dashboard summary
+      tags:
+      - dashboard
+  /dashboard/technicians/workload:
+    get:
+      consumes:
+      - application/json
+      description: Get workload statistics per technician
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.DashboardTechnicianWorkload'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get technicians workload
+      tags:
+      - dashboard
+  /dashboard/tickets/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get detailed ticket statistics by status, priority and type
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.DashboardTicketStatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get ticket statistics
+      tags:
+      - dashboard
+  /dashboard/tickets/trend:
+    get:
+      consumes:
+      - application/json
+      description: Get ticket trend for the last N days
+      parameters:
+      - default: 30
+        description: Number of days
+        in: query
+        name: days
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.TicketTrendResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get tickets trend
+      tags:
+      - dashboard
+  /dashboard/users/by-role:
+    get:
+      consumes:
+      - application/json
+      description: Get user count by role
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.UsersByRoleResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get users by role
+      tags:
+      - dashboard
+  /dashboard/users/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get user activity statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.UserStatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user statistics
+      tags:
+      - dashboard
+  /intelligence/analyses:
+    get:
+      description: Get list of AI analyses
+      parameters:
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by analysis type
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.AnalysisResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List AI analyses
+      tags:
+      - intelligence
+  /intelligence/models:
+    get:
+      description: Get list of AI model configurations for tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.ModelConfigResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List AI model configurations
+      tags:
+      - intelligence
+  /intelligence/templates:
+    get:
+      description: Get list of available prompt templates
+      parameters:
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.PromptTemplateResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List prompt templates
+      tags:
+      - intelligence
+  /intelligence/usage:
+    get:
+      description: Get usage and cost statistics for AI
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.UsageStatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get AI usage statistics
+      tags:
+      - intelligence
+  /inventory/cameras:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of all cameras for the authenticated tenant
+      parameters:
+      - default: 50
+        description: Number of items to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.CameraResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all cameras
+      tags:
+      - inventory-cameras
+    post:
+      consumes:
+      - application/json
+      description: Create a new camera for the authenticated tenant
+      parameters:
+      - description: Camera data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateCameraRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.CameraResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new camera
+      tags:
+      - inventory-cameras
+  /inventory/cameras/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a camera by ID
+      parameters:
+      - description: Camera ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a camera
+      tags:
+      - inventory-cameras
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific camera
+      parameters:
+      - description: Camera ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.CameraResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get camera by ID
+      tags:
+      - inventory-cameras
+  /inventory/cameras/search:
+    get:
+      consumes:
+      - application/json
+      description: Search cameras by name, serial number, model, area, or IP
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 50
+        description: Number of items to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.CameraResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Search cameras
+      tags:
+      - inventory-cameras
+  /inventory/cameras/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get statistics about cameras for the authenticated tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.CameraStatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get camera statistics
+      tags:
+      - inventory-cameras
+  /inventory/import/batches:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of import batches for the authenticated tenant
+      parameters:
+      - default: 20
+        description: Number of items to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.ImportBatchResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List import batches
+      tags:
+      - inventory-import
+    post:
+      consumes:
+      - application/json
+      description: Create a new import batch with data to be processed
+      parameters:
+      - description: Import batch data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateImportBatchRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.ImportBatchResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an import batch
+      tags:
+      - inventory-import
+  /inventory/import/batches/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an import batch and all its items
+      parameters:
+      - description: Import Batch ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an import batch
+      tags:
+      - inventory-import
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific import batch
+      parameters:
+      - description: Import Batch ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.ImportBatchDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get import batch by ID
+      tags:
+      - inventory-import
+  /inventory/import/batches/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancel a pending import batch
+      parameters:
+      - description: Import Batch ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/gin.H'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel an import batch
+      tags:
+      - inventory-import
+  /inventory/import/batches/{id}/errors:
+    get:
+      consumes:
+      - application/json
+      description: Get all items with errors from an import batch
+      parameters:
+      - description: Import Batch ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.ImportBatchItemResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get errors from an import batch
+      tags:
+      - inventory-import
+  /inventory/import/batches/{id}/items:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of items from an import batch
+      parameters:
+      - description: Import Batch ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Filter by status
+        enum:
+        - pending
+        - success
+        - error
+        - skipped
+        in: query
+        name: status
+        type: string
+      - default: 50
+        description: Number of items to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.ImportBatchItemResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get items from an import batch
+      tags:
+      - inventory-import
+  /inventory/import/batches/{id}/process:
+    post:
+      consumes:
+      - application/json
+      description: Start processing an import batch (async operation)
+      parameters:
+      - description: Import Batch ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/gin.H'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Process an import batch
+      tags:
+      - inventory-import
+  /inventory/import/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get statistics about import batches for the authenticated tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.ImportStatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get import statistics
+      tags:
+      - inventory-import
+  /inventory/import/validate:
+    post:
+      consumes:
+      - application/json
+      description: Validate import data before creating a batch
+      parameters:
+      - description: Data to validate
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.ValidateImportDataRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.ValidationResultResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Validate import data
+      tags:
+      - inventory-import
+  /inventory/nvrs:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all NVR servers for the authenticated tenant
+      parameters:
+      - description: Tenant ID (super admin only)
+        in: query
+        name: tenant_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.NvrServerResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all NVR servers
+      tags:
+      - inventory-nvr
+    post:
+      consumes:
+      - application/json
+      description: Create a new NVR server for the authenticated tenant
+      parameters:
+      - description: NVR Server data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateNvrServerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.NvrServerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new NVR server
+      tags:
+      - inventory-nvr
+  /inventory/nvrs/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an NVR server by ID
+      parameters:
+      - description: NVR Server ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an NVR server
+      tags:
+      - inventory-nvr
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific NVR server
+      parameters:
+      - description: NVR Server ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.NvrServerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get NVR server by ID
+      tags:
+      - inventory-nvr
+    put:
+      consumes:
+      - application/json
+      description: Update an existing NVR server
+      parameters:
+      - description: NVR Server ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: NVR Server data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateNvrServerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.NvrServerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an NVR server
+      tags:
+      - inventory-nvr
+  /inventory/nvrs/{id}/cameras:
+    get:
+      consumes:
+      - application/json
+      description: Get all cameras associated with an NVR server
+      parameters:
+      - description: NVR Server ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.CameraResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get cameras for an NVR server
+      tags:
+      - inventory-nvr
+  /inventory/nvrs/{id}/licenses:
+    get:
+      consumes:
+      - application/json
+      description: Get all licenses associated with an NVR server
+      parameters:
+      - description: NVR Server ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.NvrLicenseResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get licenses for an NVR server
+      tags:
+      - inventory-nvr
+  /inventory/nvrs/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get statistics about NVR servers for the authenticated tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.NvrServerStatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get NVR server statistics
+      tags:
+      - inventory-nvr
+  /inventory/summary:
+    get:
+      consumes:
+      - application/json
+      description: Get executive summary of inventory for the authenticated tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.ExecutiveSummaryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get executive summary
+      tags:
+      - inventory
+  /menu:
+    get:
+      consumes:
+      - application/json
+      description: Get personalized menu based on user permissions (from database)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.MenuResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get dynamic menu
+      tags:
+      - menu
+  /menu/items:
+    get:
+      description: Get list of all menu items (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.MenuItemResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all menu items
+      tags:
+      - menu
+    post:
+      consumes:
+      - application/json
+      description: Create a new menu item
+      parameters:
+      - description: Menu item data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateMenuItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.MenuItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create menu item
+      tags:
+      - menu
+  /menu/items/{id}:
+    delete:
+      description: Delete a menu item
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete menu item
+      tags:
+      - menu
+    get:
+      description: Get specific menu item details
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.MenuItemResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get menu item by ID
+      tags:
+      - menu
+    put:
+      consumes:
+      - application/json
+      description: Update an existing menu item
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated menu item data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateMenuItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.MenuItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update menu item
+      tags:
+      - menu
+  /menu/items/{id}/templates:
+    get:
+      description: Get all templates that have a specific menu item assigned
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.ItemTemplateInfo'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get templates that contain a menu item
+      tags:
+      - menu
+  /menu/items/{id}/toggle:
+    patch:
+      description: Activate or deactivate a menu item
+      parameters:
+      - description: Menu Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Active status
+        in: query
+        name: active
+        required: true
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.MenuItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Toggle menu item active status
+      tags:
+      - menu
+  /menu/items/admin:
+    get:
+      description: Get all menu items with their template assignment counts for admin
+        management
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.AdminMenuItemResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List all menu items for admin
+      tags:
+      - menu
+  /menu/items/reorder:
+    put:
+      consumes:
+      - application/json
+      description: Update display order of multiple menu items
+      parameters:
+      - description: Items with new order
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.ReorderMenuItemsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reorder menu items
+      tags:
+      - menu
+  /menu/templates:
+    get:
+      description: Get list of all menu templates
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.MenuTemplateResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List all menu templates
+      tags:
+      - menu
+    post:
+      consumes:
+      - application/json
+      description: Create a new menu template
+      parameters:
+      - description: Template data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateMenuTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.MenuTemplateResponse'
+      security:
+      - BearerAuth: []
+      summary: Create menu template
+      tags:
+      - menu
+  /menu/templates/{id}:
+    delete:
+      description: Delete a menu template
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete menu template
+      tags:
+      - menu
+    put:
+      consumes:
+      - application/json
+      description: Update an existing menu template
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated template data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateMenuTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.MenuTemplateResponse'
+      security:
+      - BearerAuth: []
+      summary: Update menu template
+      tags:
+      - menu
+  /menu/templates/{id}/items:
+    get:
+      description: Get all menu items assigned to a specific template with their order
+        and visibility
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.TemplateItemAssignment'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get items assigned to a template
+      tags:
+      - menu
+    post:
+      consumes:
+      - application/json
+      description: Assign a single menu item to a template with optional order and
+        visibility
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Item assignment data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.AssignItemToTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Assign a menu item to a template
+      tags:
+      - menu
+  /menu/templates/{id}/items/bulk:
+    put:
+      consumes:
+      - application/json
+      description: Replace all item assignments for a template with a new set of items
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Item IDs to assign
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.AssignItemsToTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Bulk assign items to a template
+      tags:
+      - menu
+  /menu/templates/{id}/tenants:
+    get:
+      description: Get list of tenants using a specific template
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.TenantBasicResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get tenants assigned to a template
+      tags:
+      - menu
+    put:
+      consumes:
+      - application/json
+      description: Assign multiple tenants to use a specific menu template
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant IDs to assign
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.AssignTenantsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Assign tenants to a template
+      tags:
+      - menu
+  /menu/templates/{id}/unassigned-items:
+    get:
+      description: Get all active menu items that are NOT assigned to a specific template
+      parameters:
+      - description: Template ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.MenuItemResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get menu items not assigned to a template
+      tags:
+      - menu
+  /menu/templates/{templateId}/items/{itemId}:
+    delete:
+      description: Remove a menu item assignment from a template
+      parameters:
+      - description: Template ID
+        in: path
+        name: templateId
+        required: true
+        type: string
+      - description: Menu Item ID
+        in: path
+        name: itemId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove a menu item from a template
+      tags:
+      - menu
+    put:
+      consumes:
+      - application/json
+      description: Update the display order or visibility of a menu item within a
+        template
+      parameters:
+      - description: Template ID
+        in: path
+        name: templateId
+        required: true
+        type: string
+      - description: Menu Item ID
+        in: path
+        name: itemId
+        required: true
+        type: string
+      - description: Update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateItemInTemplateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update item configuration in a template
+      tags:
+      - menu
+  /menu/tenants:
+    get:
+      description: Get list of all active tenants for template assignment
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.TenantBasicResponse'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get all tenants for assignment
+      tags:
+      - menu
+  /permissions:
+    get:
+      consumes:
+      - application/json
+      description: Get all available permissions in the system
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.PermissionResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all permissions
+      tags:
+      - permissions
+    post:
+      consumes:
+      - application/json
+      description: Create a new permission in the system (admin only)
+      parameters:
+      - description: Permission information
+        in: body
+        name: permission
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.PermissionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new permission
+      tags:
+      - permissions
+  /roles:
+    get:
+      consumes:
+      - application/json
+      description: Get all roles for the authenticated tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.RoleResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all roles
+      tags:
+      - roles
+    post:
+      consumes:
+      - application/json
+      description: Create a new role for the authenticated tenant
+      parameters:
+      - description: Role information
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new role
+      tags:
+      - roles
+  /roles/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific role
+      parameters:
+      - description: Role ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a role by ID
+      tags:
+      - roles
+    put:
+      consumes:
+      - application/json
+      description: Update role information
+      parameters:
+      - description: Role ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role information
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.RoleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a role
+      tags:
+      - roles
+  /roles/{id}/permissions:
+    get:
+      consumes:
+      - application/json
+      description: Get all permissions assigned to a role
+      parameters:
+      - description: Role ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.PermissionResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get role permissions
+      tags:
+      - roles
+    post:
+      consumes:
+      - application/json
+      description: Assign a permission to a role
+      parameters:
+      - description: Role ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Permission assignment
+        in: body
+        name: permission
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.AssignPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign permission to role
+      tags:
+      - roles
+  /settings:
+    get:
+      consumes:
+      - application/json
+      description: Get configuration and settings for the authenticated tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get tenant settings
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Update configuration settings for the authenticated tenant
+      parameters:
+      - description: Settings to update
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update tenant settings
+      tags:
+      - settings
+  /settings/theme:
+    put:
+      consumes:
+      - application/json
+      description: Update visual theme (colors, logo) for the authenticated tenant
+      parameters:
+      - description: Theme to update
+        in: body
+        name: theme
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateThemeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update tenant theme
+      tags:
+      - settings
+  /storage/configurations:
+    get:
+      description: Get all storage configurations for the tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.StorageConfigurationResponse'
+            type: array
+      summary: List storage configurations
+      tags:
+      - storage
+    post:
+      consumes:
+      - application/json
+      description: Create a new storage configuration for the tenant
+      parameters:
+      - description: Storage configuration data
+        in: body
+        name: configuration
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateStorageConfigurationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.StorageConfigurationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new storage configuration
+      tags:
+      - storage
+  /storage/configurations/{id}:
+    delete:
+      description: Delete a storage configuration by ID
+      parameters:
+      - description: Configuration ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a storage configuration
+      tags:
+      - storage
+    put:
+      consumes:
+      - application/json
+      description: Update an existing storage configuration
+      parameters:
+      - description: Configuration ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated storage configuration data
+        in: body
+        name: configuration
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateStorageConfigurationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.StorageConfigurationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a storage configuration
+      tags:
+      - storage
+  /storage/files:
+    get:
+      description: Get paginated list of files
+      parameters:
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.FileResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List files
+      tags:
+      - storage
+  /storage/providers:
+    get:
+      description: Get all active storage providers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.StorageProviderResponse'
+            type: array
+      summary: List storage providers
+      tags:
+      - storage
+  /storage/stats:
+    get:
+      description: Get storage statistics for tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.FileStatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get file statistics
+      tags:
+      - storage
+  /storage/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a file to storage
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: File category
+        in: formData
+        name: category
+        type: string
+      - description: Related entity type
+        in: formData
+        name: related_entity_type
+        type: string
+      - description: Related entity ID
+        in: formData
+        name: related_entity_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.FileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload a file
+      tags:
+      - storage
+  /tenants:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of all tenants (super-admin only)
+      parameters:
+      - default: 20
+        description: Number of items to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.TenantResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all tenants
+      tags:
+      - tenants
+    post:
+      consumes:
+      - application/json
+      description: Create a new tenant (super-admin only)
+      parameters:
+      - description: Tenant information
+        in: body
+        name: tenant
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new tenant
+      tags:
+      - tenants
+  /tenants/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific tenant
+      parameters:
+      - description: Tenant ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a tenant by ID
+      tags:
+      - tenants
+    put:
+      consumes:
+      - application/json
+      description: Update tenant information
+      parameters:
+      - description: Tenant ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant information
+        in: body
+        name: tenant
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a tenant
+      tags:
+      - tenants
+  /tenants/{id}/activate:
+    patch:
+      consumes:
+      - application/json
+      description: Activate a tenant account
+      parameters:
+      - description: Tenant ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Activate a tenant
+      tags:
+      - tenants
+  /tenants/{id}/deactivate:
+    patch:
+      consumes:
+      - application/json
+      description: Deactivate a tenant account
+      parameters:
+      - description: Tenant ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate a tenant
+      tags:
+      - tenants
+  /tenants/{id}/logo:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a logo image for a tenant
+      parameters:
+      - description: Tenant ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Logo image file
+        in: formData
+        name: logo
+        required: true
+        type: file
+      - description: Logo description
+        in: formData
+        name: description
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload tenant logo
+      tags:
+      - tenants
+  /tenants/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get overall tenant statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TenantStatsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get tenant statistics
+      tags:
+      - tenants
+  /tickets:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of tickets for the current tenant
+      parameters:
+      - default: 20
+        description: Number of items to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by type
+        in: query
+        name: type
+        type: string
+      - description: Filter by priority
+        in: query
+        name: priority
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.TicketResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all tickets
+      tags:
+      - tickets
+    post:
+      consumes:
+      - application/json
+      description: Create a new support ticket (preventive or corrective)
+      parameters:
+      - description: Ticket data
+        in: body
+        name: ticket
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.CreateTicketRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.TicketResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new ticket
+      tags:
+      - tickets
+  /tickets/{id}:
+    delete:
+      description: Delete a ticket
+      parameters:
+      - description: Ticket ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a ticket
+      tags:
+      - tickets
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific ticket
+      parameters:
+      - description: Ticket ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TicketDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a ticket by ID
+      tags:
+      - tickets
+    put:
+      consumes:
+      - application/json
+      description: Update ticket information
+      parameters:
+      - description: Ticket ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated ticket data
+        in: body
+        name: ticket
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateTicketRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TicketResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a ticket
+      tags:
+      - tickets
+  /tickets/{id}/assign:
+    patch:
+      consumes:
+      - application/json
+      description: Assign a ticket to a technician
+      parameters:
+      - description: Ticket ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Assignment data
+        in: body
+        name: assignment
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.AssignTicketRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign ticket to technician
+      tags:
+      - tickets
+  /tickets/{id}/comments:
+    get:
+      description: Get all comments for a ticket
+      parameters:
+      - description: Ticket ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.CommentResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List ticket comments
+      tags:
+      - tickets
+    post:
+      consumes:
+      - application/json
+      description: Add a new comment to a ticket
+      parameters:
+      - description: Ticket ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment data
+        in: body
+        name: comment
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.AddCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handlers.CommentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add comment to ticket
+      tags:
+      - tickets
+  /tickets/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update the status of a ticket (workflow transition)
+      parameters:
+      - description: Ticket ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New status
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.ChangeStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change ticket status
+      tags:
+      - tickets
+  /tickets/{id}/timeline:
+    get:
+      description: Get the timeline/history of a ticket
+      parameters:
+      - description: Ticket ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.TimelineEntryResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get ticket timeline
+      tags:
+      - tickets
+  /tickets/stats:
+    get:
+      description: Get ticket counts by status, type, and priority
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.TicketStatsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get ticket statistics
+      tags:
+      - tickets
+  /tickets/technicians/workload:
+    get:
+      description: Get active ticket counts for all technicians
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.TechnicianWorkloadResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get technicians workload
+      tags:
+      - tickets
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of users. Super admins see all users, others
+        see only their tenant.
+      parameters:
+      - default: 20
+        description: Number of items to return
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of items to skip
+        in: query
+        name: offset
+        type: integer
+      - description: Filter by tenant ID (super admin only)
+        in: query
+        name: tenant_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.UserResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all users
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deactivate a user account
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate a user
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific user
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update user information
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a user
+      tags:
+      - users
+  /users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      description: Update the password of a user (self-service or admin maintenance)
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New password payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.UpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - users
+  /users/{id}/profile-image:
+    delete:
+      consumes:
+      - application/json
+      description: Remove the profile image for a user
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.UserResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user avatar
+      tags:
+      - users
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a profile image for a user
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Avatar image file
+        in: formData
+        name: profile_image
+        required: true
+        type: file
+      - description: Image description
+        in: formData
+        name: description
+        type: string
+      - default: true
+        description: Is public
+        in: formData
+        name: is_public
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload user avatar
+      tags:
+      - users
+  /users/{id}/roles:
+    get:
+      consumes:
+      - application/json
+      description: Get all roles assigned to a user
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handlers.RoleResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user roles
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Assign a role to a user
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role assignment
+        in: body
+        name: role
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handlers.AssignRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign role to user
+      tags:
+      - users
+  /users/{id}/roles/{roleId}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a role from a user
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Role ID (UUID)
+        in: path
+        name: roleId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handlers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove role from user
+      tags:
+      - users
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

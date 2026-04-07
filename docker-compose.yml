@@ -1,0 +1,183 @@
+# docker-compose.yml — sistema-camaras-mono (desarrollo)
+# Puertos distintos a los originales para validación en paralelo (C4)
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: ./docker/postgres/Dockerfile
+    image: mono-postgres-local:pg16
+    container_name: mono-postgres
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-joselo1341}
+      POSTGRES_DB: ${DATABASE_NAME:-symtickets}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=es_ES.UTF-8"
+    ports:
+      - "${POSTGRES_HOST_PORT:-5438}:5432"
+    volumes:
+      - mono_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sistema-camaras-network
+
+  migrate:
+    image: migrate/migrate:latest
+    container_name: mono-migrate
+    command:
+      - "-path=/migrations"
+      - "-database=postgresql://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-joselo1341}@postgres:5432/${DATABASE_NAME:-symtickets}?sslmode=disable"
+      - "up"
+    volumes:
+      - ./cctv_server/internal/database/migrations:/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sistema-camaras-network
+    profiles:
+      - tools
+
+  valkey:
+    image: eqalpha/keydb:latest
+    container_name: mono-valkey
+    ports:
+      - "${VALKEY_HOST_PORT:-6388}:6379"
+    volumes:
+      - mono_valkey_data:/data
+    command: keydb-server --save 60 1000
+    healthcheck:
+      test: ["CMD", "keydb-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sistema-camaras-network
+
+  nats:
+    image: nats:latest
+    container_name: mono-nats
+    ports:
+      - "${NATS_HOST_PORT:-4228}:4222"
+      - "${NATS_MONITOR_PORT:-8228}:8222"
+    command: ["-js", "-sd", "/data"]
+    volumes:
+      - mono_nats_data:/data
+    networks:
+      - sistema-camaras-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: mono-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9009}:9000"
+      - "${MINIO_CONSOLE_PORT:-9010}:9001"
+    volumes:
+      - mono_minio_data:/data
+    networks:
+      - sistema-camaras-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: mono-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@symtickets.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "${PGADMIN_HOST_PORT:-5058}:80"
+    volumes:
+      - mono_pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sistema-camaras-network
+
+  backend:
+    build:
+      context: ./cctv_server
+      dockerfile: ../docker/backend/Dockerfile
+    image: mono-backend-local:dev
+    container_name: mono-backend
+    environment:
+      DATABASE_URL: postgres://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-joselo1341}@postgres:5432/${DATABASE_NAME:-symtickets}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      SERVER_PORT: 8080
+      SERVER_ENV: ${SERVER_ENV:-development}
+      MINIO_BASE_URL: http://minio:9000
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-symtickets}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      REDIS_HOST: valkey
+      REDIS_PORT: 6379
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+    ports:
+      - "${BACKEND_HOST_PORT:-8088}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+      nats:
+        condition: service_started
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - sistema-camaras-network
+
+  frontend:
+    build:
+      context: ./cctv_web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_HOST_PORT:-8088}/api/v1
+    image: mono-frontend-local:dev
+    container_name: mono-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_HOST_PORT:-8088}/api/v1
+      NEXT_PUBLIC_APP_NAME: SymTickets CCTV
+      NEXT_PUBLIC_DEFAULT_LOCALE: es
+    ports:
+      - "${FRONTEND_HOST_PORT:-3010}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - sistema-camaras-network
+    profiles:
+      - frontend
+
+volumes:
+  mono_postgres_data:
+    driver: local
+  mono_valkey_data:
+    driver: local
+  mono_nats_data:
+    driver: local
+  mono_minio_data:
+    driver: local
+  mono_pgadmin_data:
+    driver: local
+
+networks:
+  sistema-camaras-network:
+    driver: bridge

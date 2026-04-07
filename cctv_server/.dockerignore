@@ -1,0 +1,10 @@
+.env
+.env.*
+bin/
+backfill_media
+cctv_server
+server
+server.log
+docs/swagger.json
+docs/swagger.yaml
+tmp/

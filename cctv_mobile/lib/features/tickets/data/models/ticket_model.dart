@@ -1,0 +1,85 @@
+import '../../domain/entities/ticket.dart';
+
+class TicketModel extends Ticket {
+  const TicketModel({
+    required super.id,
+    required super.tenantId,
+    required super.ticketNumber,
+    super.clientId,
+    super.siteId,
+    super.equipmentId,
+    required super.type,
+    required super.priority,
+    required super.status,
+    required super.title,
+    super.description,
+    super.assignedTo,
+    super.reportedBy,
+    super.clientName,
+    super.siteName,
+    super.assignedToName,
+    super.policyId,
+    super.policyNumber,
+    super.coverageStatus,
+    super.slaStatus,
+    super.breachedSla,
+    required super.createdAt,
+    required super.updatedAt,
+  });
+
+  factory TicketModel.fromJson(Map<String, dynamic> json) {
+    return TicketModel(
+      id: json['id'] as String,
+      tenantId: json['tenant_id'] as String,
+      ticketNumber: json['ticket_number'] as String,
+      clientId: json['client_id'] as String?,
+      siteId: json['site_id'] as String?,
+      equipmentId: json['equipment_id'] as String?,
+      type: json['type'] as String? ?? 'corrective',
+      priority: json['priority'] as String? ?? 'medium',
+      status: json['status'] as String? ?? 'open',
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      assignedTo: json['assigned_to'] as String?,
+      reportedBy: json['reported_by'] as String?,
+      clientName: json['client_name'] as String?,
+      siteName: json['site_name'] as String?,
+      assignedToName: json['assigned_to_name'] as String?,
+      policyId: json['policy_id'] as String?,
+      policyNumber: json['policy_number'] as String?,
+      coverageStatus: json['coverage_status'] as String?,
+      slaStatus: json['sla_status'] as String?,
+      breachedSla: json['breached_sla'] as bool?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'tenant_id': tenantId,
+      'ticket_number': ticketNumber,
+      'client_id': clientId,
+      'site_id': siteId,
+      'equipment_id': equipmentId,
+      'type': type,
+      'priority': priority,
+      'status': status,
+      'title': title,
+      'description': description,
+      'assigned_to': assignedTo,
+      'reported_by': reportedBy,
+      'client_name': clientName,
+      'site_name': siteName,
+      'assigned_to_name': assignedToName,
+      'policy_id': policyId,
+      'policy_number': policyNumber,
+      'coverage_status': coverageStatus,
+      'sla_status': slaStatus,
+      'breached_sla': breachedSla,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+}

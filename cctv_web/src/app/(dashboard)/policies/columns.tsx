@@ -1,0 +1,111 @@
+"use client";
+
+import { ColumnDef } from "@tanstack/react-table";
+import type { Policy } from "@/types/api";
+import { DataTableColumnHeader } from "@/components/data-table/column-header";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
+
+interface ColumnActions {
+  onView: (policy: Policy) => void;
+  onEdit: (policy: Policy) => void;
+  onDelete: (policy: Policy) => void;
+}
+
+const statusLabels: Record<string, string> = {
+  active: "Activa",
+  expired: "Expirada",
+  suspended: "Suspendida",
+  cancelled: "Cancelada",
+};
+
+const statusVariants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  active: "default",
+  expired: "secondary",
+  suspended: "outline",
+  cancelled: "destructive",
+};
+
+export function getColumns(actions: ColumnActions): ColumnDef<Policy>[] {
+  return [
+    {
+      accessorKey: "policy_number",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="# Póliza" />,
+      cell: ({ row }) => (
+        <span className="font-mono font-medium">{row.original.policy_number}</span>
+      ),
+    },
+    {
+      accessorKey: "client_name",
+      header: "Cliente",
+      cell: ({ row }) => row.original.client_name ?? "—",
+    },
+    {
+      accessorKey: "vendor",
+      header: "Proveedor",
+      cell: ({ row }) => row.original.vendor ?? "—",
+    },
+    {
+      accessorKey: "contract_type",
+      header: "Tipo",
+      cell: ({ row }) => row.original.contract_type ?? "—",
+    },
+    {
+      accessorKey: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Badge variant={statusVariants[row.original.status] ?? "outline"}>
+          {statusLabels[row.original.status] ?? row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "monthly_payment",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Mensual" />,
+      cell: ({ row }) => `$${row.original.monthly_payment.toLocaleString("es-MX")}`,
+    },
+    {
+      accessorKey: "start_date",
+      header: "Vigencia",
+      cell: ({ row }) => (
+        <div className="text-sm">
+          <div>{row.original.start_date}</div>
+          <div className="text-xs text-muted-foreground">→ {row.original.end_date}</div>
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const policy = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 p-0 rounded-md hover:bg-accent">
+              <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => actions.onView(policy)}>
+                <Eye className="mr-2 h-4 w-4" />
+                Ver detalle
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => actions.onEdit(policy)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => actions.onDelete(policy)} className="text-destructive">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+}

@@ -1,0 +1,275 @@
+"use client";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { login, getMe } from "@/lib/api/auth";
+import { useAuthStore } from "@/stores/auth-store";
+import { useTenantStore } from "@/stores/tenant-store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Camera, Shield, Monitor, Eye, EyeOff, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const loginSchema = z.object({
+  email: z.string().email("Email inválido"),
+  password: z.string().min(1, "La contraseña es requerida"),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
+
+const demoUsers = [
+  { name: "Admin", email: "admin@demo.com", password: "Password123!", role: "Super Admin", color: "from-sky-500 to-blue-600", bg: "bg-sky-50 dark:bg-sky-950/30", border: "border-sky-500", ring: "ring-sky-200 dark:ring-sky-800" },
+  { name: "Operador", email: "operator@demo.com", password: "Password123!", role: "Operador", color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-800" },
+  { name: "Técnico", email: "tech@demo.com", password: "Password123!", role: "Técnico", color: "from-amber-500 to-orange-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-500", ring: "ring-amber-200 dark:ring-amber-800" },
+  { name: "Viewer", email: "viewer@demo.com", password: "Password123!", role: "Solo Lectura", color: "from-violet-500 to-purple-600", bg: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-500", ring: "ring-violet-200 dark:ring-violet-800" },
+];
+
+const features = [
+  { icon: Camera, label: "Monitoreo 24/7", desc: "Vigilancia continua de toda tu infraestructura" },
+  { icon: Shield, label: "Multi-sucursal", desc: "Gestiona múltiples sitios desde un solo panel" },
+  { icon: Monitor, label: "Gestión inteligente", desc: "Tickets, SLA y pólizas automatizados" },
+];
+
+export default function LoginPage() {
+  const router = useRouter();
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const setProfile = useAuthStore((s) => s.setProfile);
+  const setCompany = useTenantStore((s) => s.setCompany);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  async function onSubmit(data: LoginForm) {
+    setError(null);
+    try {
+      const res = await login(data.email, data.password);
+      setAuth(res.access_token, res.user);
+
+      const me = await getMe();
+      setProfile(me.user, me.companies, me.permissions);
+
+      if (me.companies.length > 1) {
+        router.push("/select-company");
+      } else {
+        if (me.companies.length === 1) {
+          setCompany(me.companies[0]);
+        }
+        router.push("/dashboard");
+      }
+    } catch {
+      setError("Credenciales inválidas o servidor no disponible");
+    }
+  }
+
+  function selectDemoUser(user: (typeof demoUsers)[number]) {
+    setSelectedDemo(user.email);
+    setValue("email", user.email);
+    setValue("password", user.password);
+  }
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Left panel — Brand */}
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-10 lg:flex lg:w-[60%]">
+        {/* Grid pattern overlay */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
+        />
+
+        {/* Top — Logo */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/20">
+            <Camera className="h-5 w-5 text-sky-400" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">SyMTickets CCTV</h1>
+            <p className="text-xs text-slate-400">Plataforma de Gestión CCTV</p>
+          </div>
+        </div>
+
+        {/* Center — Hero */}
+        <div className="relative z-10 space-y-8">
+          <div className="max-w-lg space-y-4">
+            <h2 className="text-4xl font-bold leading-tight text-white">
+              Control total de tu<br />infraestructura CCTV
+            </h2>
+            <p className="text-lg text-slate-300">
+              Monitorea cámaras, gestiona tickets y administra pólizas desde una sola plataforma multi-tenant.
+            </p>
+          </div>
+
+          {/* Features grid */}
+          <div className="grid max-w-lg grid-cols-3 gap-4">
+            {features.map((f) => (
+              <div key={f.label} className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                <f.icon className="mb-3 h-6 w-6 text-sky-400" />
+                <p className="text-sm font-semibold text-white">{f.label}</p>
+                <p className="mt-1 text-xs text-slate-400">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom — Attribution */}
+        <div className="relative z-10">
+          <p className="text-xs text-slate-500">© 2026 SyMTickets · Gestión de infraestructura CCTV</p>
+        </div>
+      </div>
+
+      {/* Right panel — Form */}
+      <div className="flex flex-1 flex-col items-center justify-center bg-gray-50 px-6 py-12 dark:bg-gray-950">
+        {/* Mobile logo */}
+        <div className="mb-8 flex items-center gap-3 lg:hidden">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900">
+            <Camera className="h-5 w-5 text-sky-400" />
+          </div>
+          <h1 className="text-xl font-bold">SyMTickets CCTV</h1>
+        </div>
+
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl ring-1 ring-gray-900/5 dark:bg-gray-900 dark:ring-white/10">
+          <div className="mb-6 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Accede a tu cuenta</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Ingresa tus credenciales para continuar
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@demo.com"
+                autoComplete="email"
+                className="h-11"
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="h-11 pr-10"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
+            </div>
+
+            {error && (
+              <div className="rounded-lg bg-destructive/15 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            <Button type="submit" className="h-11 w-full bg-sky-600 font-semibold text-white hover:bg-sky-700" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Ingresando...
+                </>
+              ) : (
+                "Ingresar"
+              )}
+            </Button>
+          </form>
+
+          {/* Demo user presets */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground dark:bg-gray-900">o accede rápido</span>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {demoUsers.map((u) => {
+                const isSelected = selectedDemo === u.email;
+                return (
+                  <button
+                    key={u.email}
+                    type="button"
+                    onClick={() => selectDemoUser(u)}
+                    className={cn(
+                      "relative flex flex-col items-center gap-2.5 rounded-xl border-2 p-4 transition-all duration-200",
+                      isSelected
+                        ? `${u.border} ${u.bg} ${u.ring} ring-2 shadow-md`
+                        : "border-transparent bg-gray-50 hover:border-gray-200 hover:shadow-sm dark:bg-gray-800 dark:hover:border-gray-600"
+                    )}
+                  >
+                    {/* Avatar circle */}
+                    <div className={cn(
+                      "flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br text-sm font-bold text-white shadow-sm",
+                      u.color
+                    )}>
+                      {u.name.charAt(0)}
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold">{u.name}</p>
+                      <span className={cn(
+                        "mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
+                        isSelected
+                          ? "bg-white/80 text-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                          : "bg-gray-200/60 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                      )}>
+                        {u.role}
+                      </span>
+                    </div>
+                    {/* Selected check */}
+                    {isSelected && (
+                      <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-white shadow-sm">
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

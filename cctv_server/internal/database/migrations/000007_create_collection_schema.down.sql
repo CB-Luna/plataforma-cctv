@@ -1,0 +1,22 @@
+-- 000007_create_collection_schema.down.sql
+-- Revertir schema de collection
+DROP INDEX IF EXISTS collection.idx_credit_notes_client;
+DROP INDEX IF EXISTS collection.idx_credit_notes_tenant;
+DROP INDEX IF EXISTS collection.idx_payment_reminders_invoice;
+DROP INDEX IF EXISTS collection.idx_payment_reminders_tenant;
+DROP INDEX IF EXISTS collection.idx_account_statements_period;
+DROP INDEX IF EXISTS collection.idx_account_statements_client;
+DROP INDEX IF EXISTS collection.idx_account_statements_tenant;
+DROP INDEX IF EXISTS collection.idx_payments_method;
+DROP INDEX IF EXISTS collection.idx_payments_date;
+DROP INDEX IF EXISTS collection.idx_payments_client;
+DROP INDEX IF EXISTS collection.idx_payments_invoice;
+DROP INDEX IF EXISTS collection.idx_payments_tenant_status;
+DROP INDEX IF EXISTS collection.idx_payments_tenant;
+DROP TABLE IF EXISTS collection.credit_notes;
+DROP TABLE IF EXISTS collection.payment_reminders;
+DROP TABLE IF EXISTS collection.account_statements;
+DROP TABLE IF EXISTS collection.payments;
+DROP TYPE IF EXISTS collection.payment_status;
+DROP TYPE IF EXISTS collection.payment_method;
+DROP SCHEMA IF EXISTS collection;

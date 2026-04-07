@@ -1,0 +1,24 @@
+services:
+  webcctv-next:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: symtickets-webcctv-next
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8080}
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - symtickets-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  symtickets-network:
+    external: true
+    name: symticketscctv_symtickets-network

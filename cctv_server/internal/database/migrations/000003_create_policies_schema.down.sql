@@ -1,0 +1,27 @@
+-- 000003_create_policies_schema.down.sql
+-- Revertir schema de policies
+DROP INDEX IF EXISTS policies.idx_policy_history_policy;
+DROP INDEX IF EXISTS policies.idx_policy_history_tenant;
+DROP INDEX IF EXISTS policies.idx_policies_dates;
+DROP INDEX IF EXISTS policies.idx_policies_client;
+DROP INDEX IF EXISTS policies.idx_policies_tenant_status;
+DROP INDEX IF EXISTS policies.idx_policies_tenant;
+DROP INDEX IF EXISTS policies.idx_coverage_plans_tenant;
+DROP INDEX IF EXISTS policies.idx_areas_site;
+DROP INDEX IF EXISTS policies.idx_areas_tenant;
+DROP INDEX IF EXISTS policies.idx_sites_client;
+DROP INDEX IF EXISTS policies.idx_sites_tenant;
+DROP INDEX IF EXISTS policies.idx_client_contacts_client;
+DROP INDEX IF EXISTS policies.idx_client_contacts_tenant;
+DROP INDEX IF EXISTS policies.idx_clients_rfc;
+DROP INDEX IF EXISTS policies.idx_clients_tenant_active;
+DROP INDEX IF EXISTS policies.idx_clients_tenant;
+DROP TABLE IF EXISTS policies.policy_history;
+DROP TABLE IF EXISTS policies.policies;
+DROP TABLE IF EXISTS policies.coverage_plans;
+DROP TABLE IF EXISTS policies.areas;
+DROP TABLE IF EXISTS policies.sites;
+DROP TABLE IF EXISTS policies.client_contacts;
+DROP TABLE IF EXISTS policies.clients;
+DROP TYPE IF EXISTS policies.policy_status;
+DROP SCHEMA IF EXISTS policies;

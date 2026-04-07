@@ -1,0 +1,67 @@
+# === Go ===
+cctv_server/bin/
+cctv_server/server
+cctv_server/cctv_server
+cctv_server/backfill_media
+cctv_server/tmp/
+cctv_server/main
+cctv_server/*.exe
+cctv_server/vendor/
+
+# === Node / Next.js ===
+cctv_web/node_modules/
+cctv_web/.next/
+cctv_web/out/
+cctv_web/coverage/
+cctv_web/test-results/
+cctv_web/playwright-report/
+cctv_web/.env
+cctv_web/.env.local
+cctv_web/.env.*.local
+cctv_web/*.tsbuildinfo
+
+# === Flutter ===
+cctv_mobile/.dart_tool/
+cctv_mobile/build/
+cctv_mobile/.flutter-plugins
+cctv_mobile/.flutter-plugins-dependencies
+cctv_mobile/.packages
+cctv_mobile/pubspec.lock
+
+# === Docker ===
+docker/volumes/
+docker-compose.override.yml
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# === Environment ===
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# === Secrets / credenciales ===
+*.pem
+*.key
+*.p12
+*.pfx
+serviceAccountKey.json
+
+# === Logs ===
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

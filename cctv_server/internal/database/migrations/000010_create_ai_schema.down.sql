@@ -1,0 +1,25 @@
+-- 000010_create_ai_schema.down.sql
+-- Rollback del esquema ai
+DROP INDEX IF EXISTS ai.idx_usage_summary_period;
+DROP INDEX IF EXISTS ai.idx_usage_summary_tenant;
+DROP INDEX IF EXISTS ai.idx_analyses_verified;
+DROP INDEX IF EXISTS ai.idx_analyses_created;
+DROP INDEX IF EXISTS ai.idx_analyses_type;
+DROP INDEX IF EXISTS ai.idx_analyses_tenant;
+DROP INDEX IF EXISTS ai.idx_api_calls_entity;
+DROP INDEX IF EXISTS ai.idx_api_calls_provider;
+DROP INDEX IF EXISTS ai.idx_api_calls_status;
+DROP INDEX IF EXISTS ai.idx_api_calls_created;
+DROP INDEX IF EXISTS ai.idx_api_calls_tenant;
+DROP INDEX IF EXISTS ai.idx_prompt_templates_active;
+DROP INDEX IF EXISTS ai.idx_prompt_templates_category;
+DROP INDEX IF EXISTS ai.idx_prompt_templates_tenant;
+DROP INDEX IF EXISTS ai.idx_model_configs_provider;
+DROP INDEX IF EXISTS ai.idx_model_configs_active;
+DROP INDEX IF EXISTS ai.idx_model_configs_tenant;
+DROP TABLE IF EXISTS ai.usage_summary;
+DROP TABLE IF EXISTS ai.analyses;
+DROP TABLE IF EXISTS ai.api_calls;
+DROP TABLE IF EXISTS ai.prompt_templates;
+DROP TABLE IF EXISTS ai.model_configs;
+DROP SCHEMA IF EXISTS intelligence;

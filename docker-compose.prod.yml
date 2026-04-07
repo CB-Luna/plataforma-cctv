@@ -1,0 +1,81 @@
+# docker-compose.prod.yml — sistema-camaras-mono (producción)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mono-postgres-prod
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - mono_postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sistema-camaras-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./cctv_server
+      dockerfile: ../docker/backend/Dockerfile
+    container_name: mono-backend-prod
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: require
+      AUTH_DB_NAME: ${AUTH_DB_NAME}
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8080
+      GIN_MODE: release
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      ENVIRONMENT: production
+      LOG_LEVEL: warn
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sistema-camaras-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  migrate:
+    image: migrate/migrate:latest
+    container_name: mono-migrate-prod
+    command:
+      - "-path=/migrations"
+      - "-database=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=require"
+      - "up"
+    volumes:
+      - ./cctv_server/internal/database/migrations:/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sistema-camaras-network
+    profiles:
+      - tools
+
+volumes:
+  mono_postgres_data_prod:
+    driver: local
+
+networks:
+  sistema-camaras-network:
+    driver: bridge

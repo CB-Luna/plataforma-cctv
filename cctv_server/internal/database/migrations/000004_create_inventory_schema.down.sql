@@ -1,0 +1,22 @@
+-- 000004_create_inventory_schema.down.sql
+-- Revertir schema de inventario
+DROP INDEX IF EXISTS inventory.idx_maintenance_history_date;
+DROP INDEX IF EXISTS inventory.idx_maintenance_history_equipment;
+DROP INDEX IF EXISTS inventory.idx_maintenance_history_tenant;
+DROP INDEX IF EXISTS inventory.idx_equipment_next_maintenance;
+DROP INDEX IF EXISTS inventory.idx_equipment_serial;
+DROP INDEX IF EXISTS inventory.idx_equipment_site;
+DROP INDEX IF EXISTS inventory.idx_equipment_tenant_type;
+DROP INDEX IF EXISTS inventory.idx_equipment_tenant_status;
+DROP INDEX IF EXISTS inventory.idx_equipment_tenant_client;
+DROP INDEX IF EXISTS inventory.idx_equipment_tenant;
+DROP INDEX IF EXISTS inventory.idx_models_active;
+DROP INDEX IF EXISTS inventory.idx_models_equipment_type;
+DROP INDEX IF EXISTS inventory.idx_models_brand;
+DROP TABLE IF EXISTS inventory.maintenance_history;
+DROP TABLE IF EXISTS inventory.equipment;
+DROP TABLE IF EXISTS inventory.models;
+DROP TABLE IF EXISTS inventory.brands;
+DROP TABLE IF EXISTS inventory.equipment_types;
+DROP TYPE IF EXISTS inventory.equipment_status;
+DROP SCHEMA IF EXISTS inventory;
