@@ -1,30 +1,43 @@
 # 04. Plan Faseado de Completacion
 
-> Criterio rector: primero consolidar contexto, contrato y operacion real; despues ampliar o pulir superficies.
+> Criterio rector: una fase no se considera realmente cerrada solo porque exista avance tecnico o visual. Debe quedar operable end-to-end el requerimiento de negocio que le da sentido, o bien debe quedar degradado y documentado como GAP real.
 
-## Vista general
+## Vista general corregida
 
 | Fase | Nombre | Resultado principal |
 |---|---|---|
-| F0 | Alineacion y decisiones de producto | Modelo aprobado y backlog congelado por nucleo |
+| F0 | Alineacion y decisiones de producto | Modelo base aprobado y backlog congelado por nucleo |
 | F1 | Consolidacion multi-tenant y scopes | Contexto de empresa confiable y no enganoso |
 | F2 | Maestros operativos y UX de contexto | Cliente-sitio-activo operables sin UUIDs manuales |
 | F3 | Cierre CCTV core | Inventario, importacion, planos y mapa en estado defendible |
 | F4 | Operacion contractual | Tickets, polizas y SLA coherentes con cobertura real |
-| F5 | Backoffice enterprise | Configuracion, roles, tenants, storage e IA con frontera clara |
-| F6 | Calidad, hardening y handoff | QA, e2e, documentacion y criterios de release cerrados |
+| F5 | Backoffice enterprise inicial | Configuracion, roles, tenants, storage e IA con frontera administrativa mas clara |
+| F6 | Correccion de rumbo producto | Tenant operable, servicios habilitados, portal tenant y auditoria real de Control de Acceso |
+| F7 | Calidad, hardening y handoff | QA, e2e, documentacion y criterios de release cerrados |
 
-## Estado de ejecucion
+## Estado de ejecucion corregido
 
 | Fase | Estado | Fecha | Evidencia |
 |---|---|---|---|
-| F0 | Completada | 2026-04-07 | Paquete `docs/plan-maestro/` aprobado y decisiones de producto cerradas |
-| F1 | Completada | 2026-04-07 | Flujo login/select-company/contexto activo implementado en `cctv_web`, switch enganoso retirado, guards minimos aplicados, `npm test`, `npm run build` y smoke Playwright verdes |
-| F2 | Completada | 2026-04-07 | Formularios de tickets y polizas ya no dependen de UUID manual para contexto principal, aliases administrativos apuntan a la tab correcta de `/settings`, contexto de sitio aplica en tickets/polizas/inventario, `npm test`, `npm run build` y Playwright Fase 2 verdes |
-| F3 | Completada | 2026-04-07 | Camaras y NVR alineados al contrato manual real, importacion con parseo+mapeo+validacion, floor plans sin perdida de semantica y mapa degradado con precision aproximada, `npm test`, `npm run build` y Playwright Fase 3 verdes |
-| F4 | Completada | 2026-04-07 | Tickets, polizas y SLA ya exponen cobertura real, snapshot SLA, degradaciones honestas de update y validacion Playwright Fase 4 |
-| F5 | Completada | 2026-04-07 | `/settings` ya separa plataforma vs tenant, branding tenant se rehidrata, existe consola global inicial de `menu_templates`, logo de empresa operadora ya es administrable y Playwright Fase 5 quedo verde |
-| F6 | Pendiente | - | Requiere hardening final, QA ampliado y handoff |
+| F0 | Completada | 2026-04-07 | Paquete `docs/plan-maestro/` aprobado y decisiones base cerradas |
+| F1 | Completada | 2026-04-07 | Flujo login/select-company/contexto activo implementado en `cctv_web`, switch enganoso retirado, guards minimos aplicados |
+| F2 | Completada | 2026-04-07 | Formularios de tickets y polizas sin UUIDs manuales para contexto principal, aliases administrativos apuntando a `/settings`, contexto de sitio aplicado donde fue posible |
+| F3 | Completada | 2026-04-07 | Camaras y NVR alineados al contrato manual real, importacion con parseo y mapeo, floor plans defendibles y mapa degradado con precision aproximada |
+| F4 | Completada | 2026-04-07 | Tickets, polizas y SLA ya exponen cobertura real y degradaciones honestas de update |
+| F5 | Completada con alcance administrativo parcial | 2026-04-07 | `/settings` ya separa plataforma vs tenant, branding tenant se rehidrata y existe consola inicial de `menu_templates`; esto NO equivale a tener tenant operable end-to-end |
+| F6 | Pendiente | - | Debe reparar la desviacion entre lo implementado y la vision enterprise esperada |
+| F7 | Pendiente | - | Solo debe iniciarse despues de cerrar F6 y reauditar el estado real del producto |
+
+## Nota de correccion de rumbo
+
+El cierre tecnico de F1-F5 resolvio una parte importante del sistema actual, pero no resolvio el objetivo de negocio que motivaba el proyecto enterprise:
+
+- dar de alta una empresa y dejarla lista para iniciar sesion,
+- asignarle servicios o modulos habilitados con criterio real,
+- separar de verdad el backoffice global del portal tenant,
+- y contar con dominios adicionales como Control de Acceso mas alla de una mencion conceptual.
+
+Por esa razon, el siguiente paso ya no puede ser hardening directo. Antes debe ejecutarse una fase nueva de correccion de rumbo producto.
 
 ## Fase 0. Alineacion y decisiones de producto
 
@@ -61,18 +74,12 @@ Completado el 2026-04-07.
 
 ### Resultado materializado
 
-- `LoginResponse` ya se alinea al payload real con `companies`.
+- `LoginResponse` se alineo al payload real con `companies`.
 - El login multiempresa usa seleccion explicita de empresa antes de emitir el contexto final de trabajo.
 - Se elimino la dependencia funcional de `X-Company-ID` y el selector enganoso de empresa en header.
 - El tenant activo queda persistido como snapshot local y se rehidrata desde `/auth/me`.
 - La navegacion fija de Fase 1 respeta permisos por ruta.
 - Se agregaron guards minimos por pagina y acciones principales en tickets, clientes y configuracion.
-
-### Validacion ejecutada
-
-- `npm test` en `cctv_web`: OK.
-- `npm run build` en `cctv_web`: OK.
-- Playwright smoke Fase 1 en `http://localhost:3010`: OK sobre login, auth redirect, dashboard y settings.
 
 ### Criterio de salida
 
@@ -90,35 +97,18 @@ Completado el 2026-04-07.
 
 ### Resultado materializado
 
-- `site-store` ahora rehidrata y reconcilia el sitio activo contra datos reales del tenant.
-- Tickets ya usan selectores de cliente, sitio, poliza y tecnico en lugar de IDs manuales.
+- `site-store` rehidrata y reconcilia el sitio activo contra datos reales del tenant.
+- Tickets ya usan selectores de cliente, sitio, poliza y tecnico.
 - Polizas ya usan selectores de cliente, sitio y activos cubiertos navegables.
-- Inventario ahora recalcula KPIs por sitio activo cuando existe contexto operativo seleccionado.
-- `/users`, `/roles`, `/tenants`, `/storage` e `/intelligence` ya redirigen a la tab correcta de `/settings`.
-- `TabLayout` y `/settings` ya soportan deep link por query string para navegacion administrativa coherente.
+- Inventario recalcula KPIs por sitio activo cuando existe contexto operativo seleccionado.
+- `/users`, `/roles`, `/tenants`, `/storage` e `/intelligence` redirigen a la tab correcta de `/settings`.
+- `TabLayout` y `/settings` soportan deep link por query string.
 
 ### Degradaciones honestas aplicadas
 
 - El cruce cliente-sitio se resuelve por nombre comercial mientras la API de sitios no entregue `client_id`.
 - La asociacion de activos cubiertos por `equipment_id` generico se retiro de la UI operativa porque no existe catalogo navegable real en backend.
 - Las polizas sin `site_id` siguen visibles aun con sitio activo para no ocultar cobertura a nivel cliente.
-
-### Alcance
-
-- Reemplazar UUIDs manuales por selectores y relaciones navegables donde ya existan endpoints.
-- Conectar el contexto de sitio a filtros y queries donde si aplica.
-- Normalizar tablas, busquedas, estados vacios y errores en modulos operativos.
-
-### Fuera de alcance
-
-- Crear CRUD de sitios.
-- Nuevos endpoints de busqueda inexistentes.
-
-### Validacion ejecutada
-
-- `npm test` en `cctv_web`: OK.
-- `npm run build` en `cctv_web`: OK.
-- Playwright Fase 2 en `http://localhost:3020`: OK sobre tickets, polizas, aliases administrativos y estabilidad del inventario.
 
 ### Criterio de salida
 
@@ -136,38 +126,18 @@ Completado el 2026-04-07.
 
 ### Resultado materializado
 
-- `camaras` ahora aplica contexto de sitio en tabla, KPIs y exportacion; el alta manual se acota a los campos que el backend realmente persiste y la edicion se retira porque no existe `PUT /inventory/cameras/{id}`.
-- `nvrs` ahora aplica contexto de sitio, expone columna de sucursal y separa con claridad la alta manual base de la edicion parcial que el contrato si soporta.
-- `imports` ya parsea CSV/XLSX en frontend, expone el mapeo de columnas, usa el analisis del backend cuando esta disponible y crea batches con `column_mapping` y `data` reales.
-- `floor-plans` ahora guarda una proyeccion legacy para compatibilidad y, ademas, una version enriquecida del documento editor para no perder habitaciones, zonas, puertas o poligonos.
-- `map` ahora comunica explicitamente que la georreferencia es aproximada por ciudad y se alinea al sitio activo cuando existe contexto operativo seleccionado.
+- `camaras` aplica contexto de sitio en tabla, KPIs y exportacion; el alta manual se acota a los campos que el backend realmente persiste y la edicion se retira porque no existe `PUT /inventory/cameras/{id}`.
+- `nvrs` aplica contexto de sitio, expone columna de sucursal y separa la alta manual base de la edicion parcial que el contrato si soporta.
+- `imports` parsea CSV/XLSX en frontend, expone el mapeo de columnas, usa el analisis del backend cuando esta disponible y crea batches con `column_mapping` y `data` reales.
+- `floor-plans` guarda una proyeccion legacy para compatibilidad y una version enriquecida del documento editor.
+- `map` comunica explicitamente que la georreferencia es aproximada por ciudad.
 
 ### Degradaciones honestas aplicadas
 
-- La alta manual de camaras no promete tipo, IP, MAC, megapixeles ni estado operativo avanzado porque el backend actual no los persiste desde este formulario.
+- La alta manual de camaras no promete tipo, IP, MAC, megapixeles ni estado operativo avanzado.
 - La edicion manual de camaras queda diferida por GAP real de API.
-- La alta y edicion manual de NVR no promete red, almacenamiento, fechas ni estado avanzado; esos datos siguen entrando por importacion o procesos especializados.
-- El mapa se mantiene como modulo complementario y referencial mientras la API no entregue latitud y longitud reales.
-
-### Alcance
-
-- Revisar CRUD real de camaras y NVR.
-- Cerrar importacion masiva con la interfaz que el backend si puede consumir.
-- Corregir guardado de floor plans para no perder semantica del editor.
-- Resolver como se presenta el mapa mientras no haya coordenadas reales.
-- Verificar consistencia entre camaras, NVR, floor plans y contexto sitio-activo.
-
-### Fuera de alcance
-
-- Nuevos endpoints de geolocalizacion.
-- Nuevos endpoints de catalogo maestro inexistentes.
-
-### Validacion ejecutada
-
-- `npm test` en `cctv_web`: OK.
-- `npm run build` en `cctv_web`: OK.
-- Playwright Fase 3 en `http://localhost:3030`: OK sobre camaras/NVR, importacion, mapa y persistencia defendible de floor plans.
-- Playwright smoke adicional en `http://localhost:3030`: OK sobre `/inventory`, `/camera-models` y `/cameras` sin hydration mismatch.
+- La alta y edicion manual de NVR no promete red, almacenamiento, fechas ni estado avanzado.
+- El mapa se mantiene como modulo complementario y referencial.
 
 ### Criterio de salida
 
@@ -185,100 +155,156 @@ Completado el 2026-04-07.
 
 ### Resultado materializado
 
-- `tickets` ahora expone filtros de cobertura y SLA, KPIs contractuales por sitio activo y una vista de detalle donde politica ligada, estado de cobertura y snapshot SLA conviven en el mismo expediente.
-- `ticket-dialog` ya separa creacion vs edicion: en create previsualiza poliza candidata y regla SLA con el mismo orden de resolucion del backend; en edit se bloquea el contexto contractual y solo quedan campos operativos que el backend si soporta sin recalculo.
-- `ticket-actions` ahora usa workload real del backend para asignacion y documenta el impacto de cada transicion de estado sobre primera respuesta, resolucion y refresh del SLA.
-- `polizas` ahora muestran alcance contractual en tabla, formulario con cobertura operativa sobre `coverage_json` y detalle que conecta cobertura declarada, activos cubiertos y tickets realmente ligados a la poliza.
-- `sla` ahora explica la logica real de seleccion de reglas, diferencia entre alcance exacto/parcial/default y comunica explicitamente que `business_hours` sigue siendo documental mientras el motor calcula horas corridas.
+- `tickets` ya expone cobertura y SLA con el mismo orden de resolucion del backend.
+- `ticket-dialog` separa creacion vs edicion y bloquea el contexto contractual cuando el backend no recalcula.
+- `ticket-actions` usa workload real del backend para asignacion y documenta el impacto de cada transicion.
+- `polizas` muestran alcance contractual en tabla, formulario con `coverage_json` y detalle que conecta cobertura, activos y tickets ligados.
+- `sla` explica la logica real de seleccion de reglas y comunica que `business_hours` sigue siendo documental.
 
 ### Degradaciones honestas aplicadas
 
-- La edicion de tickets no permite cambiar tipo, prioridad, sitio ni poliza porque `PUT /tickets/:id` no recompone el contrato operativo.
-- Una poliza existente con `site_id` ya no promete que pueda volver a cobertura cliente por update; la UI obliga a recrearla si cambia ese alcance base.
-- `business_hours` en SLA se mantiene visible como dato documental, pero no se presenta como comportamiento activo del motor.
-
-### Alcance
-
-- Tickets.
-- Polizas.
-- SLA.
-- Relacion entre activos, cobertura y operacion.
-
-### Fuera de alcance
-
-- Nuevos endpoints para recalculo contractual en update.
-- Paquetes comerciales o habilitacion de servicios a nivel backend.
-- Automatizacion real de `business_hours` dentro del motor SLA.
-
-### Validacion ejecutada
-
-- `npm test` en `cctv_web`: OK.
-- `npm run build` en `cctv_web`: OK.
-- Playwright Fase 4 en `http://localhost:3040`: OK sobre tickets, polizas y SLA contractuales.
+- La edicion de tickets no permite cambiar tipo, prioridad, sitio ni poliza.
+- Una poliza existente con `site_id` no promete volver a cobertura cliente por update.
+- `business_hours` en SLA se mantiene visible como dato documental, no como comportamiento activo del motor.
 
 ### Criterio de salida
 
 La capa contractual deja de ser un conjunto de modulos sueltos y se vuelve un flujo coherente.
 
-## Fase 5. Backoffice enterprise
+## Fase 5. Backoffice enterprise inicial
 
 ### Objetivo
 
-Separar y cerrar la administracion enterprise del portal operativo.
+Separar y ordenar la administracion enterprise que ya existia, sin confundir eso con tener un producto tenant-operable completo.
 
 ### Estado del checkpoint
 
-Completado el 2026-04-07.
+Completado el 2026-04-07, con alcance administrativo parcial.
 
 ### Resultado materializado
 
-- `/settings` ahora funciona como shell enterprise con separacion visible entre `Backoffice global` y `Portal de empresa`, usando tabs agrupadas por ownership real.
+- `/settings` funciona como shell enterprise con separacion visible entre `Backoffice global` y `Portal de empresa`, usando tabs agrupadas por ownership.
 - `empresas` ya opera branding corporativo con upload de logo por tenant y rehidrata el snapshot local cuando la empresa editada coincide con el tenant activo.
-- `tema` ahora deja explicito que solo gobierna branding del tenant activo y sincroniza la paleta con el snapshot local usado por header y theme provider.
-- `usuarios`, `roles`, `storage` e `ia` ya comunican alcance tenant y limitaciones reales del contrato para no mezclar administracion global con operacion interna.
+- `tema` deja explicito que solo gobierna branding del tenant activo y sincroniza la paleta con el snapshot local.
+- `usuarios`, `roles`, `storage` e `ia` comunican alcance tenant y limitaciones reales del contrato.
 - Se agrego una consola inicial de `menu_templates` sobre el backend real: listar, crear, editar, eliminar, asignar tenants, definir composicion base e inspeccionar el menu efectivo resuelto por `GET /menu`.
-- `/settings` y sus aliases administrativos aceptan tambien permisos de `menu`, para no bloquear perfiles globales que solo gestionan plantillas.
+- `/settings` y sus aliases administrativos aceptan tambien permisos de `menu`.
 
-### Degradaciones honestas aplicadas
+### Lo que NO quedo cerrado
 
-- El sidebar runtime de la web sigue fijo; la consola de plantillas ya administra backend real, pero la navegacion operativa todavia no se hidrata dinamicamente desde `menu_templates`.
-- La composicion de plantilla ya puede resolverse en bloque, pero el orden fino y la visibilidad por item siguen como cierre posterior del modulo de menu.
-- El CRUD separado de roles globales de plataforma no existe aun como superficie explicita; `roles` sigue operando principalmente sobre el tenant activo.
-- Branding corporativo ahora soporta upload de logo, pero no incluye recorte, validacion avanzada ni variantes por canal.
-
-### Alcance
-
-- Empresas y tenants.
-- Usuarios.
-- Roles y permisos.
-- Tema y configuracion general.
-- Storage.
-- IA.
-- Evaluacion del modulo de menu por plantillas.
-
-### Fuera de alcance
-
-- Convertir el sidebar operacional a runtime 100% dinamico.
-- Crear CRUD separado de roles globales inexistente en backend/web actual.
-- Resolver orden y visibilidad avanzada por item dentro de cada plantilla.
-
-### Validacion ejecutada
-
-- `npm test` en `cctv_web`: OK.
-- `npm run build` en `cctv_web`: OK.
-- Playwright Fase 5 en `http://localhost:3050`: OK sobre separacion plataforma/tenant, consola global de menu y ownership explicito de tema/IA/storage.
-- Playwright regression de admin/settings en `http://localhost:3050`: OK sobre shell enterprise y navegacion entre scopes/tabs.
-- Playwright regression de aliases administrativos en `http://localhost:3050`: OK sobre `/users`, `/roles` y `/storage` redirigiendo a la tab correcta.
+- No existe onboarding end-to-end del tenant con usuario admin inicial.
+- `subscription_plan` sigue siendo metadato de tenant, no un catalogo real de paquetes o servicios habilitados.
+- El sidebar runtime sigue fijo y no se hidrata desde `menu_templates`.
+- El portal tenant sigue compartiendo shell y narrativa con el backoffice global.
+- No existe superficie web real del dominio `Control de Acceso`.
 
 ### Criterio de salida
 
-El backoffice deja de ser una tab grande y pasa a ser una capa administrable con ownership claro.
+El backoffice deja de ser una tab grande y pasa a ser una capa administrativa mas clara, pero esto no basta para considerar resuelta la vision enterprise esperada por producto.
 
-## Fase 6. Calidad, hardening y handoff
+## Fase 6. Correccion de rumbo producto
 
 ### Objetivo
 
-Cerrar calidad, validaciones, documentacion operativa y preparacion de entrega.
+Cerrar la brecha entre el sistema tecnicamente ordenado y el producto enterprise realmente esperado:
+
+- tenant operable desde el alta,
+- servicios o modulos habilitados con criterio explicito,
+- portal tenant autocontenido,
+- y auditoria honesta del dominio `Control de Acceso`.
+
+### Por que existe esta fase
+
+Las Fases 1-5 ordenaron la plataforma actual, pero no completaron estos requerimientos centrales de negocio:
+
+- alta de tenant con branding base y usuario admin inicial,
+- login real de la empresa creada,
+- gestion clara de servicios o modulos habilitados,
+- menu visible por tenant + rol + servicio,
+- experiencia tenant que no se sienta como backoffice global,
+- y modulo `Control de Acceso` como superficie real o GAP formal.
+
+### Alcance
+
+#### Bloque A. Onboarding real de tenant
+
+- Auditar que parte del onboarding ya existe en backend y web.
+- Definir el flujo operativo completo para alta de tenant.
+- Separar claramente que parte ya existe: tenant, branding, login.
+- Documentar si el bootstrap del usuario admin inicial puede implementarse desde web usando contrato existente o si queda bloqueado.
+- Definir la evidencia minima para considerar a un tenant "listo para operar".
+
+#### Bloque B. Servicios habilitados / paquetes / modulos
+
+- Definir un catalogo claro de servicios o modulos habilitables por empresa.
+- Separar semanticamente `servicio habilitado`, `paquete`, `poliza`, `SLA` y `modulo visible`.
+- Definir como impacta eso a menu, permisos, portal tenant y narrativa comercial.
+- Identificar que parte puede resolverse con `menu_templates`, permisos y configuracion actual, y que parte requiere soporte backend no existente.
+
+#### Bloque C. Portal tenant real
+
+- Definir la experiencia del tenant al iniciar sesion.
+- Delimitar que ve un usuario global vs un usuario tenant.
+- Aterrizar usuarios internos del tenant, roles internos y ownership real.
+- Decidir si basta una shell compartida con separacion fuerte o si se necesita shell/rutas dedicadas.
+
+#### Bloque D. Control de Acceso
+
+- Auditar honestamente que existe hoy en backend y frontend.
+- Documentar si hay dominio, endpoints, rutas o solo semantica conceptual.
+- Si no existe superficie real, dejarlo explicitamente fuera de "modulo habilitable operativo" hasta tener plan de construccion.
+- Definir un plan faseado especifico para construirlo como dominio operativo.
+
+### Fuera de alcance
+
+- Hardening final.
+- Release notes de entrega.
+- Dar por hecho que `subscription_plan` ya es un paquete funcional real.
+- Declarar `Control de Acceso` como listo si no existe evidencia en repo.
+
+### Tareas detalladas
+
+1. Reabrir el plan maestro y registrar la desviacion de alcance.
+2. Crear una matriz honesta de esperado vs existente vs faltante vs bloqueado.
+3. Insertar esta fase nueva antes del hardening.
+4. Redefinir backlog y riesgos para la nueva realidad del producto.
+5. Dejar una definicion operativa de "tenant listo para operar".
+6. Dejar una definicion operativa de "servicio habilitado" y "modulo visible".
+7. Auditar el estado real de `Control de Acceso`.
+
+### Dependencias
+
+- Contrato actual de `cctv_server/` sin modificaciones.
+- Rutas actuales de `auth`, `users`, `roles`, `tenants`, `menu`, `settings`.
+- Decision de producto sobre si puede usarse `POST /auth/register` como parte del bootstrap administrativo o si eso debe tratarse como limite de seguridad y onboarding.
+
+### Riesgos
+
+- Forzar hardening sobre una vision de producto todavia incompleta.
+- Sobrerrepresentar `subscription_plan` como si ya definiera modulos.
+- Tratar `menu_templates` como si ya resolviera menu runtime por si solo.
+- Confundir portal tenant con una tab bonita dentro de `/settings`.
+- Prometer `Control de Acceso` sin evidencia real en repo.
+
+### Validaciones
+
+- Existe una matriz clara entre lo esperado por negocio y lo existente real.
+- Existe definicion cerrada de que deja a un tenant operable.
+- Existe criterio claro para gobernar visibilidad por tenant + rol + servicio.
+- Existe conclusion explicita sobre el estado real de `Control de Acceso`.
+- Existe backlog corregido para cerrar estos vacios antes de hardening.
+
+### Criterio de salida
+
+No se continua a hardening hasta que quede clara, documentada y aprobada la siguiente afirmacion:
+
+**que parte del producto enterprise ya existe, que parte sigue parcial, que parte esta bloqueada por backend y que parte debe convertirse en la siguiente etapa real de construccion.**
+
+## Fase 7. Calidad, hardening y handoff
+
+### Objetivo
+
+Cerrar calidad, validaciones, documentacion operativa y preparacion de entrega, pero solo despues de reparar la desviacion de producto.
 
 ### Alcance
 
@@ -286,17 +312,25 @@ Cerrar calidad, validaciones, documentacion operativa y preparacion de entrega.
 - Revisar Playwright y base URLs.
 - Ejecutar QA funcional por modulo.
 - Alinear docs, seeds, datos demo y release notes.
+- Generar el paquete documental de la siguiente etapa real antes de programar mas producto.
+
+### Fuera de alcance
+
+- Corregir con hardening vacios de producto que debieron resolverse en F6.
+- Declarar "terminado" algo que no este operativo end-to-end.
 
 ### Criterio de salida
 
-Existe una definicion defendible de listo para entrega y de GAP aceptado.
+Existe una definicion defendible de listo para entrega y un paquete documental nuevo para la etapa siguiente del producto.
 
 ## Siguiente paso recomendado
 
-La siguiente ejecucion en codigo debe ser **Fase 6: Calidad, hardening y handoff**.
+La siguiente ejecucion correcta ya no es hardening.
+
+La siguiente ejecucion debe ser **Fase 6: Correccion de rumbo producto**.
 
 El razonamiento es:
 
-- Fase 5 ya despejo el principal riesgo enterprise de ownership y backoffice mezclado.
-- El siguiente cuello de botella ya no es de producto, sino de calidad de entrega: QA ampliado, seeds, scripts, puertos, release notes y cierre de riesgos aceptados.
-- Endurecer ahora evita cerrar una demo fuerte sin checklist final de salida.
+- Fase 5 ordeno el backoffice, pero no cerro tenant onboarding, servicios habilitados ni portal tenant real.
+- Hardening ahora solo maquillaria una desviacion de alcance que el propio repo y la propia documentacion ya reconocen.
+- Antes de seguir programando, el proyecto necesita reauditarse desde la vision enterprise esperada por negocio.

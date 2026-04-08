@@ -1,6 +1,6 @@
 # 06. Backlog Priorizado Web
 
-> Regla de priorizacion: primero se corrige lo que compromete contexto, contrato y operacion real; despues lo que mejora cobertura funcional; al final lo que solo pule presentacion o conveniencia.
+> Regla de priorizacion: primero se corrige lo que compromete contexto, contrato, tenant onboarding y verdad del producto; despues lo que mejora cobertura funcional; al final lo que solo pule presentacion o conveniencia.
 
 ## Escala usada
 
@@ -31,18 +31,29 @@
 | WEB-016 | Users / roles | Alinear las pantallas alias (`/users`, `/roles`, `/tenants`, `/storage`, `/intelligence`) con una estrategia de routing clara | Media | UX | Fase 2 o 5 | S | Bajo | Las URLs alias no generan ambiguedad y el breadcrumb es coherente |
 | WEB-017 | Dashboard | Revisar KPIs y accesos rapidos para que respondan al tenant activo y al sitio cuando aplique | Media | Integracion | WEB-004; WEB-006 | M | Medio | El dashboard no muestra agregados contradictorios con el contexto activo |
 | WEB-018 | Clientes | Explicitar alcance real de clientes como lista/alta/detalle y evitar prometer CRUD completo si no existe API | Media | Documentacion | Auditoria API | S | Bajo | La UI y los textos no prometen acciones que el backend no soporta |
-| WEB-019 | SLA | Alinear SLA con el flujo de polizas y cobertura contractual | Media | Gap | Fase 4; decision DEC-05 | M | Medio | SLA deja de verse como catalogo aislado y se integra conceptualmente con polizas |
+| WEB-019 | SLA | Alinear SLA con el flujo de polizas y cobertura contractual | Media | Gap | Fase 4; decision DEC-05 | M | Medio | SLA deja de verse como catalogo aislado y se integra semanticamente con polizas |
 | WEB-020 | CAPEX / garantias | Definir si CAPEX es vista derivada o modulo autonomo y ajustar copy/acciones | Media | UX | DEC-08 | S | Bajo | El modulo refleja su rol real y no sobrepromete proceso propio |
 | WEB-021 | Inventario | Normalizar tablas, filtros y estados vacios segun contexto cliente-sitio-activo | Media | UX | WEB-006 | M | Medio | Inventario usa filtros consistentes y muestra estados honestos |
 | WEB-022 | NVR | Verificar y completar consistencia CRUD y relaciones con sitio/camaras | Media | Integracion | Fase 3 | M | Medio | NVR puede operarse sin inconsistencias visibles tras recarga |
 | WEB-023 | Topologia | Revisar coherencia de topologia con floor plans e inventario del sitio | Media | Integracion | WEB-011; WEB-021 | M | Medio | La topologia refleja activos y no queda desacoplada del resto del modulo CCTV |
 | WEB-024 | Errores globales | Unificar manejo de errores funcionales, de permiso y de red en formularios y tablas | Media | UX | Transversal | M | Medio | Los modulos presentan errores diferenciados y recuperables |
 | WEB-025 | Estado vacio | Estandarizar mensajes y CTAs de estados vacios, sin permiso y sin integracion | Media | UX | Transversal | S | Bajo | Los modulos ya no muestran vacios ambiguos |
-| WEB-026 | Documentacion tecnica | Corregir puertos y contratos desactualizados en docs de `cctv_web` y scripts auxiliares | Media | Documentacion | Fase 6 | S | Medio | La documentacion usa puertos coherentes y scripts no apuntan a endpoints obsoletos |
-| WEB-027 | Playwright / QA | Alinear `playwright.config.ts` y smoke tests al puerto y flujo reales del proyecto | Media | Integracion | Fase 6; entorno reproducible | S | Medio | Las pruebas e2e apuntan al shell correcto y al flujo vigente |
-| WEB-028 | Build / middleware | Atender la advertencia de Next 16 sobre `middleware` y migracion futura a `proxy` | Baja | Documentacion | Fase 6; decision tecnica | S | Bajo | Existe decision documentada y plan de ajuste, aunque no sea bloqueante inmediato |
+| WEB-026 | Documentacion tecnica | Corregir puertos y contratos desactualizados en docs de `cctv_web` y scripts auxiliares | Media | Documentacion | Hardening | S | Medio | La documentacion usa puertos coherentes y scripts no apuntan a endpoints obsoletos |
+| WEB-027 | Playwright / QA | Alinear `playwright.config.ts` y smoke tests al puerto y flujo reales del proyecto | Media | Integracion | Hardening; entorno reproducible | S | Medio | Las pruebas e2e apuntan al shell correcto y al flujo vigente |
+| WEB-028 | Build / middleware | Atender la advertencia de Next 16 sobre `middleware` y migracion futura a `proxy` | Baja | Documentacion | Hardening; decision tecnica | S | Bajo | Existe decision documentada y plan de ajuste |
 | WEB-029 | IA | Confirmar ownership y alcance de configuracion de IA por tenant o plataforma | Baja | Gap | DEC-06 | S | Bajo | El modulo comunica con claridad su ambito de configuracion |
 | WEB-030 | Storage | Confirmar ownership y alcance de configuracion de storage por tenant o plataforma | Baja | Gap | DEC-06 | S | Bajo | El modulo comunica con claridad su ambito de configuracion |
+| WEB-031 | Tenant onboarding | Definir y documentar el flujo completo `crear tenant -> branding -> admin inicial -> login valido` | Critica | Gap | Fase 6; contrato `tenants` + `auth/register` | L | Alto | Existe un flujo defendible y una definicion de tenant listo para operar |
+| WEB-032 | Tenant onboarding | Auditar si el admin inicial puede crearse desde web con contrato actual o si queda bloqueado | Critica | Documentacion | API-10; decision DEC-09 | M | Alto | Queda explicitamente claro si es implementable ya o si necesita soporte backend adicional |
+| WEB-033 | Users tenant | Implementar alta de usuario interno del tenant si se aprueba el flujo seguro sobre contrato actual | Alta | Integracion | WEB-032; validacion producto/seguridad | L | Alto | El tenant puede dar de alta usuarios internos sin hacks ni supuestos |
+| WEB-034 | Servicios habilitados | Definir el catalogo de servicios/modulos habilitables por empresa | Critica | Gap | BIZ-03; BIZ-06 | M | Alto | Existe una matriz clara servicio -> menu -> modulo -> tenant |
+| WEB-035 | Paquetes | Separar `subscription_plan` de paquete funcional real y ajustar copy/UI | Critica | UX | WEB-034 | M | Alto | La UI deja de vender `basic/professional/enterprise` como algo que aun no existe funcionalmente |
+| WEB-036 | Menu runtime | Definir criterio de visibilidad por tenant + rol + servicio y bajarlo a navegacion real | Alta | Gap | WEB-013; WEB-034 | L | Alto | El menu deja de depender solo de hardcode y respeta el modelo aprobado |
+| WEB-037 | Portal tenant | Definir shell, rutas y narrativa del portal tenant separada del backoffice global | Critica | UX | Fase 6; MT-01; MT-05 | L | Alto | Un usuario tenant entra a un espacio que se siente propio de su empresa |
+| WEB-038 | Roles tenant | Aterrizar la diferencia entre roles globales y roles internos del tenant en la UX | Alta | UX | DEC-03; WEB-037 | M | Medio | El usuario entiende que permisos son de plataforma y cuales de empresa |
+| WEB-039 | Control de Acceso | Auditar honestamente que existe hoy en repo para ese dominio | Critica | Documentacion | Fase 6; API-12; FE-15 | M | Alto | Existe conclusion verificable sobre si hay o no superficie real del modulo |
+| WEB-040 | Control de Acceso | Definir plan concreto para construir el modulo como dominio operativo, no como idea abstracta | Alta | Gap | WEB-039 | L | Alto | Existe fase propia, alcance y criterio de salida para ese dominio |
+| WEB-041 | Sitios / sucursales | Explicitar en UI y docs que el CRUD de sitios sigue bloqueado por backend | Alta | Documentacion | API-03 | S | Medio | No se promete una administracion de sucursales que hoy no existe |
 
 ## Agrupacion sugerida por fase
 
@@ -86,6 +97,20 @@
 
 ### Fase 6
 
+- WEB-031
+- WEB-032
+- WEB-033
+- WEB-034
+- WEB-035
+- WEB-036
+- WEB-037
+- WEB-038
+- WEB-039
+- WEB-040
+- WEB-041
+
+### Fase 7
+
 - WEB-024
 - WEB-025
 - WEB-026
@@ -94,12 +119,20 @@
 
 ## Bloqueadores de backlog
 
-- Mientras no se confirme DEC-01, WEB-002 y WEB-003 no deben resolverse de manera definitiva.
-- Mientras no se confirme DEC-02, WEB-006, WEB-007, WEB-008 y WEB-021 pueden quedar inconsistentes entre tenant, cliente y sitio.
-- Mientras no se confirme DEC-06, `/settings`, IA y storage seguiran mezclando ownership.
-- Mientras no se confirme DEC-07, el sidebar no debe sobrediseñarse como si ya fuera plenamente dinamico.
-- Mientras el backend no exponga mejor soporte de sitios, el contexto de sucursal debe tratarse con cautela.
+- Mientras no se confirme DEC-09, el bootstrap del admin inicial del tenant no debe sobredisenarse.
+- Mientras no se confirme DEC-10, `subscription_plan` no debe tratarse como paquete funcional real.
+- Mientras no se confirme DEC-11, el sidebar no debe presentarse como si ya estuviera gobernado por tenant + rol + servicio.
+- Mientras no se confirme DEC-12, el portal tenant puede quedarse visualmente mezclado con el backoffice global.
+- Mientras el backend no exponga mejor soporte de sitios, la administracion real de sucursales debe tratarse como bloqueo.
+- Mientras no exista auditoria formal de `Control de Acceso`, no debe venderse como modulo disponible.
 
 ## Lectura ejecutiva del backlog
 
-Las prioridades criticas no son cosmeticas. Todas atacan el mismo riesgo sistémico: que la aplicacion proyecte una experiencia enterprise mientras el contexto real de empresa, permisos y datos sigue siendo ambiguo. Cerrar ese nucleo primero reduce retrabajo en casi todos los modulos posteriores.
+Las prioridades criticas ya no son solo tecnicas. Ahora atacan el riesgo sistemico de que la aplicacion proyecte una experiencia enterprise sin haber cerrado todavia:
+
+- el onboarding real del tenant,
+- el catalogo de servicios habilitados,
+- el portal tenant autocontenido,
+- y la verdad del dominio `Control de Acceso`.
+
+Corregir primero ese nucleo evita que el proyecto entre a hardening sobre una promesa de producto que aun no existe.
