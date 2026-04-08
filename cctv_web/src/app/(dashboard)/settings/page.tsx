@@ -16,6 +16,7 @@ import { AccessDeniedState } from "@/components/auth/access-denied-state";
 import { Badge } from "@/components/ui/badge";
 import { TabLayout, type TabItem } from "@/components/ui/tab-layout";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { useTenantStore } from "@/stores/tenant-store";
 import { isSettingsTabEnabledForServices, parseTenantProductProfile } from "@/lib/product/service-catalog";
 import { cn } from "@/lib/utils";
@@ -153,7 +154,7 @@ const scopeMeta: Record<
 };
 
 export default function SettingsPage() {
-  const { canAny } = usePermissions();
+  const { canAny, permissions, roles } = usePermissions();
   const currentCompany = useTenantStore((state) => state.currentCompany);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -163,6 +164,15 @@ export default function SettingsPage() {
     [currentCompany],
   );
   const tenantProductProfile = useMemo(() => parseTenantProductProfile(currentCompany), [currentCompany]);
+  const experience = useMemo(
+    () =>
+      getWorkspaceExperience({
+        permissions,
+        roles,
+        company: currentCompany,
+      }),
+    [currentCompany, permissions, roles],
+  );
   const visibleTabs = useMemo(
     () =>
       tabs.filter(
@@ -178,6 +188,7 @@ export default function SettingsPage() {
   const platformTabs = visibleTabs.filter((tab) => tab.scope === "platform");
   const tenantTabs = visibleTabs.filter((tab) => tab.scope === "tenant");
   const activeScopeMeta = scopeMeta[activeScope];
+  const hasScopeSwitch = platformTabs.length > 0 && tenantTabs.length > 0;
 
   useEffect(() => {
     if (!visibleTabs.length || !activeTab) return;
@@ -203,15 +214,21 @@ export default function SettingsPage() {
             <Badge className={activeScopeMeta.badgeClass}>{activeScopeMeta.badge}</Badge>
             {currentCompany ? <Badge variant="secondary">{currentCompany.name}</Badge> : null}
             <Badge variant="outline">Plan: {tenantProductProfile.packageProfile}</Badge>
+            <Badge variant="outline">Rol: {experience.roleLabel}</Badge>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Backoffice enterprise y producto</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              {experience.mode === "tenant_portal" ? experience.shellTitle : "Backoffice enterprise y producto"}
+            </h1>
             <p className="mt-1 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-              `/settings` separa plataforma global del portal tenant y ahora tambien expone el catalogo vigente de servicios y paquetes que gobierna visibilidad real.
+              {experience.mode === "tenant_portal"
+                ? "Este espacio ya prioriza usuarios, roles internos, branding y capacidades operativas de la empresa activa."
+                : "`/settings` separa plataforma global del portal tenant y ahora tambien expone el catalogo vigente de servicios y paquetes que gobierna visibilidad real."}
             </p>
           </div>
         </div>
 
+        {hasScopeSwitch ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[540px]">
           <ScopeCard
             scope="platform"
@@ -232,6 +249,14 @@ export default function SettingsPage() {
             onClick={() => goToScopeTab(tenantTabs[0], router)}
           />
         </div>
+        ) : (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-slate-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-slate-200 xl:min-w-[420px]">
+            <p className="font-semibold">Portal tenant activo</p>
+            <p className="mt-1">
+              La configuracion visible ya esta filtrada al ownership de empresa. No se muestran controles globales de plataforma en este contexto.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className={cn("rounded-2xl border p-4", activeScopeMeta.cardClass)}>

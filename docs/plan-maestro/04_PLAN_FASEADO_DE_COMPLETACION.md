@@ -25,7 +25,7 @@
 | F3 | Completada | 2026-04-07 | Camaras y NVR alineados al contrato manual real, importacion con parseo y mapeo, floor plans defendibles y mapa degradado con precision aproximada |
 | F4 | Completada | 2026-04-07 | Tickets, polizas y SLA ya exponen cobertura real y degradaciones honestas de update |
 | F5 | Completada con alcance administrativo parcial | 2026-04-07 | `/settings` ya separa plataforma vs tenant, branding tenant se rehidrata y existe consola inicial de `menu_templates`; esto NO equivale a tener tenant operable end-to-end |
-| F6 | En curso | 2026-04-07 | C6.1 y C6.2 ya quedaron implementados en `cctv_web` con validacion por `vitest`, `next build` y smoke E2E mockeado; C6.3-C6.5 siguen pendientes |
+| F6 | En curso | 2026-04-07 | C6.1-C6.3 ya quedaron implementados en `cctv_web` con validacion por `vitest`, `next build` y smoke E2E mockeado; C6.4-C6.5 siguen pendientes |
 | F7 | Pendiente | - | Solo debe iniciarse despues de cerrar F6 y reauditar el estado real del producto |
 
 ## Nota de correccion de rumbo
@@ -270,7 +270,7 @@ La Fase 6 se ejecuta por checkpoints formales. Ningun checkpoint se considera ce
 |---|---|---|
 | C6.1 | Completado con validacion contractual mockeada | Cerrar onboarding real de tenant |
 | C6.2 | Completado | Cerrar servicios habilitados y paquetes |
-| C6.3 | Pendiente | Definir portal tenant real |
+| C6.3 | Completado | Definir portal tenant real |
 | C6.4 | Pendiente | Auditar `Control de Acceso` |
 | C6.5 | Pendiente | Consolidar F6 antes de hardening |
 
@@ -381,6 +381,10 @@ Deja de existir confusion entre plan comercial y producto visible.
 
 ### Checkpoint C6.3. Portal tenant
 
+#### Estado del checkpoint
+
+Completado el 2026-04-07.
+
 #### Objetivo
 
 Definir la experiencia del tenant como producto propio, no como una extension ambigua del backoffice global.
@@ -402,6 +406,23 @@ Definir la experiencia del tenant como producto propio, no como una extension am
 - Modelo de experiencia tenant.
 - Frontera clara global vs tenant.
 - Criterio de rutas o shell dedicadas vs shell compartida endurecida.
+
+#### Resultado materializado
+
+- El shell ahora distingue explicitamente `tenant_portal` vs `hybrid_backoffice` usando permisos, roles y tenant activo.
+- El sidebar tenant-only cambia branding, copy y CTA principales: `Inicio del portal`, `Mi empresa` y resumen visible de la empresa activa.
+- El header tenant-only ya usa `Portal` como raiz, refleja rol interno + tenant activo y alinea el breadcrumb con la narrativa del portal.
+- El dashboard agrega un hero de portal tenant con plan, servicios visibles, rol interno y accesos rapidos propios del tenant.
+- `/settings` tenant-only deja de mostrarse como backoffice global y se presenta como espacio de empresa activa, ocultando tabs globales cuando el perfil no tiene workspace de plataforma.
+- Usuarios y roles internos del tenant quedan reforzados como ownership de empresa dentro de la experiencia visible.
+- Se documenta y se implementa la decision de producto para C6.3: por ahora basta una shell compartida endurecida; no se introducen rutas o layouts separados mientras el contrato backend siga comun.
+
+#### Degradaciones honestas aplicadas
+
+- El portal tenant sigue montado sobre la misma shell tecnica del dashboard; la separacion es de experiencia, ownership y navegacion, no de runtime aislado.
+- La alta administrativa general de usuarios internos sigue parcial porque `/users` no expone `POST`.
+- La administracion de sitios/sucursales del tenant sigue limitada por GAP backend; el portal hoy los consume como contexto, no como CRUD cerrado.
+- El menu runtime sigue siendo una composicion fija gobernada por permisos + servicios; `menu_templates` aun no es la fuente unica.
 
 #### Criterio de salida
 
@@ -529,10 +550,11 @@ Existe una definicion defendible de listo para entrega y un paquete documental n
 
 La siguiente ejecucion correcta ya no es hardening ni el cierre completo de Fase 6.
 
-La siguiente ejecucion debe ser **C6.3 Portal tenant**.
+La siguiente ejecucion debe ser **C6.4 Control de Acceso**.
 
 El razonamiento es:
 
 - C6.1 ya cerro el onboarding tenant hasta donde permite el contrato actual.
 - C6.2 ya cerro el catalogo visible de servicios y paquetes dentro del shell existente.
-- El siguiente hueco real es que el tenant todavia no se siente como portal propio y `Control de Acceso` sigue sin auditoria formal.
+- C6.3 ya cerro la experiencia tenant dentro de una shell compartida endurecida.
+- El siguiente hueco real es auditar `Control de Acceso` y dejar de tratarlo como modulo habilitable sin evidencia de repo.

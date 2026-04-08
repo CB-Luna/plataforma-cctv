@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useAuthStore } from "@/stores/auth-store";
-import type { User, Company, Permission } from "@/types/api";
+import type { User, Company, Permission, Role } from "@/types/api";
 
 // Mock cookies module
 vi.mock("@/lib/cookies", () => ({
@@ -10,12 +10,14 @@ vi.mock("@/lib/cookies", () => ({
 
 const mockUser: User = {
   id: "u1",
+  tenant_id: "c1",
   email: "admin@demo.com",
   first_name: "Admin",
   last_name: "Demo",
+  email_verified: true,
   is_active: true,
+  last_login_at: null,
   created_at: "2024-01-01T00:00:00Z",
-  updated_at: "2024-01-01T00:00:00Z",
 };
 
 const mockCompany: Company = {
@@ -29,8 +31,19 @@ const mockCompany: Company = {
 };
 
 const mockPermissions: Permission[] = [
-  { id: "p1", code: "cameras.view", name: "View Cameras", module: "cameras" },
-  { id: "p2", code: "cameras.edit", name: "Edit Cameras", module: "cameras" },
+  { id: "p1", code: "cameras.view", description: "View Cameras", module: "cameras", created_at: "2024-01-01T00:00:00Z" },
+  { id: "p2", code: "cameras.edit", description: "Edit Cameras", module: "cameras", created_at: "2024-01-01T00:00:00Z" },
+];
+
+const mockRoles: Role[] = [
+  {
+    id: "r1",
+    tenant_id: "c1",
+    name: "tenant_admin",
+    description: "Administrador del tenant",
+    is_system: true,
+    created_at: "2024-01-01T00:00:00Z",
+  },
 ];
 
 describe("auth-store", () => {
@@ -39,6 +52,7 @@ describe("auth-store", () => {
     useAuthStore.setState({
       user: null,
       companies: [],
+      roles: [],
       permissions: [],
       token: null,
       isAuthenticated: false,
@@ -63,16 +77,17 @@ describe("auth-store", () => {
   });
 
   it("setProfile stores user, companies, permissions", () => {
-    useAuthStore.getState().setProfile(mockUser, [mockCompany], mockPermissions);
+    useAuthStore.getState().setProfile(mockUser, [mockCompany], mockRoles, mockPermissions);
     const state = useAuthStore.getState();
 
     expect(state.user?.first_name).toBe("Admin");
     expect(state.companies).toHaveLength(1);
+    expect(state.roles).toHaveLength(1);
     expect(state.permissions).toHaveLength(2);
   });
 
   it("hasPermission returns true for existing code", () => {
-    useAuthStore.getState().setProfile(mockUser, [], mockPermissions);
+    useAuthStore.getState().setProfile(mockUser, [], mockRoles, mockPermissions);
 
     expect(useAuthStore.getState().hasPermission("cameras.view")).toBe(true);
     expect(useAuthStore.getState().hasPermission("cameras.edit")).toBe(true);
@@ -81,7 +96,7 @@ describe("auth-store", () => {
 
   it("clearAuth resets everything", () => {
     useAuthStore.getState().setAuth("tok123", mockUser);
-    useAuthStore.getState().setProfile(mockUser, [mockCompany], mockPermissions);
+    useAuthStore.getState().setProfile(mockUser, [mockCompany], mockRoles, mockPermissions);
     useAuthStore.getState().clearAuth();
 
     const state = useAuthStore.getState();
@@ -89,6 +104,7 @@ describe("auth-store", () => {
     expect(state.user).toBeNull();
     expect(state.token).toBeNull();
     expect(state.companies).toHaveLength(0);
+    expect(state.roles).toHaveLength(0);
     expect(state.permissions).toHaveLength(0);
     expect(localStorage.getItem("access_token")).toBeNull();
   });

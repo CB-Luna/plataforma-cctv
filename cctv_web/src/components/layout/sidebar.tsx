@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Camera } from "lucide-react";
+import { Building2, Camera } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getRouteAccessRule } from "@/lib/auth/access-control";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import {
   isRouteEnabledForServices,
   parseTenantProductProfile,
@@ -29,10 +30,6 @@ interface MenuSection {
   label: string;
   items: MenuLinkItem[];
 }
-
-const PRIMARY_LINKS: MenuLinkItem[] = [
-  { id: "nav-dashboard", label: "Dashboard", icon: "dashboard", route: "/dashboard" },
-];
 
 const MENU_SECTIONS: MenuSection[] = [
   {
@@ -140,16 +137,6 @@ const MENU_SECTIONS: MenuSection[] = [
   },
 ];
 
-const SECONDARY_LINKS: MenuLinkItem[] = [
-  {
-    id: "nav-settings",
-    label: "Configuracion",
-    icon: "settings",
-    route: "/settings",
-    permissions: getRouteAccessRule("/settings")?.anyOf,
-  },
-];
-
 interface SidebarProps {
   collapsed?: boolean;
   onNavigate?: () => void;
@@ -157,19 +144,73 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
   const pathname = usePathname();
+  const permissions = useAuthStore((state) => state.permissions);
+  const roles = useAuthStore((state) => state.roles);
   const hasAnyPermission = useAuthStore((state) => state.hasAnyPermission);
   const currentCompany = useTenantStore((state) => state.currentCompany);
-  const enabledServices = parseTenantProductProfile(currentCompany).enabledServices;
-  const primaryLinks = filterVisibleLinks(PRIMARY_LINKS, hasAnyPermission, enabledServices);
+  const tenantProfile = parseTenantProductProfile(currentCompany);
+  const experience = getWorkspaceExperience({
+    permissions,
+    roles,
+    company: currentCompany,
+  });
+  const primaryLinks = filterVisibleLinks(
+    [
+      {
+        id: "nav-dashboard",
+        label: experience.dashboardLabel,
+        icon: "dashboard",
+        route: "/dashboard",
+      },
+    ],
+    hasAnyPermission,
+    tenantProfile.enabledServices,
+  );
   const sections = MENU_SECTIONS.map((section) => ({
     ...section,
-    items: filterVisibleLinks(section.items, hasAnyPermission, enabledServices),
+    items: filterVisibleLinks(section.items, hasAnyPermission, tenantProfile.enabledServices),
   })).filter((section) => section.items.length > 0);
-  const secondaryLinks = filterVisibleLinks(SECONDARY_LINKS, hasAnyPermission, enabledServices);
+  const secondaryLinks = filterVisibleLinks(
+    [
+      {
+        id: "nav-settings",
+        label: experience.settingsLabel,
+        icon: "settings",
+        route: experience.settingsHref,
+        permissions: getRouteAccessRule("/settings")?.anyOf,
+      },
+    ],
+    hasAnyPermission,
+    tenantProfile.enabledServices,
+  );
 
   return (
     <div className="flex h-full flex-col">
-      <SidebarBranding collapsed={collapsed} />
+      <SidebarBranding
+        collapsed={collapsed}
+        companyName={currentCompany?.name}
+        experienceBadge={experience.shellBadgeLabel}
+      />
+
+      {experience.mode === "tenant_portal" && currentCompany && !collapsed ? (
+        <div className="mx-3 mt-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90">
+          <div className="flex items-center gap-2">
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-white"
+              style={{ backgroundColor: currentCompany.primary_color ?? "#1976D2" }}
+            >
+              <Building2 className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">{currentCompany.name}</p>
+              <p className="truncate text-[11px] text-slate-300">{experience.roleLabel}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-slate-300">
+            Este shell ya prioriza la operacion de tu empresa y sus modulos habilitados.
+          </p>
+        </div>
+      ) : null}
 
       <nav
         className={cn(
@@ -256,7 +297,15 @@ function SidebarSeparator({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-function SidebarBranding({ collapsed }: { collapsed: boolean }) {
+function SidebarBranding({
+  collapsed,
+  companyName,
+  experienceBadge,
+}: {
+  collapsed: boolean;
+  companyName?: string;
+  experienceBadge: string;
+}) {
   return (
     <div
       className={cn(
@@ -269,8 +318,10 @@ function SidebarBranding({ collapsed }: { collapsed: boolean }) {
       </div>
       {!collapsed ? (
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-bold leading-tight text-white">SyMTickets</h2>
-          <p className="truncate text-[10px] leading-tight text-slate-400/70">CCTV Platform</p>
+          <h2 className="truncate text-sm font-bold leading-tight text-white">
+            {companyName ?? "SyMTickets"}
+          </h2>
+          <p className="truncate text-[10px] leading-tight text-slate-400/70">{experienceBadge}</p>
         </div>
       ) : null}
     </div>
@@ -301,7 +352,8 @@ function MenuLink({
   collapsed?: boolean;
   onNavigate?: () => void;
 }) {
-  const active = pathname === item.route || pathname.startsWith(`${item.route}/`);
+  const routePath = item.route.split("?")[0] ?? item.route;
+  const active = pathname === routePath || pathname.startsWith(`${routePath}/`);
 
   const link = (
     <Link

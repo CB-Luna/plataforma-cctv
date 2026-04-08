@@ -24,12 +24,15 @@ Tambien quedaron operativas estas capacidades concretas:
 - catalogo visible de servicios y paquetes dentro de `/settings`,
 - persistencia de `enabled_services` por tenant,
 - y visibilidad real de sidebar y tabs de `/settings` gobernada por permisos + servicios habilitados.
+- experiencia tenant-only visible en sidebar, header, dashboard y `/settings`,
+- breadcrumb, copy y CTA alineados a `Portal` y `Mi empresa` cuando el perfil no tiene backoffice global,
+- y separacion explicita entre `tenant_portal` y `hybrid_backoffice` dentro de la shell compartida actual.
 
 ## Que NO quedo realmente hecho
 
 No quedo cerrado lo que da sentido al producto SaaS enterprise esperado:
 
-- portal tenant autocontenido y claramente separado del backoffice global,
+- portal tenant totalmente autocontenido con runtime/rutas dedicadas,
 - gestion completa de usuarios internos del tenant desde el flujo administrativo,
 - gobierno unificado de menu runtime por tenant + rol + servicio desde una sola fuente,
 - gestion fuerte de paquetes/servicios desde backend si se quiere algo mas que catalogo frontend,
@@ -90,7 +93,7 @@ Punto clave:
 Conclusion:
 
 - el onboarding del tenant ya es operable en web con el contrato actual hasta el admin inicial,
-- pero el dominio de usuarios internos del tenant sigue parcial y necesita retomarse en C6.3.
+- pero el dominio de usuarios internos del tenant sigue parcial y debe retomarse despues de C6.3 para cerrar altas administrativas y gobierno mas completo.
 
 ### Bloque B. Servicios habilitados / paquetes / modulos
 
@@ -121,18 +124,20 @@ Hoy existe:
 - usuarios del tenant listados,
 - cambio de password,
 - asignacion de roles,
-- cierta separacion visual entre plataforma y tenant,
-- y un contexto visible del tenant mas claro.
+- shell tenant-only con sidebar, header, dashboard y `/settings` orientados a empresa,
+- copy y breadcrumbs alineados a `Portal` / `Mi empresa`,
+- y una diferenciacion visible entre experiencia `tenant_portal` y `hybrid_backoffice`.
 
 Hoy no existe cerrado:
 
 - alta administrativa de usuarios internos del tenant desde el backoffice,
-- shell o narrativa claramente distinta para el tenant,
-- experiencia en la que un usuario tipo "Bimbo Admin" sienta que esta dentro de su propio portal y no dentro del backoffice global.
+- shell o runtime aislado con rutas/layouts dedicados,
+- administracion CRUD de sitios/sucursales del tenant,
+- y una fuente unica de menu runtime gobernada por `menu_templates` + servicios + rol.
 
 Conclusion:
 
-- el portal tenant sigue parcial y es el siguiente foco correcto.
+- el portal tenant ya es defendible a nivel de experiencia dentro de la web actual, pero sigue parcial a nivel de runtime, usuarios internos completos y gobierno total del menu.
 
 ### Bloque D. Control de Acceso
 
@@ -161,13 +166,13 @@ Conclusion:
 | Branding por empresa | Existe logo, colores y tema basico | Endurecimiento de media y consistencia del portal tenant | No critico | Si | Branding base ya existe |
 | Usuario admin inicial del tenant | Existe flujo de bootstrap desde Empresas con password y asignacion de `tenant_admin` | Repetir smoke live y endurecer politicas de seguridad del bootstrap | Parcial | Si | Se implemento sobre `POST /auth/register` + asignacion de rol, sin tocar backend |
 | Tenant puede iniciar sesion de verdad | Si, si el usuario existe y tiene rol | Validar smoke live en ambiente levantado y cerrar narrativa tenant | Parcial | Si | El login existe; el alta ya puede dejar al tenant mucho mas cerca de operar |
-| Roles internos por tenant | Existen y pueden administrarse parcialmente | Cerrar ciclo real dentro del portal tenant | No total | Si | Falta ownership de portal tenant |
+| Roles internos por tenant | Existen y pueden administrarse parcialmente dentro de la experiencia tenant | Cerrar ciclo real completo con altas administrativas y separacion mas fuerte del runtime | No total | Si | C6.3 ya cerro ownership visible, no el ciclo completo |
 | Usuarios internos del tenant | Se listan, editan, asignan roles y password | Alta administrativa real de nuevos usuarios | Parcial | Si, si se aprueba integrar register o cambia backend | `/users` no tiene `POST` |
 | Sitios/sucursales administrables | Se consumen como contexto operativo | CRUD real de sitios/sucursales | Si | No completo | Sigue siendo GAP fuerte de backend |
 | Servicios habilitados por empresa | Existe catalogo frontend y persistencia en `enabled_services` | Llevarlo a gobierno mas fuerte o backend si se requiere | En parte | Si | La web ya separa servicios operativos de dominios planeados |
 | Que incluye basic/professional/enterprise | Ya esta definido en el catalogo vigente del shell actual | Validar si debe migrar a catalogo administrable o backend | No necesariamente | Si | Hoy ya no se comunica como metadato vacio, sino como preset comercial visible |
 | Menu por tenant + rol + servicio | Sidebar y tabs de settings ya responden a permisos + servicios; `menu_templates` sigue aparte | Unificar runtime completo con menu dinamico | No total | Parcial | Ya existe gobierno real, pero aun no una sola fuente de verdad |
-| Portal tenant separado del backoffice | Solo existe separacion parcial en `/settings` | Shell, narrativa y experiencia tenant real | No total | Si | Es el foco natural de C6.3 |
+| Portal tenant separado del backoffice | Existe shell tenant-only sobre la misma base tecnica: sidebar, header, dashboard y `/settings` cambian por perfil y tenant | Rutas/layout aislado, menu runtime unificado y CRUD mas completo del tenant | No total | Si | C6.3 ya cerro la experiencia visible, no el aislamiento tecnico completo |
 | Modulo Control de Acceso operativo | No existe evidencia de superficie real | Auditar, modelar y construir el dominio | Probablemente si, en parte | No sin nueva etapa | Hoy no debe venderse como modulo existente |
 
 ## Que puede hacerse ya desde web sin tocar backend
@@ -190,8 +195,8 @@ Conclusion:
 Antes de hardening, el plan correcto es:
 
 1. Cerrar Fase 6 como correccion de rumbo producto.
-2. Atacar ahora el portal tenant real.
-3. Auditar formalmente `Control de Acceso`.
+2. Auditar formalmente `Control de Acceso`.
+3. Consolidar F6 y congelar el rumbo corregido.
 4. Solo despues entrar a hardening.
 5. Al cerrar hardening, generar un nuevo paquete documental para la siguiente etapa real del producto.
 
@@ -206,8 +211,8 @@ La Fase 6 ya no debe ejecutarse como bloque unico. Se propone este orden:
    Estado actual:
    Completado.
 3. `C6.3 Portal tenant`
-   Resultado esperado:
-   Modelo claro de experiencia tenant, ownership y navegacion.
+   Estado actual:
+   Completado.
 4. `C6.4 Control de Acceso`
    Resultado esperado:
    Auditoria honesta del dominio y decision formal sobre su estado real.
@@ -231,4 +236,4 @@ El sistema no debe presentarse como "terminado" ni como "enterprise completo".
 
 La afirmacion correcta es esta:
 
-**hoy existe una base tecnica y funcional fuerte para CCTV + operacion contractual + backoffice inicial, y ya quedaron resueltos C6.1 y C6.2; aun asi la vision enterprise esperada por producto sigue abierta en portal tenant y Control de Acceso.**
+**hoy existe una base tecnica y funcional fuerte para CCTV + operacion contractual + backoffice inicial, y ya quedaron resueltos C6.1, C6.2 y C6.3; aun asi la vision enterprise esperada por producto sigue abierta en aislamiento total del tenant y en Control de Acceso.**

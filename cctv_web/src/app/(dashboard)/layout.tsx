@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     async function hydrateSession() {
       try {
         const me = await getMe();
-        setProfile(me.user, me.companies, me.permissions);
+        setProfile(me.user, me.companies, me.roles, me.permissions);
 
         const activeCompany = me.companies[0];
         if (!activeCompany) {

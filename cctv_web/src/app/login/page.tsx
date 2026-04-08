@@ -94,7 +94,7 @@ export default function LoginPage() {
       setAuth(res.access_token, res.user);
 
       const me = await getMe();
-      setProfile(me.user, me.companies, me.permissions);
+      setProfile(me.user, me.companies, me.roles, me.permissions);
       setCompany(me.companies[0] ?? res.companies[0]);
       router.push(redirectTo);
     } catch {

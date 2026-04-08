@@ -2,8 +2,11 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { TenantPortalHero } from "@/components/portal/tenant-portal-hero";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard } from "@/components/ui/stats-card";
+import { usePermissions } from "@/hooks/use-permissions";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import {
   getDashboardSummary,
   getDashboardTicketStats,
@@ -12,6 +15,9 @@ import {
 } from "@/lib/api/dashboard";
 import { getCameraStats } from "@/lib/api/cameras";
 import { getNvrStats } from "@/lib/api/nvrs";
+import { parseTenantProductProfile } from "@/lib/product/service-catalog";
+import { useSiteStore } from "@/stores/site-store";
+import { useTenantStore } from "@/stores/tenant-store";
 import {
   Ticket,
   Camera,
@@ -42,6 +48,15 @@ import {
 } from "recharts";
 
 export default function DashboardPage() {
+  const { canAny, permissions, roles } = usePermissions();
+  const currentCompany = useTenantStore((state) => state.currentCompany);
+  const currentSite = useSiteStore((state) => state.currentSite);
+  const experience = getWorkspaceExperience({
+    permissions,
+    roles,
+    company: currentCompany,
+  });
+  const tenantProfile = parseTenantProductProfile(currentCompany);
   const { data: summary } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: getDashboardSummary,
@@ -116,9 +131,96 @@ export default function DashboardPage() {
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const portalActions = useMemo(() => {
+    const actions: Array<{ href: string; label: string; description: string }> = [];
+
+    if (canAny("tickets.read", "tickets:read:own", "tickets:read:all")) {
+      actions.push({
+        href: "/tickets",
+        label: "Tickets",
+        description: "Gestiona incidentes, prioridades y estado operativo de la empresa.",
+      });
+    }
+
+    if (canAny("clients.read", "clients:read:own", "clients:read:all")) {
+      actions.push({
+        href: "/clients",
+        label: "Clientes y sitios",
+        description: "Consulta clientes atendidos y el contexto operativo por sucursal.",
+      });
+    }
+
+    if (canAny("users.read", "users:read:own", "users:read:all")) {
+      actions.push({
+        href: "/settings?tab=usuarios",
+        label: "Mi equipo",
+        description: "Administra usuarios internos del tenant activo.",
+      });
+    }
+
+    if (canAny("roles.read", "roles:read:own", "roles:read:all", "permissions:read:all")) {
+      actions.push({
+        href: "/settings?tab=roles",
+        label: "Roles internos",
+        description: "Ajusta perfiles internos del tenant sin tocar el backoffice global.",
+      });
+    }
+
+    if (
+      canAny(
+        "settings.read",
+        "configuration.read",
+        "configuration:read:own",
+        "configuration:read:all",
+        "themes:read:own",
+        "themes:read:all",
+      )
+    ) {
+      actions.push({
+        href: "/settings?tab=tema",
+        label: "Branding y empresa",
+        description: "Revisa plan, servicios visibles e identidad del tenant activo.",
+      });
+    }
+
+    if (
+      tenantProfile.enabledServices.includes("storage") &&
+      canAny("storage.read", "storage:read:own", "storage:read:all")
+    ) {
+      actions.push({
+        href: "/settings?tab=almacenamiento",
+        label: "Storage",
+        description: "Consulta configuraciones de almacenamiento de la empresa.",
+      });
+    }
+
+    if (
+      tenantProfile.enabledServices.includes("intelligence") &&
+      canAny("ai_models.read", "ai_models:read:own", "ai_models:read:all")
+    ) {
+      actions.push({
+        href: "/settings?tab=ia",
+        label: "IA",
+        description: "Revisa modelos y configuracion de inteligencia para la empresa.",
+      });
+    }
+
+    return actions.slice(0, 6);
+  }, [canAny, tenantProfile.enabledServices]);
 
   return (
     <div className="space-y-6">
+      <TenantPortalHero
+        experience={experience}
+        companyName={currentCompany?.name}
+        companySlug={currentCompany?.slug}
+        roleLabel={experience.roleLabel}
+        plan={tenantProfile.packageProfile}
+        services={tenantProfile.enabledServices}
+        currentSiteName={currentSite?.name}
+        actions={portalActions}
+      />
+
       {/* Operational header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>

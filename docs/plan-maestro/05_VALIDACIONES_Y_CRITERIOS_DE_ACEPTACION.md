@@ -169,10 +169,10 @@
 
 #### C6.3 Portal tenant
 
-- [ ] Existe definicion clara de que vera un usuario tenant al iniciar sesion.
-- [ ] Existe frontera visible y conceptual entre plataforma global y portal tenant.
-- [ ] Roles internos del tenant quedan diferenciados de roles globales.
-- [ ] Queda documentado si se requieren rutas/shells dedicadas o si basta endurecer la shell actual.
+- [x] Existe definicion clara de que vera un usuario tenant al iniciar sesion.
+- [x] Existe frontera visible y conceptual entre plataforma global y portal tenant.
+- [x] Roles internos del tenant quedan diferenciados de roles globales.
+- [x] Queda documentado si se requieren rutas/shells dedicadas o si basta endurecer la shell actual.
 
 #### C6.4 Control de Acceso
 
@@ -228,11 +228,16 @@
 - Decision documentada cuando el alcance se reduce por GAP backend.
 - Afirmacion clara de que si quedo operativo y que no.
 
-## Evidencia ejecutada en C6.1 y C6.2
+## Evidencia ejecutada en C6.1, C6.2 y C6.3
 
-- `npm test`: `55/55` OK
-- `npm run build`: OK
-- `npx playwright test e2e/phase-6-tenant-onboarding-services.spec.ts --project=chromium` con `E2E_BASE_URL=http://127.0.0.1:3060`: `3/3` OK usando mocks del contrato actual sobre `next start`
+- C6.1-C6.2:
+  `npm test`: `55/55` OK
+  `npm run build`: OK
+  `npx playwright test e2e/phase-6-tenant-onboarding-services.spec.ts --project=chromium` con `E2E_BASE_URL=http://127.0.0.1:3060`: `3/3` OK usando mocks del contrato actual sobre `next start`
+- C6.3:
+  `npm test`: `58/58` OK
+  `npm run build`: OK
+  `npx playwright test e2e/phase-6-tenant-onboarding-services.spec.ts e2e/phase-6-portal-tenant.spec.ts --project=chromium` con `E2E_BASE_URL=http://127.0.0.1:3061`: `6/6` OK usando mocks del contrato actual sobre `next start`
 - Limitacion reconocida: el smoke E2E de esta fase valida navegador real y contrato esperado, pero no golpea un backend vivo en este workspace.
 
 ## Conclusion

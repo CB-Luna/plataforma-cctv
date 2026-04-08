@@ -9,10 +9,11 @@ import { useAuthStore } from "@/stores/auth-store";
  */
 export function usePermissions() {
   const permissions = useAuthStore((s) => s.permissions);
+  const roles = useAuthStore((s) => s.roles);
   const user = useAuthStore((s) => s.user);
   const can = useAuthStore((s) => s.hasPermission);
   const canAny = useAuthStore((s) => s.hasAnyPermission);
   const canAll = (...codes: string[]): boolean => codes.every((code) => can(code));
 
-  return { can, canAny, canAll, permissions, user };
+  return { can, canAny, canAll, permissions, roles, user };
 }

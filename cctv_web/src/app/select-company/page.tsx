@@ -58,7 +58,7 @@ export default function SelectCompanyPage() {
       setAuth(response.access_token, response.user);
 
       const me = await getMe();
-      setProfile(me.user, me.companies, me.permissions);
+      setProfile(me.user, me.companies, me.roles, me.permissions);
       setCompany(me.companies[0] ?? company);
       clearPendingTenantSelection();
       router.push(redirectTo);

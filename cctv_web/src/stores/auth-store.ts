@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { User, Company, Permission } from "@/types/api";
+import type { User, Company, Permission, Role } from "@/types/api";
 import { setTokenCookie, removeTokenCookie } from "@/lib/cookies";
 import { hasAnyPermission, hasPermission } from "@/lib/auth/permissions";
 import { useTenantStore } from "@/stores/tenant-store";
@@ -14,13 +14,14 @@ interface PendingTenantSelection {
 interface AuthState {
   user: User | null;
   companies: Company[];
+  roles: Role[];
   permissions: Permission[];
   token: string | null;
   isAuthenticated: boolean;
   pendingTenantSelection: PendingTenantSelection | null;
 
   setAuth: (token: string, user: User) => void;
-  setProfile: (user: User, companies: Company[], permissions: Permission[]) => void;
+  setProfile: (user: User, companies: Company[], roles: Role[], permissions: Permission[]) => void;
   setPendingTenantSelection: (pendingTenantSelection: PendingTenantSelection) => void;
   clearPendingTenantSelection: () => void;
   clearAuth: () => void;
@@ -31,6 +32,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   companies: [],
+  roles: [],
   permissions: [],
   token: typeof window !== "undefined" ? localStorage.getItem("access_token") : null,
   isAuthenticated: typeof window !== "undefined" ? !!localStorage.getItem("access_token") : false,
@@ -42,8 +44,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ token, user, isAuthenticated: true });
   },
 
-  setProfile: (user, companies, permissions) => {
-    set({ user, companies, permissions });
+  setProfile: (user, companies, roles, permissions) => {
+    set({ user, companies, roles, permissions });
   },
 
   setPendingTenantSelection: (pendingTenantSelection) => {
@@ -62,6 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       token: null,
       user: null,
       companies: [],
+      roles: [],
       permissions: [],
       isAuthenticated: false,
       pendingTenantSelection: null,

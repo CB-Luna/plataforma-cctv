@@ -15,11 +15,6 @@ import {
   Search,
   Sun,
 } from "lucide-react";
-import { useAuthStore } from "@/stores/auth-store";
-import { useTenantStore } from "@/stores/tenant-store";
-import { useSiteStore } from "@/stores/site-store";
-import { useSidebarStore } from "@/stores/sidebar-store";
-import { useThemeStore } from "@/stores/theme-store";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +27,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/lib/api/auth";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
+import { useAuthStore } from "@/stores/auth-store";
+import { useSidebarStore } from "@/stores/sidebar-store";
+import { useSiteStore } from "@/stores/site-store";
+import { useTenantStore } from "@/stores/tenant-store";
+import { useThemeStore } from "@/stores/theme-store";
 import { SiteSelector } from "./site-selector";
 
 const breadcrumbMap: Record<string, string> = {
@@ -58,19 +59,39 @@ const breadcrumbMap: Record<string, string> = {
   "camera-models": "Fichas Tecnicas",
 };
 
+function resolveBreadcrumbLabel(segment: string, settingsLabel: string, dashboardLabel: string) {
+  if (segment === "settings") {
+    return settingsLabel;
+  }
+
+  if (segment === "dashboard") {
+    return dashboardLabel;
+  }
+
+  return breadcrumbMap[segment] ?? segment;
+}
+
 export function Header() {
-  const user = useAuthStore((s) => s.user);
-  const clearAuth = useAuthStore((s) => s.clearAuth);
-  const clearCompany = useTenantStore((s) => s.clearCompany);
-  const currentCompany = useTenantStore((s) => s.currentCompany);
-  const currentSite = useSiteStore((s) => s.currentSite);
-  const toggleCollapsed = useSidebarStore((s) => s.toggleCollapsed);
-  const collapsed = useSidebarStore((s) => s.collapsed);
-  const setMobileOpen = useSidebarStore((s) => s.setMobileOpen);
-  const theme = useThemeStore((s) => s.theme);
-  const setTheme = useThemeStore((s) => s.setTheme);
+  const user = useAuthStore((state) => state.user);
+  const roles = useAuthStore((state) => state.roles);
+  const permissions = useAuthStore((state) => state.permissions);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const clearCompany = useTenantStore((state) => state.clearCompany);
+  const currentCompany = useTenantStore((state) => state.currentCompany);
+  const currentSite = useSiteStore((state) => state.currentSite);
+  const toggleCollapsed = useSidebarStore((state) => state.toggleCollapsed);
+  const collapsed = useSidebarStore((state) => state.collapsed);
+  const setMobileOpen = useSidebarStore((state) => state.setMobileOpen);
+  const theme = useThemeStore((state) => state.theme);
+  const setTheme = useThemeStore((state) => state.setTheme);
   const router = useRouter();
   const pathname = usePathname();
+
+  const experience = getWorkspaceExperience({
+    permissions,
+    roles,
+    company: currentCompany,
+  });
 
   async function handleLogout() {
     try {
@@ -91,7 +112,9 @@ export function Header() {
   const breadcrumbs = pathname
     .split("/")
     .filter(Boolean)
-    .map((segment) => breadcrumbMap[segment] ?? segment)
+    .map((segment) =>
+      resolveBreadcrumbLabel(segment, experience.settingsLabel, experience.dashboardLabel),
+    )
     .filter(Boolean);
 
   return (
@@ -116,7 +139,7 @@ export function Header() {
         </Button>
 
         <nav className="hidden items-center gap-1.5 text-sm md:flex">
-          <span className="text-muted-foreground">Panel</span>
+          <span className="text-muted-foreground">{experience.shellRootLabel}</span>
           {breadcrumbs.map((crumb, index) => (
             <Fragment key={`${crumb}-${index}`}>
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
@@ -133,7 +156,7 @@ export function Header() {
           ))}
         </nav>
 
-        <h1 className="text-sm font-semibold md:hidden">SyMTickets CCTV</h1>
+        <h1 className="text-sm font-semibold md:hidden">{experience.shellTitle}</h1>
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2">
@@ -147,7 +170,7 @@ export function Header() {
 
         <SiteSelector />
 
-        {currentCompany && (
+        {currentCompany ? (
           <div className="hidden items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 shadow-sm sm:flex dark:border-gray-700 dark:bg-gray-900">
             <div
               className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
@@ -159,14 +182,15 @@ export function Header() {
               <p className="truncate text-sm font-medium">{currentCompany.name}</p>
               <p className="truncate text-xs text-muted-foreground">
                 {currentSite
-                  ? `Tenant activo · ${currentCompany.slug} · Sitio: ${currentSite.name}`
-                  : `Tenant activo · ${currentCompany.slug}`}
+                  ? `${experience.shellBadgeLabel} - ${currentCompany.slug} - Sitio: ${currentSite.name}`
+                  : `${experience.shellBadgeLabel} - ${currentCompany.slug}`}
               </p>
             </div>
-            <Badge variant="outline">Tenant</Badge>
-            {currentSite && <Badge variant="secondary">Sitio</Badge>}
+            <Badge variant="outline">{experience.roleLabel}</Badge>
+            <Badge variant="secondary">{experience.shellBadgeLabel}</Badge>
+            {currentSite ? <Badge variant="secondary">Sitio</Badge> : null}
           </div>
-        )}
+        ) : null}
 
         <button className="relative rounded-lg p-2 transition-colors hover:bg-muted">
           <Bell className="h-4 w-4" />
@@ -217,9 +241,9 @@ export function Header() {
               <div className="px-2 py-1.5 text-xs text-muted-foreground">{user?.email}</div>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings")}>
+            <DropdownMenuItem onClick={() => router.push(experience.settingsHref)}>
               <Building2 className="mr-2 h-4 w-4" />
-              Configuracion
+              {experience.settingsLabel}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
