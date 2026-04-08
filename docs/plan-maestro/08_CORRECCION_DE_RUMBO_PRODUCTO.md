@@ -36,7 +36,7 @@ No quedo cerrado lo que da sentido al producto SaaS enterprise esperado:
 - gestion completa de usuarios internos del tenant desde el flujo administrativo,
 - gobierno unificado de menu runtime por tenant + rol + servicio desde una sola fuente,
 - gestion fuerte de paquetes/servicios desde backend si se quiere algo mas que catalogo frontend,
-- y modulo `Control de Acceso` como superficie web real.
+- y la maduracion operativa completa de modulos empresariales visibles como `Control de Acceso` y `Redes`.
 
 ## Por que hubo desviacion del objetivo original
 
@@ -52,7 +52,7 @@ Eso mejoro mucho la base tecnica, pero no cerro completo el problema de negocio 
 - dejar lista a una empresa para entrar,
 - operar con sus propios usuarios,
 - ver solo sus modulos contratados,
-- y crecer despues a nuevos dominios como `Control de Acceso`.
+- y crecer despues a dominios visibles como `Control de Acceso` y `Redes`, aunque sigan en estado WIP.
 
 En otras palabras:
 
@@ -110,7 +110,7 @@ Hoy no existe cerrado:
 
 - catalogo gobernado por backend,
 - menu runtime resuelto desde `menu_templates` + servicios + rol como fuente unica,
-- y modulos operativos nuevos para dominios planeados como `Control de Acceso` o `Redes`.
+- y madurar modulos WIP como `Control de Acceso` o `Redes` hasta volverlos operativos.
 
 Conclusion:
 
@@ -139,24 +139,25 @@ Conclusion:
 
 - el portal tenant ya es defendible a nivel de experiencia dentro de la web actual, pero sigue parcial a nivel de runtime, usuarios internos completos y gobierno total del menu.
 
-### Bloque D. Control de Acceso
+### Bloque D. Control de Acceso y Redes
 
 Hoy existe:
 
-- semantica conceptual del servicio `access_control` en el catalogo de producto,
-- referencias de producto y ejemplos de menu deseado,
-- y una clasificacion honesta como dominio planeado, no operativo.
+- servicios asignables en el catalogo de producto,
+- side menu gobernado por servicios habilitados,
+- rutas reales y pantallas navegables de `Control de Acceso` y `Redes`,
+- y clasificacion honesta como modulos scaffold/WIP, no operativos.
 
 Hoy no existe evidencia suficiente de:
 
-- rutas reales del modulo,
-- paginas reales del modulo,
-- CRUD u operacion del dominio,
-- ni una superficie web navegable equivalente a CCTV.
+- CRUD u operacion cerrada del dominio,
+- API dedicada de backend,
+- permisos backend propios por modulo,
+- ni una superficie equivalente a CCTV en profundidad funcional.
 
 Conclusion:
 
-- `Control de Acceso` hoy debe tratarse como dominio no construido, no como modulo ya habilitable.
+- `Control de Acceso` y `Redes` hoy deben tratarse como modulos visibles del producto en estado `WIP`, no como modulos operativos terminados.
 
 ## Matriz honesta de esperado vs real
 
@@ -169,11 +170,12 @@ Conclusion:
 | Roles internos por tenant | Existen y pueden administrarse parcialmente dentro de la experiencia tenant | Cerrar ciclo real completo con altas administrativas y separacion mas fuerte del runtime | No total | Si | C6.3 ya cerro ownership visible, no el ciclo completo |
 | Usuarios internos del tenant | Se listan, editan, asignan roles y password | Alta administrativa real de nuevos usuarios | Parcial | Si, si se aprueba integrar register o cambia backend | `/users` no tiene `POST` |
 | Sitios/sucursales administrables | Se consumen como contexto operativo | CRUD real de sitios/sucursales | Si | No completo | Sigue siendo GAP fuerte de backend |
-| Servicios habilitados por empresa | Existe catalogo frontend y persistencia en `enabled_services` | Llevarlo a gobierno mas fuerte o backend si se requiere | En parte | Si | La web ya separa servicios operativos de dominios planeados |
+| Servicios habilitados por empresa | Existe catalogo frontend y persistencia en `enabled_services` | Llevarlo a gobierno mas fuerte o backend si se requiere | En parte | Si | La web ya separa servicios operativos, capacidades parciales y modulos WIP visibles |
 | Que incluye basic/professional/enterprise | Ya esta definido en el catalogo vigente del shell actual | Validar si debe migrar a catalogo administrable o backend | No necesariamente | Si | Hoy ya no se comunica como metadato vacio, sino como preset comercial visible |
-| Menu por tenant + rol + servicio | Sidebar y tabs de settings ya responden a permisos + servicios; `menu_templates` sigue aparte | Unificar runtime completo con menu dinamico | No total | Parcial | Ya existe gobierno real, pero aun no una sola fuente de verdad |
+| Menu por tenant + rol + servicio | Sidebar y tabs de settings ya responden a permisos + servicios; los modulos WIP tambien ya aparecen por estado del dominio; `menu_templates` sigue aparte | Unificar runtime completo con menu dinamico | No total | Parcial | Ya existe gobierno real, pero aun no una sola fuente de verdad |
 | Portal tenant separado del backoffice | Existe shell tenant-only sobre la misma base tecnica: sidebar, header, dashboard y `/settings` cambian por perfil y tenant | Rutas/layout aislado, menu runtime unificado y CRUD mas completo del tenant | No total | Si | C6.3 ya cerro la experiencia visible, no el aislamiento tecnico completo |
-| Modulo Control de Acceso operativo | No existe evidencia de superficie real | Auditar, modelar y construir el dominio | Probablemente si, en parte | No sin nueva etapa | Hoy no debe venderse como modulo existente |
+| Modulo Control de Acceso | Existe como scaffold/WIP visible en menu, rutas y pantallas | Cerrar backend, datos, RBAC y operacion del dominio | Si | Si | Ya no debe ocultarse del runtime; debe comunicarse como WIP |
+| Modulo Redes | Existe como scaffold/WIP visible en menu, rutas y pantallas | Cerrar backend, datos, RBAC y operacion del dominio | Si | Si | Comparte la misma regla de visibilidad honesta del producto |
 
 ## Que puede hacerse ya desde web sin tocar backend
 
@@ -181,21 +183,21 @@ Conclusion:
 - dejar clara la diferencia entre `subscription_plan` y paquete funcional real,
 - definir la experiencia del portal tenant,
 - alinear el menu y la narrativa a lo que si existe,
-- y auditar formalmente que `Control de Acceso` hoy no es un modulo real.
+- y dejar formalmente visible que `Control de Acceso` y `Redes` ya existen como modulos WIP del runtime.
 
 ## Que depende fuerte del backend actual o de una decision muy sensible
 
 - alta administrativa general de usuarios internos mas alla del bootstrap inicial,
 - administracion completa de sitios/sucursales,
 - posible gobierno persistente de servicios habilitados si se quiere algo mas fuerte que menu + permisos,
-- y cualquier dominio nuevo que requiera APIs propias, como `Control de Acceso`.
+- y cualquier dominio nuevo que requiera APIs propias para pasar de WIP a operativo, como `Control de Acceso` o `Redes`.
 
 ## Nuevo plan correcto
 
 Antes de hardening, el plan correcto es:
 
 1. Cerrar Fase 6 como correccion de rumbo producto.
-2. Auditar formalmente `Control de Acceso`.
+2. Auditar y reclasificar formalmente dominios WIP visibles del runtime.
 3. Consolidar F6 y congelar el rumbo corregido.
 4. Solo despues entrar a hardening.
 5. Al cerrar hardening, generar un nuevo paquete documental para la siguiente etapa real del producto.
@@ -236,4 +238,4 @@ El sistema no debe presentarse como "terminado" ni como "enterprise completo".
 
 La afirmacion correcta al cierre de F6 es esta:
 
-**hoy existe una base tecnica y funcional fuerte para CCTV + operacion contractual + backoffice inicial, y ya quedaron resueltos C6.1, C6.2, C6.3, C6.4 y C6.5; aun asi la vision enterprise esperada por producto sigue abierta en aislamiento mas profundo del tenant y en la futura construccion de `Control de Acceso` como dominio nuevo.**
+**hoy existe una base tecnica y funcional fuerte para CCTV + operacion contractual + backoffice inicial, y ya quedaron resueltos C6.1, C6.2, C6.3, C6.4 y C6.5; aun asi la vision enterprise esperada por producto sigue abierta en aislamiento mas profundo del tenant y en la maduracion de modulos WIP como `Control de Acceso` y `Redes` hasta volverlos operativos.**

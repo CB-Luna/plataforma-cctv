@@ -381,7 +381,7 @@ export function PolicyDialog({
             <div className="space-y-2">
               <Label>Servicios cubiertos</Label>
               <p className="text-xs text-muted-foreground">
-                Incluir "Control de Acceso" aqui solo documenta cobertura contractual. No habilita un modulo operativo nuevo en la web actual.
+                Incluir "Control de Acceso" o "Redes" aqui documenta cobertura contractual. La visibilidad del modulo en runtime depende del servicio habilitado del tenant; su operacion completa sigue siendo WIP mientras no cierre backend y modelo del dominio.
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {serviceFamilies.map(([serviceKey, label]) => (

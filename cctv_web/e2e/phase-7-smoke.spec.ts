@@ -758,8 +758,8 @@ test.describe("Fase 7 - smoke reproducible", () => {
     await expect(page.getByRole("button", { name: "Servicios y paquetes", exact: true })).toBeVisible();
     await expect(page.getByText("Catalogo vigente de servicios y paquetes", { exact: true })).toBeVisible();
     await expect(page.getByText("Gobierno vigente de visibilidad", { exact: true })).toBeVisible();
-    await expect(page.getByText(/Control de Acceso/i)).toBeVisible();
-    await expect(page.getByText(/no tiene rutas web ni API operativa/i)).toBeVisible();
+    await expect(page.getByText("Control de Acceso - WIP", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/ya pueden aparecer en el menu del tenant/i)).toBeVisible();
   });
 
   test("portal tenant conserva experiencia separada del backoffice global", async ({ page }) => {

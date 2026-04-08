@@ -4,6 +4,8 @@ import { setTokenCookie, removeTokenCookie } from "@/lib/cookies";
 import { hasAnyPermission, hasPermission } from "@/lib/auth/permissions";
 import { useTenantStore } from "@/stores/tenant-store";
 
+const PENDING_TENANT_SELECTION_KEY = "pending_tenant_selection";
+
 interface PendingTenantSelection {
   email: string;
   password: string;
@@ -29,6 +31,34 @@ interface AuthState {
   hasAnyPermission: (...codes: string[]) => boolean;
 }
 
+function readPendingTenantSelection(): PendingTenantSelection | null {
+  if (typeof window === "undefined") return null;
+
+  const rawValue = sessionStorage.getItem(PENDING_TENANT_SELECTION_KEY);
+  if (!rawValue) return null;
+
+  try {
+    const parsedValue = JSON.parse(rawValue) as Partial<PendingTenantSelection>;
+    if (
+      typeof parsedValue.email === "string" &&
+      typeof parsedValue.password === "string" &&
+      typeof parsedValue.redirectTo === "string" &&
+      Array.isArray(parsedValue.companies)
+    ) {
+      return {
+        email: parsedValue.email,
+        password: parsedValue.password,
+        companies: parsedValue.companies,
+        redirectTo: parsedValue.redirectTo,
+      };
+    }
+  } catch {
+    sessionStorage.removeItem(PENDING_TENANT_SELECTION_KEY);
+  }
+
+  return null;
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   companies: [],
@@ -36,7 +66,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   permissions: [],
   token: typeof window !== "undefined" ? localStorage.getItem("access_token") : null,
   isAuthenticated: typeof window !== "undefined" ? !!localStorage.getItem("access_token") : false,
-  pendingTenantSelection: null,
+  pendingTenantSelection: readPendingTenantSelection(),
 
   setAuth: (token, user) => {
     localStorage.setItem("access_token", token);
@@ -49,16 +79,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setPendingTenantSelection: (pendingTenantSelection) => {
+    sessionStorage.setItem(PENDING_TENANT_SELECTION_KEY, JSON.stringify(pendingTenantSelection));
     set({ pendingTenantSelection });
   },
 
   clearPendingTenantSelection: () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(PENDING_TENANT_SELECTION_KEY);
+    }
     set({ pendingTenantSelection: null });
   },
 
   clearAuth: () => {
     localStorage.removeItem("access_token");
     removeTokenCookie();
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem(PENDING_TENANT_SELECTION_KEY);
+    }
     useTenantStore.getState().clearCompany();
     set({
       token: null,

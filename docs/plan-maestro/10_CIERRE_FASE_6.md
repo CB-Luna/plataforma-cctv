@@ -14,7 +14,7 @@ Los checkpoints que quedan cerrados son:
 | C6.1 Onboarding tenant | Alta de tenant + branding + bootstrap del admin inicial hasta donde permite el contrato actual |
 | C6.2 Servicios y paquetes | Separacion clara entre plan comercial, servicio habilitado y modulo visible |
 | C6.3 Portal tenant | Experiencia tenant-only visible dentro de la shell actual |
-| C6.4 Control de Acceso | Auditoria formal que confirma dominio no construido |
+| C6.4 Control de Acceso | Auditoria formal que primero evidencio el gap backend y luego se corrigio en criterio de producto para llevarlo a modulo scaffold/WIP visible |
 | C6.5 Consolidacion F6 | Plan, backlog, riesgos y validaciones alineados a la verdad del repo |
 
 ## Que NO cierra Fase 6
@@ -25,7 +25,7 @@ Fase 6 no debe leerse como "producto enterprise completo". Quedan abiertos, de f
 - alta administrativa general de usuarios internos,
 - CRUD real de sitios/sucursales,
 - menu runtime gobernado por una sola fuente,
-- y construccion del dominio `Control de Acceso`.
+- y maduracion operativa de dominios WIP como `Control de Acceso` y `Redes`.
 
 ## Salida valida de F6
 
@@ -34,14 +34,14 @@ Despues de F6 ya se puede afirmar esto con honestidad:
 - el tenant ya puede nacer mucho mas cerca de estar operable,
 - los servicios habilitados ya no son puro humo comercial,
 - el portal tenant ya se siente como portal en UX,
-- y `Control de Acceso` ya no se vende como si existiera.
+- y `Control de Acceso` / `Redes` ya existen visiblemente como scaffolds WIP dentro del runtime.
 
 ## Condiciones para entrar a F7
 
 F7 ya si puede empezar, pero con esta disciplina:
 
 1. Hardening no debe inventar producto faltante.
-2. Cualquier smoke o QA debe respetar que `Control de Acceso` no existe como modulo actual.
+2. Cualquier smoke o QA debe respetar la diferencia entre modulo operativo y modulo WIP visible.
 3. El hardening debe documentar limitaciones abiertas, no esconderlas.
 4. Al cerrar F7 se debe generar un paquete documental nuevo para la etapa siguiente del producto antes de volver a programar dominio nuevo.
 
@@ -55,6 +55,7 @@ El backlog que sobrevive a F6 ya no es de correccion de rumbo, sino de dos tipos
   - usuarios internos completos,
   - sitios administrables,
   - `Control de Acceso`,
+  - `Redes`,
   - y otros dominios empresariales.
 
 ## Regla de comunicacion posterior a F6
@@ -67,7 +68,7 @@ Desde este punto ya no debe decirse:
 
 La forma correcta de comunicar el estado es:
 
-**la plataforma ya tiene una base operativa fuerte y una correccion honesta de producto; aun asi la siguiente etapa real sigue pendiente para cerrar dominios empresariales adicionales y aislamiento mas profundo del tenant.**
+**la plataforma ya tiene una base operativa fuerte y una correccion honesta de producto; aun asi la siguiente etapa real sigue pendiente para cerrar dominios empresariales adicionales, madurar los modulos WIP visibles y profundizar el aislamiento del tenant.**
 
 ## Siguiente paso correcto
 

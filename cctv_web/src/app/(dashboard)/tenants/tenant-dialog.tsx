@@ -27,9 +27,9 @@ import {
 import {
   ASSIGNABLE_SERVICE_CODES,
   COMMERCIAL_PLAN_PRESETS,
-  PLANNED_SERVICE_CODES,
   PRODUCT_SERVICE_DEFINITIONS,
   getSuggestedServicesForPlan,
+  getServiceStatusMeta,
   parseTenantProductProfile,
   type AssignableServiceCode,
   type CommercialPlanCode,
@@ -45,8 +45,8 @@ const tenantSchema = z
     tertiary_color: z.string().optional(),
     subscription_plan: z.enum(["basic", "professional", "enterprise"]),
     enabled_services: z
-      .array(z.enum(["cctv", "storage", "intelligence"]))
-      .min(1, "Selecciona al menos un servicio operativo"),
+      .array(z.enum(["cctv", "storage", "intelligence", "access_control", "networking"]))
+      .min(1, "Selecciona al menos un servicio habilitado"),
     max_users: z.number().int().positive(),
     max_clients: z.number().int().positive(),
     create_initial_admin: z.boolean(),
@@ -115,7 +115,6 @@ interface TenantDialogProps {
 }
 
 const assignableServices = ASSIGNABLE_SERVICE_CODES.map((code) => PRODUCT_SERVICE_DEFINITIONS[code]);
-const plannedServices = PLANNED_SERVICE_CODES.map((code) => PRODUCT_SERVICE_DEFINITIONS[code]);
 
 export function TenantDialog({
   open,
@@ -207,7 +206,7 @@ export function TenantDialog({
             <div>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">C6.2 Servicios y paquetes</h3>
               <p className="text-sm text-muted-foreground">
-                El plan comercial es una referencia. La habilitacion real de modulos visibles se define con los servicios de abajo.
+                El plan comercial es una referencia. La habilitacion real del runtime se define con los servicios de abajo y su estado operativo, parcial o WIP.
               </p>
             </div>
 
@@ -250,11 +249,12 @@ export function TenantDialog({
             </div>
 
             <div className="space-y-3">
-              <Label>Servicios habilitados hoy *</Label>
-              <div className="grid gap-3 md:grid-cols-3">
+              <Label>Servicios habilitados para este tenant *</Label>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {assignableServices.map((service) => {
                   const serviceCode = service.code as AssignableServiceCode;
                   const selected = enabledServices.includes(serviceCode);
+                  const statusMeta = getServiceStatusMeta(service.status);
 
                   return (
                     <label
@@ -278,8 +278,18 @@ export function TenantDialog({
                         }
                       />
                       <div className="min-w-0">
-                        <p className="font-medium text-slate-900 dark:text-slate-100">{service.label}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium text-slate-900 dark:text-slate-100">{service.label}</p>
+                          <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white dark:bg-slate-100 dark:text-slate-900">
+                            {statusMeta.label}
+                          </span>
+                        </div>
                         <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{service.description}</p>
+                        {service.modules.length ? (
+                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                            Superficie: {service.modules.join(", ")}
+                          </p>
+                        ) : null}
                       </div>
                     </label>
                   );
@@ -288,22 +298,11 @@ export function TenantDialog({
               {errors.enabled_services ? <p className="text-xs text-destructive">{errors.enabled_services.message}</p> : null}
             </div>
 
-            <div className="space-y-3">
-              <Label>Servicios planeados, sin modulo web ni API operativa</Label>
-              <div className="grid gap-3 md:grid-cols-2">
-                {plannedServices.map((service) => (
-                  <div
-                    key={service.code}
-                    className="rounded-2xl border border-dashed border-slate-300 bg-slate-100/70 p-3 text-sm dark:border-slate-700 dark:bg-slate-900/50"
-                  >
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{service.label}</p>
-                    <p className="mt-1 text-slate-600 dark:text-slate-300">{service.description}</p>
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      Aun no se habilita desde este flujo porque la auditoria C6.4 confirmo que el repo no tiene superficie web ni contrato API operativo para este dominio.
-                    </p>
-                  </div>
-                ))}
-              </div>
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-100/70 p-3 text-sm dark:border-slate-700 dark:bg-slate-900/50">
+              <p className="font-medium text-slate-900 dark:text-slate-100">Regla vigente del producto</p>
+              <p className="mt-1 text-slate-600 dark:text-slate-300">
+                Un modulo puede existir en estado operativo, parcial o WIP. Si el servicio queda habilitado para este tenant, el runtime puede mostrarlo aunque todavia este en construccion, siempre que ya exista su scaffold real en la web.
+              </p>
             </div>
           </section>
 

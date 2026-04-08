@@ -3,6 +3,7 @@ import {
   LEGACY_DEFAULT_ENABLED_SERVICES,
   buildTenantSettings,
   isRouteEnabledForServices,
+  isServiceRuntimeVisible,
   isSettingsTabEnabledForServices,
   parseTenantProductProfile,
 } from "@/lib/product/service-catalog";
@@ -74,9 +75,18 @@ describe("service catalog helpers", () => {
     expect(isRouteEnabledForServices("/cameras", ["cctv"])).toBe(true);
     expect(isRouteEnabledForServices("/cameras", ["storage"])).toBe(false);
     expect(isRouteEnabledForServices("/tickets", ["storage"])).toBe(true);
+    expect(isRouteEnabledForServices("/access-control", ["access_control"], { hasRoleContext: true })).toBe(true);
+    expect(isRouteEnabledForServices("/access-control", ["access_control"], { hasRoleContext: false })).toBe(false);
 
     expect(isSettingsTabEnabledForServices("ia", ["cctv", "intelligence"])).toBe(true);
     expect(isSettingsTabEnabledForServices("ia", ["cctv"])).toBe(false);
     expect(isSettingsTabEnabledForServices("usuarios", ["cctv"])).toBe(true);
+  });
+
+  it("distinguishes runtime visible services from partial capabilities", () => {
+    expect(isServiceRuntimeVisible("cctv")).toBe(true);
+    expect(isServiceRuntimeVisible("access_control", { hasRoleContext: true })).toBe(true);
+    expect(isServiceRuntimeVisible("access_control", { hasRoleContext: false })).toBe(false);
+    expect(isServiceRuntimeVisible("storage")).toBe(false);
   });
 });

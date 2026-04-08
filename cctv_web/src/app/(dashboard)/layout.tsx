@@ -22,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const companies = useAuthStore((s) => s.companies);
+  const roles = useAuthStore((s) => s.roles);
   const setProfile = useAuthStore((s) => s.setProfile);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const hasAnyPermission = useAuthStore((s) => s.hasAnyPermission);
@@ -39,8 +40,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     [currentCompany],
   );
   const hasServiceAccess = useMemo(
-    () => isRouteEnabledForServices(pathname, enabledServices),
-    [enabledServices, pathname],
+    () => isRouteEnabledForServices(pathname, enabledServices, { hasRoleContext: roles.length > 0 }),
+    [enabledServices, pathname, roles.length],
   );
 
   useEffect(() => {

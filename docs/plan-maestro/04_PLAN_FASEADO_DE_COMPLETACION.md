@@ -251,9 +251,9 @@ Las Fases 1-5 ordenaron la plataforma actual, pero no completaron estos requerim
 #### Bloque D. Control de Acceso
 
 - Auditar honestamente que existe hoy en backend y frontend.
-- Documentar si hay dominio, endpoints, rutas o solo semantica conceptual.
-- Si no existe superficie real, dejarlo explicitamente fuera de "modulo habilitable operativo" hasta tener plan de construccion.
-- Definir un plan faseado especifico para construirlo como dominio operativo.
+- Documentar si hay dominio, endpoints, rutas, scaffolds visibles o solo semantica conceptual.
+- Si existe superficie real pero no operacion cerrada, clasificarlo como modulo scaffold/WIP visible, no como dominio ausente.
+- Definir un plan faseado especifico para madurarlo hasta dominio operativo.
 
 ### Checkpoints de Fase 6
 
@@ -366,13 +366,13 @@ Cerrar la semantica del modelo comercial-funcional antes de seguir tocando menus
 - Existe un catalogo frontend explicito de planes `basic`, `professional` y `enterprise`, con servicios sugeridos y estados de soporte.
 - Los servicios habilitados del tenant ahora viven en `tenant.settings.enabled_services`.
 - El sidebar runtime y las tabs de `/settings` ya responden a permisos + servicios habilitados + superficie real del modulo.
-- `/settings` ahora expone una tab global `Servicios y paquetes` para hacer visible el catalogo vigente, los dominios planeados y la regla real de visibilidad.
+- `/settings` ahora expone una tab global `Servicios y paquetes` para hacer visible el catalogo vigente, los dominios operativos/parciales/WIP y la regla real de visibilidad.
 - `subscription_plan` deja de presentarse como si fuera suficiente por si solo: se comunica como referencia comercial y se separa de la habilitacion real de modulos.
 
 #### Degradaciones honestas aplicadas
 
 - El catalogo de paquetes vive hoy en frontend porque el backend no expone un CRUD formal de paquetes/servicios.
-- `Control de Acceso` y `Redes` se documentan como dominios planeados, no como modulos operativos habilitables.
+- `Control de Acceso` y `Redes` se documentan como modulos scaffold/WIP visibles, no como modulos operativos.
 - `menu_templates` sigue siendo una consola administrativa; todavia no es la fuente unica del sidebar runtime.
 
 #### Criterio de salida
@@ -436,44 +436,47 @@ Completado el 2026-04-08.
 
 #### Objetivo
 
-Auditar el dominio `Control de Acceso` con la misma honestidad con la que ya se audito CCTV.
+Auditar el dominio `Control de Acceso` con la misma honestidad con la que ya se audito CCTV, pero sin expulsarlo del producto visible si ya existe como scaffold real.
 
 #### Alcance
 
 - Existencia real de rutas.
 - Existencia real de pantallas.
 - Existencia real de APIs o contrato.
-- Plan de construccion si no existe.
+- Clasificacion correcta entre operativo, parcial, WIP o futuro.
+- Plan de maduracion si hoy solo existe como scaffold/WIP.
 
 #### Fuera de alcance
 
-- Venderlo como modulo actual sin evidencia.
-- Programarlo todavia si primero no queda auditado.
+- Venderlo como modulo operativo sin evidencia.
+- Sacarlo del runtime solo por no tener backend completo.
+- Programarlo como dominio operativo cerrado sin antes dejar clasificada su evidencia real.
 
 #### Entregables
 
-- Conclusion binaria: existe como modulo real, existe parcial, o no existe.
+- Conclusion honesta: operativo, parcial, WIP visible o futuro/no iniciado.
 - Lista de gaps de backend y frontend.
-- Plan faseado propio si el dominio debe construirse.
+- Plan faseado propio para pasar de WIP visible a dominio operativo.
 
 #### Resultado materializado
 
-- Se audito el repo completo y se confirma que `Control de Acceso` no existe como modulo operativo real en web, mobile ni backend.
-- En frontend solo existe como servicio `planned` dentro de `service-catalog`, como familia contractual en polizas y como copy de producto; no hay rutas ni pantallas equivalentes a CCTV.
+- Se audito el repo completo y se confirma que `Control de Acceso` no existe como modulo operativo cerrado en web, mobile ni backend, pero si existe ya como modulo scaffold/WIP visible en web.
+- En frontend `service-catalog` ahora lo clasifica como servicio asignable, visible en runtime y en estado `wip`.
+- Existen rutas y pantallas reales equivalentes al scaffold del dominio: `/access-control`, `/access-control/inventory`, `/access-control/technical-sheets`, `/access-control/maintenance`, `/access-control/incidents` y `/access-control/reports`.
 - En backend solo existe semantica de seeds/categorias de equipo y no un grupo de endpoints dedicado en `main.go`.
 - En mobile no existe feature del dominio.
-- Se genero una auditoria formal en `docs/plan-maestro/09_AUDITORIA_CONTROL_DE_ACCESO.md`.
-- La UI administrativa ya comunica con mas fuerza que `Control de Acceso` sigue sin modulo web ni API operativa auditada.
+- Se genero una auditoria formal corregida en `docs/plan-maestro/09_AUDITORIA_CONTROL_DE_ACCESO.md` y una regla transversal de runtime visible en `docs/plan-maestro/12_MODULOS_WIP_Y_RUNTIME_VISIBLES.md`.
+- La UI administrativa y el runtime ya comunican con mas fuerza que `Control de Acceso` existe, pero como modulo WIP visible y no como CRUD terminado.
 
 #### Degradaciones honestas aplicadas
 
-- `Control de Acceso` puede seguir apareciendo como familia de cobertura contractual o dominio planeado, pero no como modulo habilitable operativo.
-- No se creo ninguna pantalla placeholder ni mock funcional para "simular" el dominio.
-- El siguiente trabajo sobre ese dominio queda movido a una etapa futura con contrato y modelo propios.
+- `Control de Acceso` aparece como modulo scaffold/WIP visible, no como modulo operativo.
+- No se creo un CRUD simulado ni se fingieron datos reales del dominio.
+- El siguiente trabajo sobre ese dominio ya no es "hacerlo visible", sino construir contrato, datos, RBAC y operacion propios.
 
 #### Criterio de salida
 
-Ya no se vuelve a mencionar `Control de Acceso` como modulo habilitable sin una etiqueta honesta de su estado real.
+Ya no se vuelve a mencionar `Control de Acceso` como dominio ausente ni como modulo operativo si su estado real sigue siendo `WIP` visible.
 
 ### Checkpoint C6.5. Consolidacion F6
 

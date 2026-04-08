@@ -56,7 +56,7 @@ Durante C6.1-C6.5 se cerraron y/o dejaron explicitados estos puntos:
 - El onboarding del tenant ya puede dejar admin inicial bootstrapeado, pero el alta administrativa general de usuarios internos sigue parcial por ausencia de `POST /users`.
 - El catalogo de servicios y paquetes ya separa plan comercial, servicio habilitado y modulo visible.
 - El portal tenant ya tiene una experiencia propia dentro de la shell actual, aunque todavia no existe un runtime aislado.
-- `Control de Acceso` fue auditado formalmente y queda clasificado como dominio no construido.
+- `Control de Acceso` y `Redes` ya existen como modulos scaffold/WIP visibles en runtime, aunque siguen sin backend ni operacion cerrada.
 - La consolidacion de F6 deja el hardening habilitado solo porque la desviacion de producto ya esta documentada y no maquillada.
 
 ## GAP de backend / API
@@ -74,7 +74,7 @@ Durante C6.1-C6.5 se cerraron y/o dejaron explicitados estos puntos:
 | API-09 | No hay endpoint dedicado de eliminacion de rol | `roles` solo lista, crea, obtiene, actualiza y asigna permisos | El ciclo de vida de roles queda incompleto | Mantener `eliminar` fuera del alcance real |
 | API-10 | No existe `POST /users` en el API protegido | `/users` lista, edita, cambia password y desactiva, pero no da alta | El onboarding del tenant y la administracion completa de usuarios internos quedan parciales | Evaluar si `POST /auth/register` puede usarse como bootstrap controlado o documentar bloqueo |
 | API-11 | No existe un contrato dedicado para servicios habilitados o paquetes | No hay endpoints que modelen catalogo producto -> tenant -> servicios | Complica menu, pricing y habilitacion formal de modulos | Tratarlo como decision/product gap antes de codigo |
-| API-12 | No existen APIs operativas de `Control de Acceso` en el contrato auditado | `main.go` expone `users`, `roles`, `settings`, `menu`, `tenants`, `storage`, `intelligence`, `clients`, `policies`, `sla`, `inventory`, `tickets` y `dashboard`, pero no un grupo equivalente para `Control de Acceso` | El dominio no puede venderse como modulo existente | Mantenerlo fuera del menu operativo actual y tratarlo como etapa nueva de producto |
+| API-12 | No existen APIs operativas de `Control de Acceso` ni `Redes` en el contrato auditado | `main.go` expone `users`, `roles`, `settings`, `menu`, `tenants`, `storage`, `intelligence`, `clients`, `policies`, `sla`, `inventory`, `tickets` y `dashboard`, pero no grupos equivalentes para esos dominios | Los modulos pueden existir como WIP visible, pero no como operacion cerrada | Mantenerlos visibles en runtime con estado honesto `WIP` y sin prometer CRUD |
 
 ## GAP de frontend / UI
 
@@ -86,7 +86,7 @@ Durante C6.1-C6.5 se cerraron y/o dejaron explicitados estos puntos:
 | FE-04 | Importacion masiva era incompleta | GAP mitigado en Fase 3 | Flujo aparente sin carga util | Mantener validacion fuerte sobre lo que realmente importa |
 | FE-05 | Tickets usaban UUID manual para cliente, sitio y tecnico | GAP mitigado en Fase 2/Fase 4 | UX fragil | Se considera resuelto para el flujo principal |
 | FE-06 | Polizas usaban UUID manual para cliente, sitio y activos | GAP mitigado en Fase 2/Fase 4 | UX fragil | Se considera resuelto para el flujo principal |
-| FE-07 | Sidebar runtime aun no usa el menu dinamico completo del backend | `sidebar.tsx` sigue hardcodeado; Fase 5 agrego consola real de `menu_templates` | El producto administra plantillas, pero no las capitaliza en la navegacion diaria | Dejar la integracion runtime del menu como cierre posterior y no prometer dinamismo operativo |
+| FE-07 | Sidebar runtime ya responde a tenant + rol + servicios habilitados + estado del modulo, pero aun no usa `menu_templates` como fuente unica | `sidebar.tsx` ya gobierna modulos operativos y WIP por servicio; Fase 5 agrego consola real de `menu_templates` | La visibilidad del producto ya es real, pero la gobernanza final sigue duplicada | Dejar la unificacion runtime del menu como cierre posterior y no prometer dinamismo completo aun |
 | FE-08 | No hay guardas de permisos por pagina/accion en toda la superficie | Hay enforcement parcial, no total | Riesgo de acciones visibles fuera de scope | Endurecer gradualmente y validarlo en hardening |
 | FE-09 | Mapa usa coordenadas sinteticas | `branch-map.tsx`, `city-coordinates.ts` | Modulo demostrable, pero no confiable | Etiquetarlo como aproximado o sacarlo de core |
 | FE-10 | Persistencia de floor plans es parcial | Se usa proyeccion legacy + documento enriquecido | Riesgo de perdida semantica si crece el editor | Mantener alcance controlado y probar reabrir/guardar |
@@ -94,7 +94,7 @@ Durante C6.1-C6.5 se cerraron y/o dejaron explicitados estos puntos:
 | FE-12 | Varias rutas administrativas son solo redirects a `/settings` | `/users`, `/roles`, `/storage`, `/intelligence`, `/tenants` | Duplica superficie sin navegacion profunda por URL | Decidir si se mantienen como aliases o se eliminan |
 | FE-13 | El flujo UI de bootstrap del admin inicial ya existe, pero el dominio de usuarios internos sigue incompleto | La web ya puede crear el primer usuario operativo del tenant, pero no usuarios internos adicionales desde `/users` | El tenant queda mucho mas cerca de operar, aunque la administracion general de usuarios sigue parcial | Mantener bootstrap inicial y tratar el alta posterior de usuarios como gap separado |
 | FE-14 | El portal tenant sigue sin autonomia tecnica total, aunque ya tiene experiencia propia visible | C6.3 endurecio sidebar, header, dashboard y `/settings`, pero no existen rutas/layout aislados | El usuario tenant ya no se siente dentro del mismo backoffice en UX, pero la separacion tecnica sigue parcial | Mantener la experiencia actual como cierre de F6 y decidir aislamiento tecnico en etapa posterior |
-| FE-15 | `Control de Acceso` no tiene superficie web real y ya fue auditado como dominio ausente | No hay rutas ni paginas equivalentes al bloque CCTV para ese dominio en `src/app` | No puede venderse como modulo habilitable operativo | Mantenerlo fuera del runtime actual y convertirlo en etapa propia de construccion |
+| FE-15 | `Control de Acceso` y `Redes` ya tienen superficie web scaffold/WIP, pero sin flujo operativo real | Existen rutas y pantallas navegables en `src/app`, aunque no CRUD ni data del dominio | Riesgo de sobreprometer si se comunican como terminados | Mantenerlos visibles en runtime solo con estado WIP y mensaje honesto |
 | FE-16 | `subscription_plan` se muestra como si fuera un plan funcional cerrado | El alta de tenant ya usa `basic/professional/enterprise` | Puede generar expectativa falsa sobre modulos incluidos | Separar plan comercial de producto visible hasta definir catalogo |
 
 ## GAP de modelo de negocio
@@ -103,12 +103,12 @@ Durante C6.1-C6.5 se cerraron y/o dejaron explicitados estos puntos:
 |---|---|---|---|---|
 | BIZ-01 | Tenant y cliente ya fueron distinguidos, pero su UX sigue mezclandose en varios lugares | Backend tiene `tenants` y `clients`; la UI aun usa "empresa" para ambos niveles en zonas puntuales | Ambiguedad estructural residual | Seguir estabilizando el vocabulario de producto |
 | BIZ-02 | Sitio no esta formalizado como entidad administrable transversal | Existe en inventario y filtros, pero sin CRUD real | El sistema no "piensa" por sitio de forma completa | Declararlo entidad core consumida mientras la API no cambie |
-| BIZ-03 | No esta definido el catalogo de servicios habilitados | La UI sugiere CCTV, IA, storage, CAPEX, polizas y ejemplos como `Control de Acceso` | Complica menu, pricing, scopes y roadmap | Confirmar modulos por servicio y su criterio de habilitacion |
+| BIZ-03 | El catalogo de servicios habilitados ya existe, pero aun no esta cerrado como gobierno backend unico | La UI ya distingue CCTV, Storage, IA, Control de Acceso y Redes con estados operativo/parcial/WIP | Complica pricing, RBAC fino y evolucion del runtime | Confirmar si seguira frontend-first o migrara a fuente administrable unica |
 | BIZ-04 | CAPEX/garantias no tiene rol de negocio cerrado | Hoy deriva de inventario | Puede crecer sin modelo | Mantenerlo derivado hasta definir proceso |
 | BIZ-05 | Paquete, poliza y SLA ya quedaron diferenciados conceptualmente, pero no materializados como modelo de producto integral | Hoy coexisten, pero el producto aun no gobierna menu/portal con esa semantica | Riesgo de duplicidad conceptual | Formalizar la relacion en Fase 6 |
 | BIZ-06 | `subscription_plan` no equivale hoy a un paquete funcional real | El tenant guarda `basic/professional/enterprise`, pero no existe una matriz viva de servicios/modulos | Riesgo alto de vender planes sin significado operativo | Separar plan comercial, servicio habilitado y modulo visible |
 | BIZ-07 | La definicion de "tenant operable" ya existe, pero no toda su validacion live esta cerrada | C6.1 definio branding + admin inicial + login defendible, aunque falta repetir smoke live contra backend levantado | El producto ya tiene una referencia minima de tenant listo, pero aun debe endurecer su validacion | Mantener checklist minimo y repetir prueba live en F7 |
-| BIZ-08 | `Control de Acceso` queda formalmente clasificado como dominio deseado, no como producto existente | La auditoria C6.4 encontro solo menciones conceptuales, seeds y labels contractuales | Riesgo de sobrepromesa comercial y funcional si vuelve a activarse como si ya existiera | Tratarlo como etapa nueva, no como feature ya presente |
+| BIZ-08 | `Control de Acceso` y `Redes` ya existen como producto visible, pero no como modulo operativo terminado | La auditoria corregida encontro runtime scaffold/WIP, sin backend ni flujo cerrado | Riesgo de sobrepromesa comercial y funcional si se omite la etiqueta WIP | Mantener la clasificacion visible: operativo, parcial, WIP o futuro |
 
 ## GAP de permisos / scopes
 
@@ -126,8 +126,8 @@ Durante C6.1-C6.5 se cerraron y/o dejaron explicitados estos puntos:
 | MT-01 | Multiempresa basica ya funciona y el tenant ya entra a un portal con identidad visible, pero no aislado tecnicamente | Login, seleccion de empresa y experiencia tenant-only existen; el shell sigue siendo comun | La experiencia SaaS enterprise avanzo, aunque el aislamiento tecnico sigue incompleto | Mantener la shell endurecida actual y decidir aislamiento posterior solo si el producto lo necesita |
 | MT-02 | La empresa activa ya puede quedar "operable" desde el alta, pero la validacion live y el gobierno posterior siguen parciales | Se crea tenant, branding y admin inicial, pero no hay smoke live repetido ni alta posterior general de usuarios | El producto avanzo fuerte, aunque el onboarding aun necesita endurecimiento | Mantener checklist de tenant listo para operar y repetir validacion live |
 | MT-03 | La configuracion hibrida ya es visible, pero aun no existe particion fuerte por rutas o shells | Fase 5 separo scopes en `/settings`, aunque varios aliases siguen en una sola shell | Menor confusion, pero el backoffice aun depende de una pantalla compartida | Decidir en Fase 6 si basta el shell actual o si conviene abrir rutas/shells dedicados |
-| MT-04 | Menu por tenant ya se administra, pero no gobierna el sidebar operativo | Backend de menu avanzado + consola Fase 5 + sidebar hardcodeado | La base multi-tenant ya esta preparada, pero la experiencia final sigue parcial | Confirmar si la V1 cierra con menu fijo o si el runtime dinamico pasa a una fase posterior |
-| MT-05 | No existe criterio operativo cerrado de visibilidad por tenant + rol + servicio | Existen permisos y templates, pero no catalogo de servicios habilitados | La navegacion y el producto comercial quedan desacoplados | Definir primero el modelo y luego ejecutar la navegacion |
+| MT-04 | Menu por tenant ya se administra y el sidebar ya responde a servicios habilitados, pero no gobierna desde una sola fuente | Backend de menu avanzado + consola Fase 5 + sidebar hardcodeado enriquecido | La experiencia final ya avanzo, pero la gobernanza sigue parcial | Confirmar si la V1 cierra con esta estrategia o si el runtime dinamico pasa a una fase posterior |
+| MT-05 | Ya existe criterio operativo inicial de visibilidad por tenant + rol + servicio + estado del modulo, pero no RBAC fino por dominio WIP | Existen permisos base, catalogo de servicios y status del modulo | La navegacion esta mucho mas alineada al producto, aunque falta profundizar permisos backend por dominio | Mantener criterio vigente y madurarlo cuando existan APIs reales |
 
 ## GAP de datos demo / seeds / mocks
 
@@ -160,7 +160,7 @@ Estas decisiones ya no pueden seguir implicitas despues del cierre de F6:
 - DEC-10: si `subscription_plan` seguira siendo solo metadato comercial o se convertira en paquete funcional real.
 - DEC-11: si el menu runtime seguira fijo en F7 o si el siguiente salto de producto exige integrarlo con `menu_templates` como fuente unica.
 - DEC-12: si el portal tenant puede seguir viviendo en la shell actual endurecida o si la siguiente etapa exige shell/rutas dedicadas.
-- DEC-13: si `Control de Acceso` pasa a ser compromiso real de la siguiente etapa o queda explicitamente fuera del producto actual hasta tener contrato y superficie.
+- DEC-13: como y cuando los modulos WIP (`Control de Acceso`, `Redes`) pasaran de visibles a operativos sin romper la honestidad del producto.
 
 ## Conclusiones
 
@@ -171,4 +171,4 @@ La condicion para seguir programando con seguridad ya no es "tener otra pantalla
 - como se deja realmente listo un tenant para operar,
 - que significa de verdad un servicio habilitado,
 - como se ve un portal tenant autocontenido,
-- y si `Control de Acceso` existe como dominio real o sigue siendo solo expectativa.
+- y como maduran `Control de Acceso` y `Redes` desde WIP visible hasta dominio operativo real.

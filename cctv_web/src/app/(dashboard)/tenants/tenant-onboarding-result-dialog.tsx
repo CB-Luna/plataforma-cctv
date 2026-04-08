@@ -65,7 +65,7 @@ export function TenantOnboardingResultDialog({
             <section className="rounded-2xl border p-4">
               <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Servicios habilitados</h3>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Estos servicios si participan desde hoy en la visibilidad real del shell donde existe modulo o configuracion.
+                Estos servicios ya participan en la visibilidad real del producto segun el estado de cada modulo: operativo, parcial o WIP.
               </p>
               <div className="mt-3">
                 <ServiceBadges services={result.enabledServices} />

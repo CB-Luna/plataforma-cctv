@@ -39,6 +39,28 @@ const CCTV_ACCESS = [
   "inventory:read:all",
 ];
 
+const MODULE_DISCOVERY_ACCESS = [
+  "inventory.read",
+  "inventory:read:own",
+  "inventory:read:all",
+  "tickets.read",
+  "tickets:read:own",
+  "tickets:read:all",
+  "settings.read",
+  "configuration.read",
+  "configuration:read:own",
+  "configuration:read:all",
+  "users.read",
+  "users:read:own",
+  "users:read:all",
+  "roles.read",
+  "roles:read:own",
+  "roles:read:all",
+  "admin.read",
+  "admin:read:own",
+  "admin:read:all",
+];
+
 const ROUTE_ACCESS_RULES: Array<{ route: string; rule: AccessRule }> = [
   {
     route: "/settings",
@@ -182,6 +204,22 @@ const ROUTE_ACCESS_RULES: Array<{ route: string; rule: AccessRule }> = [
       anyOf: CCTV_ACCESS,
       title: "Sin acceso al mapa",
       description: "No tienes permisos para consultar el mapa del tenant activo.",
+    },
+  },
+  {
+    route: "/access-control",
+    rule: {
+      anyOf: MODULE_DISCOVERY_ACCESS,
+      title: "Sin acceso a Control de Acceso",
+      description: "Este modulo scaffold/WIP requiere al menos permisos base de operacion o configuracion dentro del tenant activo.",
+    },
+  },
+  {
+    route: "/networking",
+    rule: {
+      anyOf: MODULE_DISCOVERY_ACCESS,
+      title: "Sin acceso a Redes",
+      description: "Este modulo scaffold/WIP requiere al menos permisos base de operacion o configuracion dentro del tenant activo.",
     },
   },
 ];

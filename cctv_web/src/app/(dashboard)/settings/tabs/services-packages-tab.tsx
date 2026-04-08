@@ -11,8 +11,9 @@ import { listTenants } from "@/lib/api/tenants";
 import {
   ASSIGNABLE_SERVICE_CODES,
   COMMERCIAL_PLAN_PRESETS,
-  PLANNED_SERVICE_CODES,
+  PARTIAL_SERVICE_CODES,
   PRODUCT_SERVICE_DEFINITIONS,
+  RUNTIME_VISIBLE_SERVICE_CODES,
   getServiceStatusMeta,
   parseTenantProductProfile,
 } from "@/lib/product/service-catalog";
@@ -91,7 +92,7 @@ export function ServicesPackagesTab() {
             Servicios habilitables hoy
           </CardTitle>
           <CardDescription>
-            Solo estos servicios participan ya en visibilidad del shell actual porque existe modulo o configuracion real en la web.
+            El catalogo ya separa dominios operativos, capacidades parciales y modulos scaffold/WIP visibles por tenant.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-3">
@@ -124,22 +125,61 @@ export function ServicesPackagesTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Dominios planeados, sin modulo operativo aun</CardTitle>
+          <CardTitle className="text-base">Dominios visibles en runtime</CardTitle>
           <CardDescription>
-            Se muestran aqui para dejar claro el gap actual. No se habilitan en runtime porque el repo todavia no tiene superficie web ni API operativa auditada para ellos.
+            Estos dominios ya pueden aparecer en el menu del tenant cuando el servicio esta habilitado. Su estado define si son operativos o WIP.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          {PLANNED_SERVICE_CODES.map((serviceCode) => {
+          {RUNTIME_VISIBLE_SERVICE_CODES.map((serviceCode) => {
             const service = PRODUCT_SERVICE_DEFINITIONS[serviceCode];
+            const meta = getServiceStatusMeta(service.status);
 
             return (
               <div key={service.code} className="rounded-2xl border border-dashed p-4">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <p className="font-semibold text-slate-900 dark:text-slate-100">{service.label}</p>
-                  <Badge variant="secondary">Planeado</Badge>
+                  <Badge variant={meta.tone === "default" ? "default" : "secondary"}>{meta.label}</Badge>
                 </div>
                 <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{service.description}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {service.modules.map((moduleName) => (
+                    <Badge key={moduleName} variant="outline">
+                      {moduleName}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Capacidades parciales fuera del side menu</CardTitle>
+          <CardDescription>
+            Estas capacidades ya existen en el producto, pero viven hoy dentro de `Configuracion` y no como dominio lateral completo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          {PARTIAL_SERVICE_CODES.map((serviceCode) => {
+            const service = PRODUCT_SERVICE_DEFINITIONS[serviceCode];
+
+            return (
+              <div key={service.code} className="rounded-2xl border p-4">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{service.label}</p>
+                  <Badge variant="secondary">Parcial</Badge>
+                </div>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{service.description}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {service.modules.map((moduleName) => (
+                    <Badge key={moduleName} variant="outline">
+                      {moduleName}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             );
           })}
@@ -156,15 +196,15 @@ export function ServicesPackagesTab() {
         <CardContent className="grid gap-3 lg:grid-cols-3">
           <GovernanceCard
             title="1. Permisos"
-            description="El usuario debe tener permiso para la ruta o tab correspondiente."
+            description="El usuario debe tener permiso para la ruta o tab correspondiente, o la regla temporal de descubrimiento del scaffold."
           />
           <GovernanceCard
             title="2. Servicio habilitado"
             description="El tenant debe tener ese servicio dentro de `enabled_services`."
           />
           <GovernanceCard
-            title="3. Modulo real"
-            description="Solo se muestra lo que hoy existe realmente en la web; lo planeado queda documentado como gap."
+            title="3. Estado del modulo"
+            description="El runtime ya distingue modulo operativo, capacidad parcial y scaffold/WIP sin esconder dominios reales del producto."
           />
         </CardContent>
       </Card>

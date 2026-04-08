@@ -12,7 +12,7 @@
 - No aceptar configuraciones hibridas si no esta claro que pertenece al backoffice global y que pertenece al tenant.
 - No aceptar onboarding tenant como "resuelto" si al finalizar el flujo la empresa todavia no puede iniciar sesion con un admin inicial valido.
 - No aceptar un plan comercial como "paquete funcional" si no existe una matriz real de servicios/modulos visibles.
-- No aceptar `Control de Acceso` como modulo habilitable si no existe superficie real en repo.
+- No ocultar un dominio del runtime solo porque aun no tiene backend completo, siempre que ya exista como scaffold/WIP real en repo.
 
 ## Checklist transversal de validacion
 
@@ -177,9 +177,9 @@
 #### C6.4 Control de Acceso
 
 - [x] Existe auditoria honesta de rutas, pantallas y APIs del dominio.
-- [x] Queda claro si hoy el dominio existe, existe parcial o no existe.
-- [x] Si no existe, se clasifica como etapa nueva y no como modulo ya disponible.
-- [x] Existe un plan concreto para construirlo si sigue siendo objetivo del producto.
+- [x] Queda claro si hoy el dominio es operativo, parcial, WIP visible o futuro.
+- [x] Si existe como scaffold/WIP real, permanece visible en runtime con mensajeria honesta.
+- [x] Existe un plan concreto para madurarlo si sigue siendo objetivo del producto.
 
 #### C6.5 Consolidacion F6
 
@@ -248,7 +248,8 @@
 | CCTV | Muestra detalle real y acciones soportadas | Opera sin promesas falsas | Evidencia de alta, consulta, filtros y limites claros |
 | Tickets | Lista, crea y actualiza acciones soportadas | Flujo sin UUIDs manuales y con permisos coherentes | Evidencia de alta, seguimiento y accion de tecnico |
 | Polizas / SLA | Lista y crea con datos validos | Asigna cobertura y activos cubiertos de forma navegable | Evidencia de detalle y relaciones resueltas |
-| Control de Acceso | Tiene auditoria honesta de lo que existe | Existe como modulo real, no solo como concepto | Evidencia de rutas, pantallas, APIs o conclusion formal de ausencia |
+| Control de Acceso | Tiene auditoria honesta de lo que existe y se ve como WIP cuando el tenant lo habilita | Existe como modulo real visible y luego madura hacia operacion | Evidencia de menu, rutas, pantallas y limites backend del dominio |
+| Redes | Tiene criterio equivalente de modulo WIP visible | Existe como modulo real visible y luego madura hacia operacion | Evidencia de menu, rutas, pantallas y limites backend del dominio |
 | Configuracion empresas / tenants | Lista y actualiza estado real | Incluye branding/logo cuando el endpoint existe | Evidencia de activacion/desactivacion y branding |
 | Configuracion roles y permisos | Lista y actualiza sin prometer ciclo inexistente | Acciones por pagina quedan protegidas por estos permisos | Evidencia de rol creado, permisos asignados y UI gobernada |
 | Tema | Carga y guarda configuracion real | Muestra efecto observable en UI | Evidencia antes/despues y persistencia |
@@ -282,6 +283,12 @@
   `npm run test:smoke`: `5/5` OK sobre `next start` en `http://127.0.0.1:3011`, usado aqui como verificacion del arnes y de la coherencia del entorno
   verificacion de `npm run dev` con arranque local en `3011`
   evidencia formal consolidada en `11_ENTORNO_REPRODUCIBLE_Y_SMOKE_F7.md`
+- Checkpoint de recuperacion visible:
+  `npm test`: `61/61` OK
+  `npm run build`: OK
+  `npx playwright test e2e/phase-7-runtime-modules.spec.ts e2e/phase-6-tenant-onboarding-services.spec.ts --project=chromium` con `E2E_BASE_URL=http://127.0.0.1:3011`: `5/5` OK usando mocks del contrato actual sobre `next start`
+  `npx playwright test -c playwright.smoke.config.ts` con `E2E_BASE_URL=http://127.0.0.1:3011`: `5/5` OK tras endurecer el flujo multiempresa y alinear el smoke base al runtime visible actual
+  evidencia formal consolidada en `09_AUDITORIA_CONTROL_DE_ACCESO.md` y `12_MODULOS_WIP_Y_RUNTIME_VISIBLES.md`
 - Limitacion reconocida: el smoke E2E de esta fase valida navegador real y contrato esperado, pero no golpea un backend vivo en este workspace.
 
 ## Conclusion

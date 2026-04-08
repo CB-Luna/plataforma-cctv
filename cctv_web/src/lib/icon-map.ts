@@ -18,6 +18,10 @@ import {
   Map,
   MapPin,
   Layers,
+  Wrench,
+  AlertTriangle,
+  DoorOpen,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 
@@ -49,6 +53,10 @@ const iconMap: Record<string, LucideIcon> = {
   store: Building2,
   group: Users,
   verified_user: ShieldCheck,
+  build: Wrench,
+  warning: AlertTriangle,
+  door_front: DoorOpen,
+  router: Network,
 };
 
 /** Returns a rendered icon element (avoids React 19 "component created during render" error) */

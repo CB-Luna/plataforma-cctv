@@ -15,7 +15,7 @@ export function ServiceBadges({
   compact?: boolean;
 }) {
   if (!services.length) {
-    return <Badge variant="outline">Sin servicios operativos</Badge>;
+    return <Badge variant="outline">Sin servicios habilitados</Badge>;
   }
 
   return (
@@ -30,7 +30,11 @@ export function ServiceBadges({
             variant={statusMeta.tone === "default" ? "default" : "secondary"}
             title={compact ? service.description : undefined}
           >
-            {compact ? service.shortLabel : `${service.label} - ${statusMeta.label}`}
+            {compact
+              ? service.status === "operational"
+                ? service.shortLabel
+                : `${service.shortLabel} · ${statusMeta.label}`
+              : `${service.label} - ${statusMeta.label}`}
           </Badge>
         );
       })}

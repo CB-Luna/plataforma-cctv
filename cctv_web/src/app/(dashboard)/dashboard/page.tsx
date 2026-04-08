@@ -150,6 +150,44 @@ export default function DashboardPage() {
       });
     }
 
+    if (
+      tenantProfile.enabledServices.includes("access_control") &&
+      canAny(
+        "inventory.read",
+        "inventory:read:own",
+        "inventory:read:all",
+        "settings.read",
+        "configuration.read",
+        "configuration:read:own",
+        "configuration:read:all",
+      )
+    ) {
+      actions.push({
+        href: "/access-control",
+        label: "Control de Acceso",
+        description: "Explora el scaffold WIP del dominio y define el camino operativo del tenant.",
+      });
+    }
+
+    if (
+      tenantProfile.enabledServices.includes("networking") &&
+      canAny(
+        "inventory.read",
+        "inventory:read:own",
+        "inventory:read:all",
+        "settings.read",
+        "configuration.read",
+        "configuration:read:own",
+        "configuration:read:all",
+      )
+    ) {
+      actions.push({
+        href: "/networking",
+        label: "Redes",
+        description: "Consulta la base visible del dominio de redes mientras el modulo termina de madurar.",
+      });
+    }
+
     if (canAny("users.read", "users:read:own", "users:read:all")) {
       actions.push({
         href: "/settings?tab=usuarios",

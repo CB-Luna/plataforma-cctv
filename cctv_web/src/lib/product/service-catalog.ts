@@ -7,9 +7,9 @@ export type ProductServiceCode =
   | "access_control"
   | "networking";
 
-export type AssignableServiceCode = "cctv" | "storage" | "intelligence";
+export type AssignableServiceCode = ProductServiceCode;
 export type CommercialPlanCode = "basic" | "professional" | "enterprise";
-export type ServiceSupportStatus = "operational" | "settings_only" | "planned";
+export type ServiceSupportStatus = "operational" | "partial" | "wip" | "future";
 export type ProductProfileSource = "explicit" | "legacy_default";
 export type TenantOnboardingStatus =
   | "ready"
@@ -25,6 +25,7 @@ export interface ProductServiceDefinition {
   status: ServiceSupportStatus;
   assignable: boolean;
   modules: string[];
+  runtimeVisible: boolean;
 }
 
 export interface CommercialPlanPreset {
@@ -59,47 +60,60 @@ export const PRODUCT_SERVICE_DEFINITIONS: Record<ProductServiceCode, ProductServ
     status: "operational",
     assignable: true,
     modules: ["Inventario", "Camaras", "Fichas tecnicas", "NVR", "Planos", "Mapa", "Importacion", "CAPEX"],
+    runtimeVisible: true,
   },
   storage: {
     code: "storage",
     label: "Storage",
     shortLabel: "Storage",
-    description: "Configuracion de almacenamiento y archivos del tenant activo dentro del shell actual.",
-    status: "settings_only",
+    description: "Capacidad parcial del producto: configuracion de almacenamiento y archivos del tenant activo dentro del shell actual.",
+    status: "partial",
     assignable: true,
-    modules: ["Storage"],
+    modules: ["Configuracion > Storage"],
+    runtimeVisible: false,
   },
   intelligence: {
     code: "intelligence",
     label: "IA",
     shortLabel: "IA",
-    description: "Modelos, prompts y configuracion de inteligencia del tenant activo.",
-    status: "settings_only",
+    description: "Capacidad parcial del producto: modelos, prompts y configuracion de inteligencia del tenant activo.",
+    status: "partial",
     assignable: true,
-    modules: ["IA"],
+    modules: ["Configuracion > IA"],
+    runtimeVisible: false,
   },
   access_control: {
     code: "access_control",
     label: "Control de Acceso",
     shortLabel: "Acceso",
-    description: "Dominio auditado en C6.4: solo existe como semantica de catalogo y cobertura; no tiene rutas web ni API operativa en el repo actual.",
-    status: "planned",
-    assignable: false,
-    modules: [],
+    description: "Modulo scaffold/WIP del producto: ya existe en menu, rutas y pantallas, pero todavia no tiene backend ni flujos operativos cerrados.",
+    status: "wip",
+    assignable: true,
+    modules: ["Resumen", "Inventario", "Fichas tecnicas", "Mantenimiento", "Incidentes", "Reportes"],
+    runtimeVisible: true,
   },
   networking: {
     code: "networking",
     label: "Redes",
     shortLabel: "Redes",
-    description: "Dominio de servicio previsto por producto, sin modulo web operativo en el estado actual.",
-    status: "planned",
-    assignable: false,
-    modules: [],
+    description: "Modulo scaffold/WIP del producto: ya existe en menu, rutas y pantallas base, pero todavia no tiene backend ni flujos operativos cerrados.",
+    status: "wip",
+    assignable: true,
+    modules: ["Resumen", "Inventario", "Fichas tecnicas", "Mantenimiento", "Incidentes", "Reportes"],
+    runtimeVisible: true,
   },
 };
 
-export const ASSIGNABLE_SERVICE_CODES: AssignableServiceCode[] = ["cctv", "storage", "intelligence"];
-export const PLANNED_SERVICE_CODES: ProductServiceCode[] = ["access_control", "networking"];
+export const ASSIGNABLE_SERVICE_CODES: AssignableServiceCode[] = [
+  "cctv",
+  "access_control",
+  "networking",
+  "storage",
+  "intelligence",
+];
+export const RUNTIME_VISIBLE_SERVICE_CODES: ProductServiceCode[] = ["cctv", "access_control", "networking"];
+export const PARTIAL_SERVICE_CODES: ProductServiceCode[] = ["storage", "intelligence"];
+export const FUTURE_SERVICE_CODES: ProductServiceCode[] = [];
 export const LEGACY_DEFAULT_ENABLED_SERVICES: ProductServiceCode[] = ["cctv", "storage", "intelligence"];
 
 export const COMMERCIAL_PLAN_PRESETS: Record<CommercialPlanCode, CommercialPlanPreset> = {
@@ -112,14 +126,14 @@ export const COMMERCIAL_PLAN_PRESETS: Record<CommercialPlanCode, CommercialPlanP
   professional: {
     code: "professional",
     label: "Professional",
-    description: "CCTV mas servicios de almacenamiento del tenant.",
-    suggestedServices: ["cctv", "storage"],
+    description: "CCTV mas Control de Acceso como dominio visible en construccion.",
+    suggestedServices: ["cctv", "access_control"],
   },
   enterprise: {
     code: "enterprise",
     label: "Enterprise",
-    description: "CCTV mas capacidades de storage e inteligencia dentro del shell actual.",
-    suggestedServices: ["cctv", "storage", "intelligence"],
+    description: "Stack multi-dominio: CCTV, Control de Acceso, Redes y capacidades parciales de storage e IA.",
+    suggestedServices: ["cctv", "access_control", "networking", "storage", "intelligence"],
   },
 };
 
@@ -132,6 +146,18 @@ const ROUTE_SERVICE_REQUIREMENTS: Partial<Record<string, ProductServiceCode>> = 
   "/map": "cctv",
   "/imports": "cctv",
   "/capex": "cctv",
+  "/access-control": "access_control",
+  "/access-control/inventory": "access_control",
+  "/access-control/technical-sheets": "access_control",
+  "/access-control/maintenance": "access_control",
+  "/access-control/incidents": "access_control",
+  "/access-control/reports": "access_control",
+  "/networking": "networking",
+  "/networking/inventory": "networking",
+  "/networking/technical-sheets": "networking",
+  "/networking/maintenance": "networking",
+  "/networking/incidents": "networking",
+  "/networking/reports": "networking",
 };
 
 const SETTINGS_TAB_SERVICE_REQUIREMENTS: Partial<Record<string, ProductServiceCode>> = {
@@ -273,7 +299,26 @@ export function buildTenantSettings(params: {
   return nextSettings;
 }
 
-export function isRouteEnabledForServices(pathname: string, enabledServices: ProductServiceCode[]): boolean {
+export function isServiceRuntimeVisible(
+  serviceCode: ProductServiceCode,
+  options?: { hasRoleContext?: boolean },
+): boolean {
+  const service = PRODUCT_SERVICE_DEFINITIONS[serviceCode];
+  if (!service) return false;
+  if (!service.runtimeVisible) return false;
+  if (service.status === "future") return false;
+  if (service.status === "wip") {
+    return options?.hasRoleContext ?? true;
+  }
+
+  return true;
+}
+
+export function isRouteEnabledForServices(
+  pathname: string,
+  enabledServices: ProductServiceCode[],
+  options?: { hasRoleContext?: boolean },
+): boolean {
   const matchedEntry = Object.entries(ROUTE_SERVICE_REQUIREMENTS).find(
     ([route]) => pathname === route || pathname.startsWith(`${route}/`),
   );
@@ -282,7 +327,9 @@ export function isRouteEnabledForServices(pathname: string, enabledServices: Pro
 
   const [, requiredService] = matchedEntry;
   if (!requiredService) return true;
-  return enabledServices.includes(requiredService);
+  if (!enabledServices.includes(requiredService)) return false;
+
+  return isServiceRuntimeVisible(requiredService, options);
 }
 
 export function isSettingsTabEnabledForServices(tabKey: string, enabledServices: ProductServiceCode[]): boolean {
@@ -314,9 +361,11 @@ export function getServiceStatusMeta(status: ServiceSupportStatus): {
   switch (status) {
     case "operational":
       return { label: "Operativo", tone: "default" };
-    case "settings_only":
-      return { label: "Configuracion", tone: "secondary" };
+    case "partial":
+      return { label: "Parcial", tone: "secondary" };
+    case "wip":
+      return { label: "WIP", tone: "secondary" };
     default:
-      return { label: "Planeado", tone: "secondary" };
+      return { label: "Futuro", tone: "secondary" };
   }
 }

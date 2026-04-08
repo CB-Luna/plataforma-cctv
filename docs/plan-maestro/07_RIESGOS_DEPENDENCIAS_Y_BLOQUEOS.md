@@ -1,6 +1,6 @@
 # 07. Riesgos, Dependencias y Bloqueos
 
-> Criterio rector: el mayor riesgo del proyecto ya no es "falta de avance visible", sino endurecer una version que se vea enterprise sin haber consolidado todavia tenant onboarding, servicios habilitados, portal tenant y la verdad del dominio `Control de Acceso`.
+> Criterio rector: el mayor riesgo del proyecto ya no es "falta de avance visible", sino endurecer una version que se vea enterprise sin haber consolidado todavia tenant onboarding, servicios habilitados, portal tenant y la maduracion honesta de dominios WIP como `Control de Acceso` y `Redes`.
 
 ## Panorama general
 
@@ -32,8 +32,8 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 - Sobrepromesa multiempresa por UI antes de consolidar tenant operable end-to-end.
 - Confusion entre `subscription_plan`, paquete funcional, servicio habilitado y modulo visible.
 - Mezcla de configuracion global y tenant sin ownership suficientemente fuerte.
-- Falta de definicion sobre catalogo de servicios habilitados por empresa.
-- Presentar `Control de Acceso` como si ya existiera cuando hoy no hay evidencia de superficie real.
+- Falta de definicion sobre si el catalogo de servicios habilitados seguira frontend-first o migrara a backend.
+- Presentar un modulo WIP como si ya fuera operativo solo porque ya aparece en menu y rutas.
 
 ## Dependencias de backend
 
@@ -51,10 +51,10 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 
 - No existe smoke live repetido del onboarding tenant contra backend levantado en el workspace.
 - No existe una politica cerrada de seguridad para el uso de `POST /auth/register` como bootstrap administrativo.
-- No existe una fuente unica de menu runtime por tenant + rol + servicio.
+- No existe una fuente unica de menu runtime por tenant + rol + servicio + estado del modulo.
 - No existe shell tenant tecnicamente aislada del backoffice global.
 - No existe un dataset de validacion para tenant onboarding completo.
-- No existe un modulo operativo de `Control de Acceso`; la auditoria ya lo clasifico como dominio no construido.
+- No existen modulos operativos cerrados de `Control de Acceso` ni `Redes`; hoy viven como scaffolds WIP visibles.
 
 ## Deuda visual
 
@@ -67,10 +67,10 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 
 - El onboarding del tenant ya cubre admin inicial, pero sigue sin smoke live repetido y sin politica cerrada para altas posteriores.
 - Los usuarios internos del tenant no tienen alta administrativa completa en la experiencia actual.
-- El menu runtime no capitaliza aun `menu_templates`.
+- El menu runtime ya responde a servicios habilitados y estado del modulo, pero no capitaliza aun `menu_templates` como fuente unica.
 - Los sitios/sucursales siguen consumiendose sin CRUD real.
 - El portal tenant sigue parcial a nivel de runtime aislado.
-- `Control de Acceso` sigue siendo expectativa de etapa futura, no modulo navegable.
+- `Control de Acceso` y `Redes` ya son modulos navegables WIP, pero siguen sin backend ni operacion cerrada.
 
 ## Deuda de datos demo
 
@@ -84,7 +84,7 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 - El scope global frente al scope tenant no esta expresado en toda la UX.
 - La empresa activa existe y el tenant ya tiene identidad visible de portal, pero no aislamiento tecnico propio.
 - El menu hardcodeado oculta el verdadero valor del backend multi-tenant.
-- Los servicios habilitados aun no participan formalmente en la visibilidad de producto.
+- La visibilidad actual por servicios habilitados aun no usa una fuente unica de verdad.
 
 ## Matriz de riesgos
 
@@ -94,10 +94,10 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 | Tratar `subscription_plan` como paquete funcional real | Alto | Alta | Separar plan comercial, servicio habilitado y modulo visible | Si |
 | Crear tenants sin cerrar el gobierno posterior del usuario admin inicial | Alto | Media | Aclarar el alcance del bootstrap y dejar alta general de usuarios como siguiente hueco | Parcial |
 | Reusar `POST /auth/register` sin decision de producto/seguridad | Alto | Media | Auditarlo y aprobar explicitamente su uso o descartarlo | Si |
-| Menu por tenant administrado pero no aplicado en runtime | Medio | Alta | Definir estrategia fija o dinamica y ejecutarla sin contradicciones | Si |
+| Menu por tenant administrado, ya aplicado parcialmente en runtime, pero sin fuente unica | Medio | Alta | Definir estrategia fija o dinamica y ejecutarla sin contradicciones | Si |
 | Portal tenant visible pero no aislado tecnicamente | Medio | Media | Decidir si la shell endurecida actual es suficiente o si se requiere aislamiento en la siguiente etapa | Parcial |
 | Falta de CRUD de sitios en backend | Alto | Alta | Mantener sitios como entidad consumida y documentar restriccion | Si |
-| Reactivar `Control de Acceso` en menu o marketing como si fuera modulo actual | Alto | Alta | Mantener la conclusion C6.4 visible en UI, docs y backlog | Si |
+| Presentar `Control de Acceso` o `Redes` como modulos operativos cuando hoy son WIP | Alto | Alta | Mantener la clasificacion visible operativo/parcial/WIP/futuro en UI, docs y backlog | Si |
 | Permisos sin guardas por pagina/accion en toda la superficie | Alto | Media | Implementar enforcement transversal y validarlo | Parcial |
 | Mapa basado en coordenadas sinteticas | Medio | Alta | Etiquetar como aproximacion o diferirlo de V1 core | No total |
 | Floor plans con persistencia parcial | Medio | Media | Mantener herramientas acotadas y validar reabrir/guardar | No total |
@@ -140,7 +140,7 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 - Decision de producto/seguridad sobre el uso o no de `POST /auth/register` para bootstrap administrativo.
 - Definicion de servicios habilitados, paquetes y visibilidad.
 - Definicion de portal tenant real.
-- Auditoria formal del estado de `Control de Acceso`.
+- Auditoria formal del estado de `Control de Acceso` y su reclasificacion como WIP visible.
 
 ### Fase 7
 
@@ -155,7 +155,7 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 1. Tratar tenant onboarding como problema central de negocio, no como detalle tardio de UI.
 2. Congelar la definicion de servicios habilitados antes de seguir decorando menus o planes.
 3. Separar con rigor lo que ya es backoffice inicial de lo que todavia no es portal tenant real.
-4. Mantener `Control de Acceso` fuera del runtime actual hasta que exista una etapa propia del dominio.
+4. Mantener visibles los modulos WIP en runtime, pero sin venderlos como operativos hasta que exista una etapa propia del dominio.
 5. Entrar a hardening solo despues de corregir esta desviacion de alcance, y sin usarlo para maquillar producto faltante.
 
 ## Conclusion

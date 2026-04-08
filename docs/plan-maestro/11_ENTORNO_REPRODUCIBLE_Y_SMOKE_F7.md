@@ -115,7 +115,7 @@ quedaran reproducibles sin depender de apagar procesos externos.
 | ID | Hallazgo | Clasificacion | Estado |
 |---|---|---|---|
 | F7-01 | El smoke reproducible actual valida contrato mockeado, no backend live del workspace | Limitacion aceptada | Visible |
-| F7-02 | `Control de Acceso` sigue fuera del smoke porque ya fue auditado como dominio no construido | Limitacion aceptada | Visible |
+| F7-02 | `Control de Acceso` y `Redes` ya tienen validacion runtime propia, pero siguen fuera del smoke base porque son modulos WIP sin backend live del dominio | Limitacion aceptada | Visible |
 | F7-03 | El alta general de usuarios internos sigue limitada por ausencia de `POST /users` | GAP backend | Abierto |
 | F7-04 | CRUD completo de sitios/sucursales sigue sin cierre backend | GAP backend | Abierto |
 

@@ -51,12 +51,13 @@
 | WEB-033 | Users tenant | Implementar alta de usuario interno del tenant si se aprueba el flujo seguro sobre contrato actual | Alta | Integracion | WEB-032; validacion producto/seguridad | L | Alto | El tenant puede dar de alta usuarios internos sin hacks ni supuestos |
 | WEB-034 | Servicios habilitados | Endurecer el catalogo hacia una fuente administrable o backend si producto exige gobierno mas fuerte | Alta | Gap | BIZ-03; BIZ-06 | M | Alto | La matriz servicio -> menu -> modulo -> tenant deja de vivir solo en frontend |
 | WEB-035 | Paquetes | Mantener separacion entre `subscription_plan` y producto visible, evitando regresiones de copy y UX | Media | Documentacion | WEB-034 | S | Medio | Ninguna pantalla vuelve a vender `basic/professional/enterprise` como modulo ya construido |
-| WEB-036 | Menu runtime | Decidir si el runtime se quedara fijo hasta etapa 2 o si debe unificarse con `menu_templates` como fuente unica | Alta | Gap | WEB-013; WEB-034 | L | Alto | Existe una sola estrategia defendible de menu runtime |
+| WEB-036 | Menu runtime | Unificar la estrategia actual de sidebar por tenant + rol + servicio + estado con `menu_templates` como fuente unica cuando producto lo apruebe | Alta | Gap | WEB-013; WEB-034 | L | Alto | Existe una sola estrategia defendible de menu runtime |
 | WEB-037 | Portal tenant | Evaluar si el portal tenant necesita layout/rutas aisladas o si la shell endurecida actual es suficiente | Alta | UX | MT-01; MT-05 | M | Medio | Existe decision aprobada sobre aislamiento tecnico del portal |
 | WEB-038 | Roles tenant | Cerrar ciclo real de usuarios y roles internos, mas alla de listado, update y password | Alta | UX | DEC-03; WEB-033 | M | Medio | El tenant puede administrar su equipo con ownership claro |
-| WEB-039 | Control de Acceso | Mantener el dominio fuera del menu y del discurso de modulo actual despues de la auditoria C6.4 | Critica | Documentacion | C6.4 cerrada | S | Alto | Ninguna UI ni doc lo presenta como modulo existente |
-| WEB-040 | Control de Acceso | Diseñar la etapa propia del dominio como producto nuevo, con contrato, inventario y operacion reales | Alta | Gap | WEB-039 | L | Alto | Existe fase propia, alcance y criterio de salida para ese dominio |
-| WEB-041 | Sitios / sucursales | Explicitar en UI y docs que el CRUD de sitios sigue bloqueado por backend | Alta | Documentacion | API-03 | S | Medio | No se promete una administracion de sucursales que hoy no existe |
+| WEB-039 | Runtime visible | Endurecer el criterio de modulo `operativo / parcial / WIP / futuro` en todo el producto y evitar regresiones de copy o menu | Critica | Documentacion | 12_MODULOS_WIP_Y_RUNTIME_VISIBLES | S | Alto | Ninguna UI ni doc vuelve a esconder o sobreprometer un dominio por mala clasificacion |
+| WEB-040 | Control de Acceso | Evolucionar el scaffold WIP hacia inventario, detalle y operacion real del dominio | Alta | Gap | WEB-039; API-12 | L | Alto | Existe fase propia, alcance y criterio de salida para volver operativo el dominio |
+| WEB-041 | Redes | Evolucionar el scaffold WIP hacia inventario, topologia y operacion real del dominio | Alta | Gap | WEB-039; API-12 | L | Alto | Existe fase propia, alcance y criterio de salida para volver operativo el dominio |
+| WEB-042 | Sitios / sucursales | Explicitar en UI y docs que el CRUD de sitios sigue bloqueado por backend | Alta | Documentacion | API-03 | S | Medio | No se promete una administracion de sucursales que hoy no existe |
 
 ## Agrupacion sugerida por fase
 
@@ -111,6 +112,7 @@
 - WEB-039
 - WEB-040
 - WEB-041
+- WEB-042
 
 ### Fase 7
 
@@ -127,7 +129,7 @@
 - Mientras no se confirme DEC-11, el sidebar no debe presentarse como si ya estuviera gobernado por tenant + rol + servicio.
 - Mientras no se confirme DEC-12, el portal tenant seguira apoyado en la shell endurecida actual y no en rutas/layout aislados.
 - Mientras el backend no exponga mejor soporte de sitios, la administracion real de sucursales debe tratarse como bloqueo.
-- La auditoria formal de `Control de Acceso` ya quedo cerrada en C6.4; mientras no exista etapa propia del dominio, no debe venderse como modulo disponible.
+- `Control de Acceso` y `Redes` ya existen como modulos WIP visibles; mientras no exista etapa propia del dominio, no deben venderse como modulos operativos terminados.
 
 ## Lectura ejecutiva del backlog
 
@@ -136,6 +138,6 @@ Las prioridades criticas ya no son solo tecnicas. Ahora atacan el riesgo sistemi
 - el onboarding real del tenant,
 - el catalogo de servicios habilitados,
 - el portal tenant autocontenido,
-- y la verdad del dominio `Control de Acceso`.
+- y la evolucion honesta de dominios WIP como `Control de Acceso` y `Redes`.
 
 Corregir primero ese nucleo evita que el proyecto entre a hardening sobre una promesa de producto que aun no existe.

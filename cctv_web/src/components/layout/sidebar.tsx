@@ -7,7 +7,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getRouteAccessRule } from "@/lib/auth/access-control";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import {
+  PRODUCT_SERVICE_DEFINITIONS,
+  getServiceStatusMeta,
   isRouteEnabledForServices,
+  isServiceRuntimeVisible,
   parseTenantProductProfile,
   type ProductServiceCode,
 } from "@/lib/product/service-catalog";
@@ -28,6 +31,7 @@ interface MenuLinkItem {
 interface MenuSection {
   id: string;
   label: string;
+  service?: ProductServiceCode;
   items: MenuLinkItem[];
 }
 
@@ -135,6 +139,116 @@ const MENU_SECTIONS: MenuSection[] = [
       },
     ],
   },
+  {
+    id: "access-control",
+    label: "Control de Acceso",
+    service: "access_control",
+    items: [
+      {
+        id: "nav-access-control-overview",
+        label: "Resumen",
+        icon: "dashboard",
+        route: "/access-control",
+        permissions: getRouteAccessRule("/access-control")?.anyOf,
+        service: "access_control",
+      },
+      {
+        id: "nav-access-control-inventory",
+        label: "Inventario",
+        icon: "inventory_2",
+        route: "/access-control/inventory",
+        permissions: getRouteAccessRule("/access-control/inventory")?.anyOf,
+        service: "access_control",
+      },
+      {
+        id: "nav-access-control-tech-sheets",
+        label: "Fichas tecnicas",
+        icon: "description",
+        route: "/access-control/technical-sheets",
+        permissions: getRouteAccessRule("/access-control/technical-sheets")?.anyOf,
+        service: "access_control",
+      },
+      {
+        id: "nav-access-control-maintenance",
+        label: "Mantenimiento",
+        icon: "build",
+        route: "/access-control/maintenance",
+        permissions: getRouteAccessRule("/access-control/maintenance")?.anyOf,
+        service: "access_control",
+      },
+      {
+        id: "nav-access-control-incidents",
+        label: "Incidentes",
+        icon: "warning",
+        route: "/access-control/incidents",
+        permissions: getRouteAccessRule("/access-control/incidents")?.anyOf,
+        service: "access_control",
+      },
+      {
+        id: "nav-access-control-reports",
+        label: "Reportes",
+        icon: "assessment",
+        route: "/access-control/reports",
+        permissions: getRouteAccessRule("/access-control/reports")?.anyOf,
+        service: "access_control",
+      },
+    ],
+  },
+  {
+    id: "networking",
+    label: "Redes",
+    service: "networking",
+    items: [
+      {
+        id: "nav-networking-overview",
+        label: "Resumen",
+        icon: "dashboard",
+        route: "/networking",
+        permissions: getRouteAccessRule("/networking")?.anyOf,
+        service: "networking",
+      },
+      {
+        id: "nav-networking-inventory",
+        label: "Inventario",
+        icon: "inventory_2",
+        route: "/networking/inventory",
+        permissions: getRouteAccessRule("/networking/inventory")?.anyOf,
+        service: "networking",
+      },
+      {
+        id: "nav-networking-tech-sheets",
+        label: "Fichas tecnicas",
+        icon: "description",
+        route: "/networking/technical-sheets",
+        permissions: getRouteAccessRule("/networking/technical-sheets")?.anyOf,
+        service: "networking",
+      },
+      {
+        id: "nav-networking-maintenance",
+        label: "Mantenimiento",
+        icon: "build",
+        route: "/networking/maintenance",
+        permissions: getRouteAccessRule("/networking/maintenance")?.anyOf,
+        service: "networking",
+      },
+      {
+        id: "nav-networking-incidents",
+        label: "Incidentes",
+        icon: "warning",
+        route: "/networking/incidents",
+        permissions: getRouteAccessRule("/networking/incidents")?.anyOf,
+        service: "networking",
+      },
+      {
+        id: "nav-networking-reports",
+        label: "Reportes",
+        icon: "assessment",
+        route: "/networking/reports",
+        permissions: getRouteAccessRule("/networking/reports")?.anyOf,
+        service: "networking",
+      },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -165,11 +279,30 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
     ],
     hasAnyPermission,
     tenantProfile.enabledServices,
+    roles.length > 0,
   );
   const sections = MENU_SECTIONS.map((section) => ({
     ...section,
-    items: filterVisibleLinks(section.items, hasAnyPermission, tenantProfile.enabledServices),
-  })).filter((section) => section.items.length > 0);
+    items: filterVisibleLinks(
+      section.items,
+      hasAnyPermission,
+      tenantProfile.enabledServices,
+      roles.length > 0,
+    ),
+  })).filter((section) => {
+    if (!section.items.length) {
+      return false;
+    }
+
+    if (!section.service) {
+      return true;
+    }
+
+    return (
+      tenantProfile.enabledServices.includes(section.service) &&
+      isServiceRuntimeVisible(section.service, { hasRoleContext: roles.length > 0 })
+    );
+  });
   const secondaryLinks = filterVisibleLinks(
     [
       {
@@ -182,6 +315,7 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
     ],
     hasAnyPermission,
     tenantProfile.enabledServices,
+    roles.length > 0,
   );
 
   return (
@@ -233,9 +367,16 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
             <SidebarSeparator collapsed={collapsed} />
             {!collapsed ? (
               <div className="px-3 pb-1 pt-5">
-                <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-                  {section.label}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                    {section.label}
+                  </span>
+                  {section.service ? (
+                    <span className="rounded-full border border-white/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                      {getServiceStatusMeta(PRODUCT_SERVICE_DEFINITIONS[section.service].status).label}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             ) : null}
             {section.items.map((item) => (
@@ -275,6 +416,7 @@ function filterVisibleLinks(
   items: MenuLinkItem[],
   hasAnyPermission: (...permissions: string[]) => boolean,
   enabledServices: ProductServiceCode[],
+  hasRoleContext: boolean,
 ): MenuLinkItem[] {
   return items.filter((item) => {
     if (item.permissions && !hasAnyPermission(...item.permissions)) {
@@ -285,7 +427,7 @@ function filterVisibleLinks(
       return true;
     }
 
-    return isRouteEnabledForServices(item.route, enabledServices);
+    return isRouteEnabledForServices(item.route, enabledServices, { hasRoleContext });
   });
 }
 

@@ -15,12 +15,12 @@ const BASE_TENANT = {
   subscription_plan: "professional",
   max_users: 25,
   max_clients: 100,
-  settings: {
-    package_profile: "professional",
-    enabled_services: ["cctv", "storage"],
-    onboarding: {
-      status: "ready",
-      admin_email: "admin@bimbo.demo",
+    settings: {
+      package_profile: "professional",
+      enabled_services: ["cctv", "access_control", "storage"],
+      onboarding: {
+        status: "ready",
+        admin_email: "admin@bimbo.demo",
       role_name: "tenant_admin",
       notes: "Tenant listo para operar.",
     },
@@ -54,7 +54,7 @@ const TENANTS = [
     subscription_plan: "enterprise",
     settings: {
       package_profile: "enterprise",
-      enabled_services: ["cctv", "storage", "intelligence"],
+      enabled_services: ["cctv", "access_control", "networking", "storage", "intelligence"],
       onboarding: {
         status: "ready",
         admin_email: "admin@labs.demo",
@@ -94,7 +94,6 @@ const ME_RESPONSE = {
     created_at: "2026-04-07T00:00:00Z",
   },
   companies: [BASE_TENANT],
-  roles: [],
   permissions: [
     { id: "p1", code: "tenants.read", created_at: "2026-04-07T00:00:00Z" },
     { id: "p2", code: "menu.read", created_at: "2026-04-07T00:00:00Z" },
@@ -105,6 +104,16 @@ const ME_RESPONSE = {
     { id: "p7", code: "ai_models.read", created_at: "2026-04-07T00:00:00Z" },
     { id: "p8", code: "tenants.create", created_at: "2026-04-07T00:00:00Z" },
     { id: "p9", code: "tenants.update", created_at: "2026-04-07T00:00:00Z" },
+  ],
+  roles: [
+    {
+      id: "role-tenant-admin",
+      tenant_id: BASE_TENANT.id,
+      name: "tenant_admin",
+      description: "Admin del tenant",
+      is_system: true,
+      created_at: "2026-04-07T00:00:00Z",
+    },
   ],
 };
 
@@ -176,8 +185,8 @@ test.describe("Fase 6 - onboarding tenant y servicios", () => {
     await expect(page.getByText("Professional", { exact: true })).toBeVisible();
     await expect(page.getByText("Enterprise", { exact: true })).toBeVisible();
     await expect(page.getByText("Gobierno vigente de visibilidad", { exact: true })).toBeVisible();
-    await expect(page.getByText("Control de Acceso", { exact: true })).toBeVisible();
-    await expect(page.getByText(/no tiene rutas web ni API operativa/i)).toBeVisible();
+    await expect(page.getByText("Dominios visibles en runtime", { exact: true })).toBeVisible();
+    await expect(page.getByText(/ya pueden aparecer en el menu del tenant/i)).toBeVisible();
   });
 
   test("servicios habilitados gobiernan tabs tenant del settings", async ({ page }) => {
@@ -186,7 +195,7 @@ test.describe("Fase 6 - onboarding tenant y servicios", () => {
     await expect(page.getByRole("button", { name: "Storage", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /^IA$/i })).toHaveCount(0);
     await expect(page.getByText("Contexto operativo del tenant", { exact: true })).toBeVisible();
-    await expect(page.getByText("Storage - Configuracion", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Storage - Parcial/i)).toBeVisible();
   });
 
   test("alta de empresa expone servicios habilitados y bootstrap inicial", async ({ page }) => {
@@ -198,8 +207,9 @@ test.describe("Fase 6 - onboarding tenant y servicios", () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText("Nuevo tenant operable", { exact: true })).toBeVisible();
     await expect(dialog.getByText("C6.2 Servicios y paquetes", { exact: true })).toBeVisible();
-    await expect(dialog.getByText("Servicios planeados, sin modulo web ni API operativa", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Servicios habilitados para este tenant *", { exact: true })).toBeVisible();
     await expect(dialog.getByText("Control de Acceso", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Redes", { exact: true })).toBeVisible();
     await expect(dialog.getByText("C6.1 Onboarding tenant", { exact: true })).toBeVisible();
     await expect(dialog.getByText("Crear admin inicial ahora", { exact: true })).toBeVisible();
     await expect(dialog.locator('input[type="password"]')).toBeVisible();

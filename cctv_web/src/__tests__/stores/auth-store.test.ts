@@ -49,6 +49,7 @@ const mockRoles: Role[] = [
 describe("auth-store", () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     useAuthStore.setState({
       user: null,
       companies: [],
@@ -56,6 +57,7 @@ describe("auth-store", () => {
       permissions: [],
       token: null,
       isAuthenticated: false,
+      pendingTenantSelection: null,
     });
   });
 
@@ -94,9 +96,44 @@ describe("auth-store", () => {
     expect(useAuthStore.getState().hasPermission("tickets.view")).toBe(false);
   });
 
+  it("setPendingTenantSelection stores snapshot in memory and sessionStorage", () => {
+    const pendingSelection = {
+      email: "admin@demo.com",
+      password: "Password123!",
+      companies: [mockCompany],
+      redirectTo: "/dashboard",
+    };
+
+    useAuthStore.getState().setPendingTenantSelection(pendingSelection);
+    const state = useAuthStore.getState();
+
+    expect(state.pendingTenantSelection).toEqual(pendingSelection);
+    expect(sessionStorage.getItem("pending_tenant_selection")).toContain("admin@demo.com");
+  });
+
+  it("clearPendingTenantSelection removes the session snapshot", () => {
+    useAuthStore.getState().setPendingTenantSelection({
+      email: "admin@demo.com",
+      password: "Password123!",
+      companies: [mockCompany],
+      redirectTo: "/dashboard",
+    });
+
+    useAuthStore.getState().clearPendingTenantSelection();
+
+    expect(useAuthStore.getState().pendingTenantSelection).toBeNull();
+    expect(sessionStorage.getItem("pending_tenant_selection")).toBeNull();
+  });
+
   it("clearAuth resets everything", () => {
     useAuthStore.getState().setAuth("tok123", mockUser);
     useAuthStore.getState().setProfile(mockUser, [mockCompany], mockRoles, mockPermissions);
+    useAuthStore.getState().setPendingTenantSelection({
+      email: "admin@demo.com",
+      password: "Password123!",
+      companies: [mockCompany],
+      redirectTo: "/dashboard",
+    });
     useAuthStore.getState().clearAuth();
 
     const state = useAuthStore.getState();
@@ -107,5 +144,6 @@ describe("auth-store", () => {
     expect(state.roles).toHaveLength(0);
     expect(state.permissions).toHaveLength(0);
     expect(localStorage.getItem("access_token")).toBeNull();
+    expect(sessionStorage.getItem("pending_tenant_selection")).toBeNull();
   });
 });
