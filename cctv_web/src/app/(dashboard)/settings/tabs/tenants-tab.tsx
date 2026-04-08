@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CheckCircle, Plus } from "lucide-react";
+import { ArrowRight, BadgeCheck, Building2, CheckCircle, Palette, Plus, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { Company, Tenant } from "@/types/api";
+import { TenantPortalPreview } from "@/components/settings/tenant-portal-preview";
 import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatsCard } from "@/components/ui/stats-card";
@@ -53,6 +55,7 @@ export function TenantsTab() {
   const [brandingDialogOpen, setBrandingDialogOpen] = useState(false);
   const [onboardingDialogOpen, setOnboardingDialogOpen] = useState(false);
   const [onboardingResult, setOnboardingResult] = useState<TenantOnboardingResult | null>(null);
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(currentCompany?.id ?? null);
 
   const canCreateTenant = canAny("tenants.create", "tenants:create:all");
   const canEditTenant = canAny("tenants.update", "tenants:update:all");
@@ -153,6 +156,22 @@ export function TenantsTab() {
       ),
     [canEditTenant, canToggleTenant, canUploadBranding, toggleActiveMutation],
   );
+  const selectedTenant = useMemo(
+    () => tenants.find((tenant) => tenant.id === selectedTenantId) ?? tenants[0] ?? null,
+    [selectedTenantId, tenants],
+  );
+  const selectedProfile = parseTenantProductProfile(selectedTenant);
+  const selectedOnboardingMeta = getOnboardingStatusMeta(selectedProfile.onboarding.status);
+
+  useEffect(() => {
+    if (!tenants.length) return;
+
+    if (selectedTenantId && tenants.some((tenant) => tenant.id === selectedTenantId)) {
+      return;
+    }
+
+    setSelectedTenantId(currentCompany?.id ?? tenants[0].id);
+  }, [currentCompany?.id, selectedTenantId, tenants]);
 
   async function handleSubmit(data: TenantFormValues) {
     if (editingTenant) {
@@ -216,6 +235,202 @@ export function TenantsTab() {
         </div>
       ) : null}
 
+      <div className="grid gap-6 xl:grid-cols-[320px,1fr]">
+        <Card className="border-slate-200 dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-base">Empresas operadoras</CardTitle>
+            <CardDescription>
+              Selecciona una empresa para ver de forma visible su paquete, su admin inicial y el portal que recibira.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {tenants.map((tenant) => {
+              const tenantProfile = parseTenantProductProfile(tenant);
+              const tenantOnboardingMeta = getOnboardingStatusMeta(tenantProfile.onboarding.status);
+              const isSelected = tenant.id === selectedTenant?.id;
+
+              return (
+                <button
+                  key={tenant.id}
+                  type="button"
+                  onClick={() => setSelectedTenantId(tenant.id)}
+                  className={`w-full rounded-3xl border p-4 text-left transition-all ${
+                    isSelected
+                      ? "border-blue-300 bg-blue-50 shadow-sm dark:border-blue-800 dark:bg-blue-950/20"
+                      : "border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-slate-700 dark:hover:bg-slate-900/70"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {tenant.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={tenant.logo_url}
+                        alt={tenant.name}
+                        className="h-12 w-12 rounded-2xl border object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl text-base font-bold text-white"
+                        style={{ backgroundColor: tenant.primary_color ?? "#1976D2" }}
+                      >
+                        {tenant.name.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate font-semibold text-slate-900 dark:text-slate-100">{tenant.name}</p>
+                        <Badge variant={tenantOnboardingMeta.tone}>{tenantOnboardingMeta.label}</Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{tenant.slug}</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Badge variant="outline">Plan {tenantProfile.packageProfile}</Badge>
+                        <Badge variant="secondary">{tenantProfile.enabledServices.length} servicios</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
+            <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50/70 dark:from-slate-900 dark:to-blue-950/20">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="bg-slate-900 text-white hover:bg-slate-900">Checkpoint visible</Badge>
+                    <Badge variant="outline">Empresa operable</Badge>
+                    {selectedTenant ? <Badge variant="secondary">{selectedTenant.name}</Badge> : null}
+                  </div>
+                  <CardTitle className="mt-3 text-xl">Configuracion visible de tenant operable</CardTitle>
+                  <CardDescription className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
+                    Esta vista responde de forma directa a la pregunta de producto: que se le asigno a la empresa, con que admin inicial entrara, que branding tendra y que menu vera cuando inicie sesion.
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {canEditTenant && selectedTenant ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingTenant(selectedTenant);
+                        setDialogOpen(true);
+                      }}
+                    >
+                      Editar configuracion
+                    </Button>
+                  ) : null}
+                  {canUploadBranding && selectedTenant ? (
+                    <Button
+                      onClick={() => {
+                        setBrandingTenant(selectedTenant);
+                        setBrandingDialogOpen(true);
+                      }}
+                    >
+                      <Palette className="mr-2 h-4 w-4" />
+                      Logo y branding
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-4 p-5 lg:grid-cols-3">
+              <HighlightCard
+                icon={Sparkles}
+                title="Paquete y modulos"
+                description="Definicion visible del producto contratado por esta empresa."
+                lines={[
+                  `Plan comercial: ${selectedProfile.packageProfile}`,
+                  `Servicios habilitados: ${selectedProfile.enabledServices.length}`,
+                  `Modulos runtime: ${selectedProfile.enabledServices.filter((serviceCode) => ["cctv", "access_control", "networking"].includes(serviceCode)).length}`,
+                ]}
+                badges={selectedProfile.enabledServices.map((serviceCode) => serviceCode.replace("_", " "))}
+              />
+              <HighlightCard
+                icon={ShieldCheck}
+                title="Admin inicial"
+                description="Usuario con el que la empresa queda lista para iniciar sesion."
+                lines={[
+                  `Email: ${selectedProfile.onboarding.adminEmail ?? "pendiente de definir"}`,
+                  `Rol: ${selectedProfile.onboarding.roleName ?? "tenant_admin pendiente"}`,
+                  `Estado: ${selectedOnboardingMeta.label}`,
+                ]}
+                badges={[selectedOnboardingMeta.label]}
+              />
+              <HighlightCard
+                icon={BadgeCheck}
+                title="Resultado visible"
+                description="Lo que debe sentir la empresa al entrar al producto."
+                lines={[
+                  "Logo y colores propios",
+                  "Sidebar segun modulos habilitados",
+                  "Roles internos solo del tenant activo",
+                ]}
+                badges={["Portal tenant", "Menu por empresa"]}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
+            <TenantPortalPreview
+              tenant={selectedTenant}
+              title="Lo que vera la empresa al iniciar sesion"
+              description="Preview visible del branding, del menu y del recorrido de login para el tenant seleccionado."
+            />
+
+            <Card className="border-slate-200 dark:border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-base">Flujo exacto y verificable</CardTitle>
+                <CardDescription>
+                  Secuencia visible que conecta backoffice global con portal tenant para esta empresa.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ProductStep
+                  step="1"
+                  title="Alta y branding"
+                  description={`La empresa ${selectedTenant?.name ?? "seleccionada"} se crea en esta misma seccion y aqui mismo se le puede cargar logo, cupos y colores.`}
+                />
+                <ProductStep
+                  step="2"
+                  title="Servicios y modulos"
+                  description="La asignacion real del runtime depende del paquete comercial y de los servicios habilitados visibles para ese tenant."
+                />
+                <ProductStep
+                  step="3"
+                  title="Bootstrap del admin inicial"
+                  description={`El snapshot actual registra como admin inicial a ${selectedProfile.onboarding.adminEmail ?? "un usuario aun pendiente"} y su estado de onboarding.`}
+                />
+                <ProductStep
+                  step="4"
+                  title="Login del tenant"
+                  description="Ese usuario entra por /login y, si pertenece a multiples empresas, selecciona explicitamente la empresa antes de caer en su portal."
+                />
+                <ProductStep
+                  step="5"
+                  title="Portal y roles internos"
+                  description="Al entrar, la empresa ya ve logo, colores, sidebar y modulos segun su configuracion; sus roles internos se administran en las tabs tenant."
+                  last
+                />
+                {selectedTenant ? (
+                  <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">Empresa seleccionada</p>
+                    <p className="mt-2">
+                      {selectedTenant.name} ya queda narrada como producto visible, no como fila decorativa de tabla.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Badge variant="outline">{selectedTenant.slug}</Badge>
+                      <Badge variant="secondary">{selectedOnboardingMeta.label}</Badge>
+                    </div>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
       <DataTable
         columns={columns}
         data={tenants}
@@ -272,6 +487,76 @@ export function TenantsTab() {
         onOpenChange={setOnboardingDialogOpen}
         result={onboardingResult}
       />
+    </div>
+  );
+}
+
+function HighlightCard({
+  icon: Icon,
+  title,
+  description,
+  lines,
+  badges,
+}: {
+  icon: typeof Sparkles;
+  title: string;
+  description: string;
+  lines: string[];
+  badges: string[];
+}) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-950">
+          <Icon className="h-4 w-4 text-slate-700 dark:text-slate-200" />
+        </div>
+        <div>
+          <p className="font-semibold text-slate-900 dark:text-slate-100">{title}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
+        </div>
+      </div>
+      <ul className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+        {lines.map((line) => (
+          <li key={`${title}-${line}`} className="flex items-start gap-2">
+            <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {badges.filter(Boolean).slice(0, 5).map((badge) => (
+          <Badge key={`${title}-${badge}`} variant="secondary">
+            {badge}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProductStep({
+  step,
+  title,
+  description,
+  last = false,
+}: {
+  step: string;
+  title: string;
+  description: string;
+  last?: boolean;
+}) {
+  return (
+    <div className="flex gap-4">
+      <div className="flex flex-col items-center">
+        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
+          {step}
+        </div>
+        {!last ? <div className="mt-2 h-full w-px bg-slate-200 dark:bg-slate-800" /> : null}
+      </div>
+      <div className="pb-4">
+        <p className="font-semibold text-slate-900 dark:text-slate-100">{title}</p>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{description}</p>
+      </div>
     </div>
   );
 }

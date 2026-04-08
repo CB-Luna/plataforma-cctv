@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "test:smoke": "npm run build && playwright test -c playwright.smoke.config.ts",
     "test:smoke:headed": "npm run build && playwright test -c playwright.smoke.config.ts --headed",
+    "test:visible-product": "playwright test e2e/phase-7-visible-product.spec.ts",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {

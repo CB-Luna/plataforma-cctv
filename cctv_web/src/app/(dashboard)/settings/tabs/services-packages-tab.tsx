@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Layers3, Package2 } from "lucide-react";
+import { TenantPortalPreview } from "@/components/settings/tenant-portal-preview";
 import { ServiceBadges } from "@/components/product/service-badges";
 import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +18,10 @@ import {
   getServiceStatusMeta,
   parseTenantProductProfile,
 } from "@/lib/product/service-catalog";
+import { useTenantStore } from "@/stores/tenant-store";
 
 export function ServicesPackagesTab() {
+  const currentCompany = useTenantStore((state) => state.currentCompany);
   const { data: tenants = [] } = useQuery({
     queryKey: ["tenants", "services-packages"],
     queryFn: () => listTenants(),
@@ -36,6 +39,8 @@ export function ServicesPackagesTab() {
       explicitAssignments,
     };
   }, [tenants]);
+  const effectiveTenant = currentCompany ?? tenants[0] ?? null;
+  const effectiveProfile = parseTenantProductProfile(effectiveTenant);
 
   return (
     <div className="space-y-6">
@@ -85,6 +90,58 @@ export function ServicesPackagesTab() {
         ))}
       </div>
 
+      <Card className="border-slate-200 dark:border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-base">Matriz visible por paquete</CardTitle>
+          <CardDescription>
+            Esta tabla ya responde a la pregunta de producto mas importante: que dominios ve una empresa segun el paquete base que le asignes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-slate-500 dark:text-slate-400">
+                <th className="px-3 py-3 font-semibold">Dominio</th>
+                <th className="px-3 py-3 font-semibold">Estado</th>
+                <th className="px-3 py-3 font-semibold">Basic</th>
+                <th className="px-3 py-3 font-semibold">Professional</th>
+                <th className="px-3 py-3 font-semibold">Enterprise</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ASSIGNABLE_SERVICE_CODES.map((serviceCode) => {
+                const service = PRODUCT_SERVICE_DEFINITIONS[serviceCode];
+                const meta = getServiceStatusMeta(service.status);
+
+                return (
+                  <tr key={`matrix-${service.code}`} className="border-b last:border-b-0">
+                    <td className="px-3 py-3">
+                      <div>
+                        <p className="font-medium text-slate-900 dark:text-slate-100">{service.label}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{service.modules.slice(0, 3).join(", ")}</p>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Badge variant={meta.tone === "default" ? "default" : "secondary"}>{meta.label}</Badge>
+                    </td>
+                    {(["basic", "professional", "enterprise"] as const).map((planCode) => {
+                      const included = COMMERCIAL_PLAN_PRESETS[planCode].suggestedServices.includes(serviceCode);
+                      return (
+                        <td key={`${service.code}-${planCode}`} className="px-3 py-3">
+                          <Badge variant={included ? "default" : "outline"}>
+                            {included ? "Incluido" : "Opcional"}
+                          </Badge>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -122,6 +179,53 @@ export function ServicesPackagesTab() {
           })}
         </CardContent>
       </Card>
+
+      <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+        <Card className="border-slate-200 dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-base">Configuracion efectiva de empresa</CardTitle>
+            <CardDescription>
+              Asi aterriza el paquete comercial en una empresa real del sistema.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-slate-900 dark:text-slate-100">{effectiveTenant?.name ?? "Sin tenant activo"}</p>
+                <Badge variant="outline">Plan {effectiveProfile.packageProfile}</Badge>
+              </div>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                Este resumen hace visible la diferencia entre plan comercial y producto realmente visible para una empresa concreta.
+              </p>
+              <div className="mt-4">
+                <ServiceBadges services={effectiveProfile.enabledServices} />
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <GovernanceCard
+                title="Paquete base"
+                description={`El plan ${effectiveProfile.packageProfile} sugiere un conjunto inicial, pero la empresa se define de verdad por sus servicios habilitados.`}
+              />
+              <GovernanceCard
+                title="Servicios efectivos"
+                description="Estos servicios son los que realmente gobiernan su sidebar, sus tabs y la presencia de modulos visibles en portal."
+              />
+              <GovernanceCard
+                title="Estado del modulo"
+                description="El runtime ya no es binario: un modulo puede ser operativo, parcial o WIP y aun asi formar parte del producto visible."
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <TenantPortalPreview
+          tenant={effectiveTenant}
+          title="Preview del menu por empresa"
+          description="Esta preview deja visible que modulos aparecerán realmente para la empresa segun su configuracion de servicios."
+          compact
+        />
+      </div>
 
       <Card>
         <CardHeader>

@@ -1,10 +1,11 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Palette, Save, Settings2 } from "lucide-react";
+import { BookmarkPlus, Palette, Save, Settings2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ServiceBadges } from "@/components/product/service-badges";
+import { TenantPortalPreview } from "@/components/settings/tenant-portal-preview";
 import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,43 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { getSettings, updateTheme } from "@/lib/api/settings";
 import { getOnboardingStatusMeta, parseTenantProductProfile } from "@/lib/product/service-catalog";
 import { useTenantStore } from "@/stores/tenant-store";
+
+interface ThemeTemplate {
+  id: string;
+  name: string;
+  primary: string;
+  secondary: string;
+  tertiary: string;
+  source: "built_in" | "local";
+}
+
+const THEME_TEMPLATE_STORAGE_KEY = "tenant_theme_templates_v1";
+const BUILT_IN_TEMPLATES: ThemeTemplate[] = [
+  {
+    id: "corporativo-azul",
+    name: "Corporativo Azul",
+    primary: "#2563EB",
+    secondary: "#0F172A",
+    tertiary: "#94A3B8",
+    source: "built_in",
+  },
+  {
+    id: "industrial-verde",
+    name: "Industrial Verde",
+    primary: "#15803D",
+    secondary: "#14532D",
+    tertiary: "#A3E635",
+    source: "built_in",
+  },
+  {
+    id: "retail-rojo",
+    name: "Retail Rojo",
+    primary: "#DC2626",
+    secondary: "#7F1D1D",
+    tertiary: "#FDBA74",
+    source: "built_in",
+  },
+];
 
 export function GeneralTab() {
   const queryClient = useQueryClient();
@@ -40,6 +78,24 @@ export function GeneralTab() {
   const [primary, setPrimary] = useState("#000000");
   const [secondary, setSecondary] = useState("#000000");
   const [tertiary, setTertiary] = useState("#000000");
+  const [templateName, setTemplateName] = useState("");
+  const [localTemplates, setLocalTemplates] = useState<ThemeTemplate[]>([]);
+
+  const availableTemplates = useMemo(
+    () => [...BUILT_IN_TEMPLATES, ...localTemplates],
+    [localTemplates],
+  );
+  const previewTenant = useMemo(() => {
+    const baseTenant = settings ?? currentCompany;
+    if (!baseTenant) return null;
+
+    return {
+      ...baseTenant,
+      primary_color: primary,
+      secondary_color: secondary,
+      tertiary_color: tertiary,
+    };
+  }, [currentCompany, primary, secondary, settings, tertiary]);
 
   useEffect(() => {
     if (!settings) return;
@@ -47,6 +103,25 @@ export function GeneralTab() {
     setSecondary(settings.secondary_color || "#000000");
     setTertiary(settings.tertiary_color || "#000000");
   }, [settings]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const rawValue = localStorage.getItem(THEME_TEMPLATE_STORAGE_KEY);
+      if (!rawValue) {
+        setLocalTemplates([]);
+        return;
+      }
+
+      const parsedValue = JSON.parse(rawValue) as ThemeTemplate[];
+      if (Array.isArray(parsedValue)) {
+        setLocalTemplates(parsedValue);
+      }
+    } catch {
+      setLocalTemplates([]);
+    }
+  }, []);
 
   const themeMutation = useMutation({
     mutationFn: () =>
@@ -69,6 +144,48 @@ export function GeneralTab() {
     },
     onError: () => toast.error("Error al actualizar tema"),
   });
+
+  function persistLocalTemplates(nextTemplates: ThemeTemplate[]) {
+    setLocalTemplates(nextTemplates);
+    if (typeof window === "undefined") return;
+    localStorage.setItem(THEME_TEMPLATE_STORAGE_KEY, JSON.stringify(nextTemplates));
+  }
+
+  function applyTemplate(template: ThemeTemplate) {
+    setPrimary(template.primary);
+    setSecondary(template.secondary);
+    setTertiary(template.tertiary);
+    toast.success(`Plantilla aplicada: ${template.name}`);
+  }
+
+  function saveCurrentTemplate() {
+    const cleanName = templateName.trim();
+    if (!cleanName) {
+      toast.error("Asigna un nombre a la plantilla");
+      return;
+    }
+
+    const nextTemplates = [
+      ...localTemplates,
+      {
+        id: `local-${Date.now()}`,
+        name: cleanName,
+        primary,
+        secondary,
+        tertiary,
+        source: "local" as const,
+      },
+    ];
+    persistLocalTemplates(nextTemplates);
+    setTemplateName("");
+    toast.success("Plantilla local guardada");
+  }
+
+  function deleteTemplate(templateId: string) {
+    const nextTemplates = localTemplates.filter((template) => template.id !== templateId);
+    persistLocalTemplates(nextTemplates);
+    toast.success("Plantilla local eliminada");
+  }
 
   if (isLoading) {
     return <div className="flex h-64 items-center justify-center text-muted-foreground">Cargando configuracion...</div>;
@@ -164,6 +281,88 @@ export function GeneralTab() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
+        <Card className="border-slate-200 dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookmarkPlus className="h-5 w-5" />
+              Plantillas visuales reutilizables
+            </CardTitle>
+            <CardDescription>
+              Biblioteca visible para aplicar rapidamente branding a la empresa actual. Las plantillas guardadas por ahora viven en este navegador mientras se define un CRUD global.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {availableTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100">{template.name}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {template.source === "built_in" ? "Preset base" : "Plantilla local"}
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {[template.primary, template.secondary, template.tertiary].map((color, index) => (
+                        <div
+                          key={`${template.id}-swatch-${index}`}
+                          className="h-6 w-6 rounded-xl border"
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <Button type="button" variant="outline" className="flex-1" onClick={() => applyTemplate(template)}>
+                      Aplicar
+                    </Button>
+                    {template.source === "local" ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteTemplate(template.id)}
+                        aria-label={`Eliminar ${template.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+              <p className="font-semibold text-slate-900 dark:text-slate-100">Guardar plantilla local</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                Guarda la combinacion actual para reutilizarla en otras empresas mientras definimos la capa global de temas.
+              </p>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <Input
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                  placeholder="Ej. Calimax corporativo"
+                />
+                <Button type="button" onClick={saveCurrentTemplate}>
+                  <BookmarkPlus className="mr-2 h-4 w-4" />
+                  Guardar plantilla
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <TenantPortalPreview
+          tenant={previewTenant}
+          title="Preview del portal con este branding"
+          description="Antes de guardar puedes ver como cambian sidebar, identidad y menu del tenant con la paleta seleccionada."
+        />
+      </div>
 
       <Card>
         <CardHeader>

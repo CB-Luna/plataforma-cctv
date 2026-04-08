@@ -268,6 +268,9 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
     roles,
     company: currentCompany,
   });
+  const visibleRuntimeServices = tenantProfile.enabledServices.filter((serviceCode) =>
+    isServiceRuntimeVisible(serviceCode, { hasRoleContext: roles.length > 0 }),
+  );
   const primaryLinks = filterVisibleLinks(
     [
       {
@@ -329,12 +332,21 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
       {experience.mode === "tenant_portal" && currentCompany && !collapsed ? (
         <div className="mx-3 mt-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90">
           <div className="flex items-center gap-2">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-xl text-white"
-              style={{ backgroundColor: currentCompany.primary_color ?? "#1976D2" }}
-            >
-              <Building2 className="h-4 w-4" />
-            </div>
+            {currentCompany.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={currentCompany.logo_url}
+                alt={currentCompany.name}
+                className="h-8 w-8 rounded-xl border border-white/10 object-cover"
+              />
+            ) : (
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-white"
+                style={{ backgroundColor: currentCompany.primary_color ?? "#1976D2" }}
+              >
+                <Building2 className="h-4 w-4" />
+              </div>
+            )}
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{currentCompany.name}</p>
               <p className="truncate text-[11px] text-slate-300">{experience.roleLabel}</p>
@@ -343,6 +355,18 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
           <p className="mt-3 text-xs text-slate-300">
             Este shell ya prioriza la operacion de tu empresa y sus modulos habilitados.
           </p>
+          {visibleRuntimeServices.length ? (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {visibleRuntimeServices.map((serviceCode) => (
+                <span
+                  key={`sidebar-service-${serviceCode}`}
+                  className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80"
+                >
+                  {PRODUCT_SERVICE_DEFINITIONS[serviceCode].shortLabel}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

@@ -7,18 +7,28 @@ import {
   Building2,
   HardDrive,
   LayoutTemplate,
+  LogIn,
   Package2,
+  Palette,
   Settings2,
   Shield,
+  ShieldCheck,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { AccessDeniedState } from "@/components/auth/access-denied-state";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TabLayout, type TabItem } from "@/components/ui/tab-layout";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { useTenantStore } from "@/stores/tenant-store";
-import { isSettingsTabEnabledForServices, parseTenantProductProfile } from "@/lib/product/service-catalog";
+import {
+  PRODUCT_SERVICE_DEFINITIONS,
+  isSettingsTabEnabledForServices,
+  parseTenantProductProfile,
+} from "@/lib/product/service-catalog";
 import { cn } from "@/lib/utils";
 import { GeneralTab } from "./tabs/general-tab";
 import { IntelligenceTab } from "./tabs/intelligence-tab";
@@ -285,6 +295,49 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      <div className="grid gap-4 xl:grid-cols-4">
+        <SettingsJourneyCard
+          icon={Building2}
+          title="1. Empresa operable"
+          description="Da de alta la empresa, define branding, cupos y estado de onboarding desde una sola vista."
+          footer={`Admin inicial: ${tenantProductProfile.onboarding.adminEmail ?? "pendiente"}`}
+          badges={[
+            "Alta de tenant",
+            "Branding",
+            tenantProductProfile.onboarding.status === "ready" ? "Lista para login" : "Onboarding parcial",
+          ]}
+          actionLabel="Ir a Empresas"
+          onAction={() => router.replace("/settings?tab=empresas", { scroll: false })}
+        />
+        <SettingsJourneyCard
+          icon={Package2}
+          title="2. Paquetes y modulos"
+          description="Muestra claramente que incluye cada plan y que dominios quedaran visibles para cada empresa."
+          footer={`${tenantProductProfile.enabledServices.length} servicios configurados para ${currentCompany?.name ?? "el tenant activo"}`}
+          badges={tenantProductProfile.enabledServices.map((serviceCode) => PRODUCT_SERVICE_DEFINITIONS[serviceCode].label)}
+          actionLabel="Ir a Servicios"
+          onAction={() => router.replace("/settings?tab=servicios", { scroll: false })}
+        />
+        <SettingsJourneyCard
+          icon={LogIn}
+          title="3. Portal tenant"
+          description="Deja visible que ve la empresa al entrar: identidad, menu, modulos habilitados y ownership del tenant."
+          footer={experience.mode === "tenant_portal" ? "Ya estas viendo el portal tenant" : `Portal listo para ${currentCompany?.name ?? "tenant activo"}`}
+          badges={[experience.shellBadgeLabel, `Plan ${tenantProductProfile.packageProfile}`]}
+          actionLabel="Ir a Tema / Portal"
+          onAction={() => router.replace("/settings?tab=tema", { scroll: false })}
+        />
+        <SettingsJourneyCard
+          icon={ShieldCheck}
+          title="4. Roles internos"
+          description="Diferencia con claridad los roles de plataforma y los roles que solo viven dentro de cada empresa."
+          footer={`${roles.length} roles cargados en este contexto`}
+          badges={[experience.roleLabel, activeScopeMeta.badge]}
+          actionLabel="Ir a Roles"
+          onAction={() => router.replace("/settings?tab=roles", { scroll: false })}
+        />
+      </div>
+
       <TabLayout
         tabs={scopeTabs}
         activeTab={activeTab}
@@ -344,5 +397,54 @@ function ScopeCard({
         </p>
       ) : null}
     </button>
+  );
+}
+
+function SettingsJourneyCard({
+  icon: Icon,
+  title,
+  description,
+  footer,
+  badges,
+  actionLabel,
+  onAction,
+}: {
+  icon: typeof Sparkles;
+  title: string;
+  description: string;
+  footer: string;
+  badges: string[];
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  return (
+    <Card className="border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+      <CardHeader className="gap-3 pb-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-900">
+            <Icon className="h-5 w-5 text-slate-700 dark:text-slate-200" />
+          </div>
+          <div>
+            <CardTitle className="text-base">{title}</CardTitle>
+            <CardDescription className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              {description}
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {badges.filter(Boolean).slice(0, 4).map((badge) => (
+            <Badge key={`${title}-${badge}`} variant="secondary">
+              {badge}
+            </Badge>
+          ))}
+        </div>
+        <p className="text-sm text-slate-600 dark:text-slate-300">{footer}</p>
+        <Button variant="outline" className="w-full" onClick={onAction}>
+          {actionLabel}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

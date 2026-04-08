@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { Tenant } from "@/types/api";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TenantPortalPreview } from "@/components/settings/tenant-portal-preview";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ import {
   ASSIGNABLE_SERVICE_CODES,
   COMMERCIAL_PLAN_PRESETS,
   PRODUCT_SERVICE_DEFINITIONS,
+  buildTenantSettings,
   getSuggestedServicesForPlan,
   getServiceStatusMeta,
   parseTenantProductProfile,
@@ -142,6 +144,14 @@ export function TenantDialog({
   const subscriptionPlan = watch("subscription_plan");
   const createInitialAdmin = watch("create_initial_admin");
   const enabledServices = watch("enabled_services");
+  const previewName = watch("name");
+  const previewSlug = watch("slug");
+  const previewPrimary = watch("primary_color");
+  const previewSecondary = watch("secondary_color");
+  const previewTertiary = watch("tertiary_color");
+  const previewAdminEmail = watch("admin_email");
+  const previewAdminFirstName = watch("admin_first_name");
+  const previewAdminLastName = watch("admin_last_name");
 
   useEffect(() => {
     reset(buildDefaultValues(tenant, tenantProfile.packageProfile));
@@ -159,6 +169,44 @@ export function TenantDialog({
       reset(buildDefaultValues(tenant, tenantProfile.packageProfile));
     }
     onOpenChange(value);
+  };
+
+  const previewTenant = {
+    id: tenant?.id ?? "tenant-preview",
+    name: previewName || "Nueva empresa",
+    slug: previewSlug || "empresa-preview",
+    domain: tenant?.domain ?? undefined,
+    logo_url: tenant?.logo_url ?? null,
+    primary_color: previewPrimary || "#1976D2",
+    secondary_color: previewSecondary || "#424242",
+    tertiary_color: previewTertiary || "#757575",
+    is_active: tenant?.is_active ?? true,
+    settings: buildTenantSettings({
+      existingSettings: tenant?.settings,
+      packageProfile: subscriptionPlan,
+      enabledServices: enabledServices as AssignableServiceCode[],
+      onboarding: createInitialAdmin
+        ? {
+            status: "ready" as const,
+            adminEmail: previewAdminEmail?.trim() || undefined,
+            adminName: [previewAdminFirstName, previewAdminLastName].filter(Boolean).join(" ").trim() || undefined,
+            roleName: "tenant_admin",
+            notes: "Preview visual del onboarding listo.",
+            updatedAt: new Date().toISOString(),
+          }
+        : {
+            status: "tenant_created_only" as const,
+            adminEmail: previewAdminEmail?.trim() || undefined,
+            adminName: [previewAdminFirstName, previewAdminLastName].filter(Boolean).join(" ").trim() || undefined,
+            notes: "Preview visual del tenant sin admin inicial confirmado.",
+            updatedAt: new Date().toISOString(),
+          },
+    }),
+    subscription_plan: subscriptionPlan,
+    max_users: watch("max_users"),
+    max_clients: watch("max_clients"),
+    created_at: tenant?.created_at ?? new Date().toISOString(),
+    updated_at: tenant?.updated_at ?? new Date().toISOString(),
   };
 
   return (
@@ -374,6 +422,22 @@ export function TenantDialog({
               ) : null}
             </section>
           ) : null}
+
+          <section className="space-y-4 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Vista previa del producto visible</h3>
+              <p className="text-sm text-muted-foreground">
+                Antes de guardar, aqui ya puedes ver que modulo, branding y flujo de entrada tendra la empresa cuando entre a su portal.
+              </p>
+            </div>
+
+            <TenantPortalPreview
+              tenant={previewTenant}
+              loginEmail={previewAdminEmail?.trim() || undefined}
+              roleLabel="tenant_admin"
+              compact
+            />
+          </section>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
