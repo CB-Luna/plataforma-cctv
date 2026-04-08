@@ -17,6 +17,7 @@ export async function listTickets(params?: {
   type?: string;
   priority?: string;
   sla_status?: string;
+  coverage_status?: string;
 }): Promise<Ticket[]> {
   const searchParams: Record<string, string> = {};
   if (params?.limit) searchParams.limit = String(params.limit);
@@ -25,6 +26,7 @@ export async function listTickets(params?: {
   if (params?.type) searchParams.type = params.type;
   if (params?.priority) searchParams.priority = params.priority;
   if (params?.sla_status) searchParams.sla_status = params.sla_status;
+  if (params?.coverage_status) searchParams.coverage_status = params.coverage_status;
   return api.get("tickets", { searchParams }).json<Ticket[]>();
 }
 

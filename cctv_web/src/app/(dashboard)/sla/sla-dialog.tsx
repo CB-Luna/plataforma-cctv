@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { describeSlaScope } from "@/lib/contracts/contractual";
 import type { SlaPolicy } from "@/types/api";
 
 const slaSchema = z.object({
@@ -81,13 +82,24 @@ export function SlaDialog({ open, onOpenChange, onSubmit, sla, isLoading }: SlaD
     }
   }, [sla, form]);
 
+  const ticketPriority = form.watch("ticket_priority") ?? "";
+  const ticketType = form.watch("ticket_type") ?? "";
+  const scopeLabel = describeSlaScope({
+    ticket_priority: ticketPriority || undefined,
+    ticket_type: ticketType || undefined,
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{sla ? "Editar Política SLA" : "Nueva Política SLA"}</DialogTitle>
+          <DialogTitle>{sla ? "Editar Politica SLA" : "Nueva Politica SLA"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="rounded-lg border border-dashed border-sky-300 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+            El motor SLA actual usa horas corridas y selecciona la primera regla activa que coincida con prioridad/tipo. `business_hours` sigue siendo solo documental.
+          </div>
+
           <div className="space-y-2">
             <Label>Nombre *</Label>
             <Input {...form.register("name")} />
@@ -100,13 +112,16 @@ export function SlaDialog({ open, onOpenChange, onSubmit, sla, isLoading }: SlaD
             <div className="space-y-2">
               <Label>Prioridad del ticket</Label>
               <Select
-                value={form.watch("ticket_priority") ?? ""}
-                onValueChange={(v) => form.setValue("ticket_priority", v || undefined)}
+                value={ticketPriority || "__all__"}
+                onValueChange={(value) =>
+                  form.setValue("ticket_priority", value && value !== "__all__" ? value : "")
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__all__">Todas</SelectItem>
                   <SelectItem value="low">Baja</SelectItem>
                   <SelectItem value="medium">Media</SelectItem>
                   <SelectItem value="high">Alta</SelectItem>
@@ -117,20 +132,27 @@ export function SlaDialog({ open, onOpenChange, onSubmit, sla, isLoading }: SlaD
             <div className="space-y-2">
               <Label>Tipo de ticket</Label>
               <Select
-                value={form.watch("ticket_type") ?? ""}
-                onValueChange={(v) => form.setValue("ticket_type", v || undefined)}
+                value={ticketType || "__all__"}
+                onValueChange={(value) =>
+                  form.setValue("ticket_type", value && value !== "__all__" ? value : "")
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__all__">Todos</SelectItem>
                   <SelectItem value="corrective">Correctivo</SelectItem>
                   <SelectItem value="preventive">Preventivo</SelectItem>
-                  <SelectItem value="installation">Instalación</SelectItem>
+                  <SelectItem value="installation">Instalacion</SelectItem>
                   <SelectItem value="other">Otro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="rounded-lg border px-3 py-2 text-xs text-muted-foreground">
+            Alcance actual de esta regla: {scopeLabel}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -143,7 +165,7 @@ export function SlaDialog({ open, onOpenChange, onSubmit, sla, isLoading }: SlaD
               />
             </div>
             <div className="space-y-2">
-              <Label>Tiempo de resolución (h) *</Label>
+              <Label>Tiempo de resolucion (h) *</Label>
               <Input
                 type="number"
                 min={0}
@@ -159,7 +181,7 @@ export function SlaDialog({ open, onOpenChange, onSubmit, sla, isLoading }: SlaD
                 {...form.register("is_default")}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              Política por defecto
+              Politica por defecto
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input

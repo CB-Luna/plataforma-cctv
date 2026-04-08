@@ -1,7 +1,9 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { SlaPolicy } from "@/types/api";
+import { describeSlaScope, summarizeBusinessHours } from "@/lib/contracts/contractual";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,7 +12,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 interface ColumnActions {
   onEdit: (sla: SlaPolicy) => void;
@@ -26,20 +27,17 @@ export function getColumns(actions: ColumnActions): ColumnDef<SlaPolicy>[] {
         <div>
           <span className="font-medium">{row.original.name}</span>
           {row.original.is_default && (
-            <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+            <Badge variant="secondary" className="ml-2 text-xs">
+              Default
+            </Badge>
           )}
         </div>
       ),
     },
     {
-      accessorKey: "ticket_priority",
-      header: "Prioridad",
-      cell: ({ row }) => row.original.ticket_priority ?? "Todas",
-    },
-    {
-      accessorKey: "ticket_type",
-      header: "Tipo Ticket",
-      cell: ({ row }) => row.original.ticket_type ?? "Todos",
+      id: "scope",
+      header: "Coincidencia",
+      cell: ({ row }) => describeSlaScope(row.original),
     },
     {
       accessorKey: "response_time_hours",
@@ -48,8 +46,13 @@ export function getColumns(actions: ColumnActions): ColumnDef<SlaPolicy>[] {
     },
     {
       accessorKey: "resolution_time_hours",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Resolución (h)" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Resolucion (h)" />,
       cell: ({ row }) => `${row.original.resolution_time_hours}h`,
+    },
+    {
+      id: "schedule",
+      header: "Horario",
+      cell: ({ row }) => summarizeBusinessHours(row.original.business_hours),
     },
     {
       accessorKey: "is_active",
@@ -66,7 +69,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<SlaPolicy>[] {
         const sla = row.original;
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 p-0 rounded-md hover:bg-accent">
+            <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

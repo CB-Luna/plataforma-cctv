@@ -22,7 +22,7 @@
 | F1 | Completada | 2026-04-07 | Flujo login/select-company/contexto activo implementado en `cctv_web`, switch enganoso retirado, guards minimos aplicados, `npm test`, `npm run build` y smoke Playwright verdes |
 | F2 | Completada | 2026-04-07 | Formularios de tickets y polizas ya no dependen de UUID manual para contexto principal, aliases administrativos apuntan a la tab correcta de `/settings`, contexto de sitio aplica en tickets/polizas/inventario, `npm test`, `npm run build` y Playwright Fase 2 verdes |
 | F3 | Completada | 2026-04-07 | Camaras y NVR alineados al contrato manual real, importacion con parseo+mapeo+validacion, floor plans sin perdida de semantica y mapa degradado con precision aproximada, `npm test`, `npm run build` y Playwright Fase 3 verdes |
-| F4 | Pendiente | - | Requiere cierre contractual de polizas y SLA |
+| F4 | Completada | 2026-04-07 | Tickets, polizas y SLA ya exponen cobertura real, snapshot SLA, degradaciones honestas de update y validacion Playwright Fase 4 |
 | F5 | Pendiente | - | Requiere consolidacion de backoffice enterprise |
 | F6 | Pendiente | - | Requiere hardening final, QA ampliado y handoff |
 
@@ -179,12 +179,42 @@ El bloque CCTV puede demostrarse y operarse sin promesas falsas de contrato.
 
 Alinear tickets, polizas y SLA como una sola capa operativo-contractual.
 
+### Estado del checkpoint
+
+Completado el 2026-04-07.
+
+### Resultado materializado
+
+- `tickets` ahora expone filtros de cobertura y SLA, KPIs contractuales por sitio activo y una vista de detalle donde politica ligada, estado de cobertura y snapshot SLA conviven en el mismo expediente.
+- `ticket-dialog` ya separa creacion vs edicion: en create previsualiza poliza candidata y regla SLA con el mismo orden de resolucion del backend; en edit se bloquea el contexto contractual y solo quedan campos operativos que el backend si soporta sin recalculo.
+- `ticket-actions` ahora usa workload real del backend para asignacion y documenta el impacto de cada transicion de estado sobre primera respuesta, resolucion y refresh del SLA.
+- `polizas` ahora muestran alcance contractual en tabla, formulario con cobertura operativa sobre `coverage_json` y detalle que conecta cobertura declarada, activos cubiertos y tickets realmente ligados a la poliza.
+- `sla` ahora explica la logica real de seleccion de reglas, diferencia entre alcance exacto/parcial/default y comunica explicitamente que `business_hours` sigue siendo documental mientras el motor calcula horas corridas.
+
+### Degradaciones honestas aplicadas
+
+- La edicion de tickets no permite cambiar tipo, prioridad, sitio ni poliza porque `PUT /tickets/:id` no recompone el contrato operativo.
+- Una poliza existente con `site_id` ya no promete que pueda volver a cobertura cliente por update; la UI obliga a recrearla si cambia ese alcance base.
+- `business_hours` en SLA se mantiene visible como dato documental, pero no se presenta como comportamiento activo del motor.
+
 ### Alcance
 
 - Tickets.
 - Polizas.
 - SLA.
 - Relacion entre activos, cobertura y operacion.
+
+### Fuera de alcance
+
+- Nuevos endpoints para recalculo contractual en update.
+- Paquetes comerciales o habilitacion de servicios a nivel backend.
+- Automatizacion real de `business_hours` dentro del motor SLA.
+
+### Validacion ejecutada
+
+- `npm test` en `cctv_web`: OK.
+- `npm run build` en `cctv_web`: OK.
+- Playwright Fase 4 en `http://localhost:3040`: OK sobre tickets, polizas y SLA contractuales.
 
 ### Criterio de salida
 
@@ -229,10 +259,10 @@ Existe una definicion defendible de listo para entrega y de GAP aceptado.
 
 ## Siguiente paso recomendado
 
-La siguiente ejecucion en codigo debe ser **Fase 4: Operacion contractual**.
+La siguiente ejecucion en codigo debe ser **Fase 5: Backoffice enterprise**.
 
 El razonamiento es:
 
-- Fase 3 ya dejo el bloque CCTV en un estado demostrable y defendible.
-- El siguiente riesgo enterprise no es visual sino contractual: tickets, polizas, SLA y cobertura todavia necesitan cerrarse como un solo flujo.
-- Resolver Fase 4 antes de ampliar backoffice evita que la operacion siga separada de las reglas reales de servicio y cobertura.
+- Fase 4 ya dejo tickets, polizas y SLA en una capa contractual coherente y con limitaciones honestas.
+- El siguiente riesgo enterprise ya no esta en la operacion diaria, sino en separar ownership global vs tenant dentro de `/settings`, roles, tenants, storage e IA.
+- Resolver Fase 5 antes del hardening final evita que la administracion siga mezclada con el portal operativo.

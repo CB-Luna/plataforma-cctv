@@ -37,14 +37,12 @@ export function getColumns(actions: ColumnActions): ColumnDef<Policy>[] {
     {
       accessorKey: "policy_number",
       header: ({ column }) => <DataTableColumnHeader column={column} title="# Poliza" />,
-      cell: ({ row }) => (
-        <span className="font-mono font-medium">{row.original.policy_number}</span>
-      ),
+      cell: ({ row }) => <span className="font-mono font-medium">{row.original.policy_number}</span>,
     },
     {
       accessorKey: "client_name",
       header: "Cliente",
-      cell: ({ row }) => row.original.client_name ?? "—",
+      cell: ({ row }) => row.original.client_name ?? "-",
     },
     {
       accessorKey: "site_name",
@@ -52,14 +50,21 @@ export function getColumns(actions: ColumnActions): ColumnDef<Policy>[] {
       cell: ({ row }) => row.original.site_name ?? "Cobertura cliente",
     },
     {
+      id: "scope",
+      header: "Alcance",
+      cell: ({ row }) => (
+        <Badge variant="outline">{row.original.site_id ? "Por sitio" : "Nivel cliente"}</Badge>
+      ),
+    },
+    {
       accessorKey: "vendor",
       header: "Proveedor",
-      cell: ({ row }) => row.original.vendor ?? "—",
+      cell: ({ row }) => row.original.vendor ?? "-",
     },
     {
       accessorKey: "contract_type",
       header: "Tipo",
-      cell: ({ row }) => row.original.contract_type ?? "—",
+      cell: ({ row }) => row.original.contract_type ?? "-",
     },
     {
       accessorKey: "status",
@@ -81,7 +86,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Policy>[] {
       cell: ({ row }) => (
         <div className="text-sm">
           <div>{row.original.start_date}</div>
-          <div className="text-xs text-muted-foreground">→ {row.original.end_date}</div>
+          <div className="text-xs text-muted-foreground">hasta {row.original.end_date}</div>
         </div>
       ),
     },

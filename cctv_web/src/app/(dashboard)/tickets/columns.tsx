@@ -10,6 +10,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import type { Ticket } from "@/types/api";
+import { CoverageStatusBadge, SlaStatusBadge } from "@/components/contracts/status-badges";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -129,12 +130,12 @@ export function getColumns(
     {
       accessorKey: "client_name",
       header: "Cliente",
-      cell: ({ row }) => row.original.client_name ?? "—",
+      cell: ({ row }) => row.original.client_name ?? "-",
     },
     {
       accessorKey: "site_name",
       header: "Sitio",
-      cell: ({ row }) => row.original.site_name ?? "—",
+      cell: ({ row }) => row.original.site_name ?? "-",
     },
     {
       accessorKey: "assigned_to_name",
@@ -142,18 +143,14 @@ export function getColumns(
       cell: ({ row }) => row.original.assigned_to_name ?? "Sin asignar",
     },
     {
+      accessorKey: "coverage_status",
+      header: "Cobertura",
+      cell: ({ row }) => <CoverageStatusBadge status={row.original.coverage_status} />,
+    },
+    {
       accessorKey: "sla_status",
       header: "SLA",
-      cell: ({ row }) => {
-        const status = row.original.sla_status;
-        if (!status) return "—";
-
-        return (
-          <Badge variant={row.original.breached_sla ? "destructive" : "default"}>
-            {status}
-          </Badge>
-        );
-      },
+      cell: ({ row }) => <SlaStatusBadge status={row.original.sla_status} />,
     },
     {
       accessorKey: "created_at",

@@ -10,6 +10,8 @@ import {
   DollarSign,
   FileText,
   Plus,
+  Shield,
+  TicketIcon,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -34,8 +36,11 @@ import {
 } from "@/components/ui/select";
 import { listCameras } from "@/lib/api/cameras";
 import { listNvrs } from "@/lib/api/nvrs";
-import { addPolicyAsset, getPolicy, removePolicyAsset } from "@/lib/api/policies";
+import { getPolicy, addPolicyAsset, removePolicyAsset } from "@/lib/api/policies";
+import { listTickets } from "@/lib/api/tickets";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
+import { PolicyCoverageSummary } from "@/components/contracts/policy-coverage-summary";
+import { CoverageStatusBadge, SlaStatusBadge } from "@/components/contracts/status-badges";
 import type { SiteListItem } from "@/types/api";
 
 const statusLabels: Record<string, string> = {
@@ -77,6 +82,12 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: tickets = [] } = useQuery({
+    queryKey: ["tickets", "policy-detail"],
+    queryFn: () => listTickets({ limit: 200 }),
+    staleTime: 60 * 1000,
+  });
+
   const siteSnapshot: SiteListItem | null = useMemo(() => {
     if (!policy?.site_id) return null;
 
@@ -99,6 +110,11 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
     if (!policy?.site_id) return cameras;
     return cameras.filter((camera) => camera.site_id === policy.site_id);
   }, [cameras, policy?.site_id]);
+
+  const relatedTickets = useMemo(
+    () => tickets.filter((ticket) => ticket.policy_id === id),
+    [id, tickets],
+  );
 
   const addAssetMutation = useMutation({
     mutationFn: (data: { nvr_server_id?: string; camera_id?: string; notes?: string }) =>
@@ -184,19 +200,19 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <dt className="text-muted-foreground">Proveedor</dt>
-                <dd className="font-medium">{policy.vendor ?? "—"}</dd>
+                <dd className="font-medium">{policy.vendor ?? "-"}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Tipo de contrato</dt>
-                <dd className="font-medium">{policy.contract_type ?? "—"}</dd>
+                <dd className="font-medium">{policy.contract_type ?? "-"}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Sitio</dt>
-                <dd className="font-medium">{policy.site_name ?? "—"}</dd>
+                <dd className="font-medium">{policy.site_name ?? "Cobertura cliente"}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground">Notas</dt>
-                <dd className="font-medium">{policy.notes ?? "—"}</dd>
+                <dd className="font-medium">{policy.notes ?? "-"}</dd>
               </div>
               {policy.contract_url && (
                 <div className="col-span-2">
@@ -266,6 +282,57 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center gap-2">
+            <Shield className="h-4 w-4" />
+            <CardTitle className="text-base">Cobertura declarada</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <PolicyCoverageSummary policy={policy} />
+            <div className="rounded-lg border border-dashed border-sky-300 bg-sky-50 px-3 py-2 text-xs text-sky-800">
+              La poliza fija cobertura y alcance. El SLA se aplica despues en tickets segun tipo y prioridad.
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center gap-2">
+            <TicketIcon className="h-4 w-4" />
+            <CardTitle className="text-base">Tickets ligados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {relatedTickets.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Todavia no hay tickets visibles ligados a esta poliza dentro del limite de consulta actual.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {relatedTickets.map((ticket) => (
+                  <Link
+                    key={ticket.id}
+                    href={`/tickets/${ticket.id}`}
+                    className="flex items-start justify-between rounded-lg border p-3 transition-colors hover:bg-accent"
+                  >
+                    <div className="space-y-1">
+                      <p className="font-medium">{ticket.ticket_number}</p>
+                      <p className="text-sm text-muted-foreground">{ticket.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ticket.site_name ?? "Sin sitio"} · {ticket.client_name ?? "Sin cliente"}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <CoverageStatusBadge status={ticket.coverage_status} />
+                      <SlaStatusBadge status={ticket.sla_status} />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -285,8 +352,16 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
               {policy.assets.map((asset) => (
                 <div key={asset.id} className="flex items-center justify-between rounded-lg border p-3">
                   <div className="text-sm">
-                    {asset.nvr_name && <Badge variant="outline" className="mr-2">NVR: {asset.nvr_name}</Badge>}
-                    {asset.camera_name && <Badge variant="outline" className="mr-2">Camara: {asset.camera_name}</Badge>}
+                    {asset.nvr_name && (
+                      <Badge variant="outline" className="mr-2">
+                        NVR: {asset.nvr_name}
+                      </Badge>
+                    )}
+                    {asset.camera_name && (
+                      <Badge variant="outline" className="mr-2">
+                        Camara: {asset.camera_name}
+                      </Badge>
+                    )}
                     {asset.equipment_serial && (
                       <Badge variant="outline" className="mr-2">
                         Equipo: {asset.equipment_serial}
@@ -298,7 +373,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      if (confirm("¿Remover este activo?")) {
+                      if (confirm("Remover este activo?")) {
                         removeAssetMutation.mutate(asset.id);
                       }
                     }}
@@ -364,7 +439,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
             </div>
 
             <div className="rounded-md border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              La asociacion manual por `equipment_id` se retira en Fase 2 porque no existe un catalogo navegable de equipos genericos en el backend actual.
+              La asociacion manual por `equipment_id` se mantiene diferida porque no existe un catalogo navegable real de equipos genericos en el backend actual.
             </div>
           </div>
           <DialogFooter>

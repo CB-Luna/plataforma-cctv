@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Shield } from "lucide-react";
+import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table/data-table";
 import { listSlaPolicies, createSlaPolicy, updateSlaPolicy, deleteSlaPolicy } from "@/lib/api/sla";
 import { getColumns } from "./columns";
@@ -26,39 +27,39 @@ export default function SlaPage() {
     mutationFn: createSlaPolicy,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sla-policies"] });
-      toast.success("Política SLA creada");
+      toast.success("Politica SLA creada");
       setDialogOpen(false);
     },
-    onError: () => toast.error("Error al crear política SLA"),
+    onError: () => toast.error("Error al crear politica SLA"),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: SlaFormValues }) => updateSlaPolicy(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sla-policies"] });
-      toast.success("Política SLA actualizada");
+      toast.success("Politica SLA actualizada");
       setDialogOpen(false);
       setEditSla(null);
     },
-    onError: () => toast.error("Error al actualizar política SLA"),
+    onError: () => toast.error("Error al actualizar politica SLA"),
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteSlaPolicy,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sla-policies"] });
-      toast.success("Política SLA eliminada");
+      toast.success("Politica SLA eliminada");
     },
-    onError: () => toast.error("Error al eliminar política SLA"),
+    onError: () => toast.error("Error al eliminar politica SLA"),
   });
 
   const handleSubmit = (values: SlaFormValues) => {
-    // Clean up empty optional strings
     const data = {
       ...values,
       ticket_priority: values.ticket_priority || undefined,
       ticket_type: values.ticket_type || undefined,
     };
+
     if (editSla) {
       updateMut.mutate({ id: editSla.id, data });
     } else {
@@ -66,13 +67,23 @@ export default function SlaPage() {
     }
   };
 
+  const summary = useMemo(
+    () => ({
+      active: slaPolicies.filter((policy) => policy.is_active).length,
+      defaults: slaPolicies.filter((policy) => policy.is_active && policy.is_default).length,
+      scoped: slaPolicies.filter((policy) => policy.ticket_priority || policy.ticket_type).length,
+      exact: slaPolicies.filter((policy) => policy.ticket_priority && policy.ticket_type).length,
+    }),
+    [slaPolicies],
+  );
+
   const columns = getColumns({
     onEdit: (sla) => {
       setEditSla(sla);
       setDialogOpen(true);
     },
     onDelete: (sla) => {
-      if (confirm("¿Eliminar esta política SLA?")) deleteMut.mutate(sla.id);
+      if (confirm("Eliminar esta politica SLA?")) deleteMut.mutate(sla.id);
     },
   });
 
@@ -80,34 +91,86 @@ export default function SlaPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Políticas SLA</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Politicas SLA</h1>
           <p className="text-muted-foreground">
-            Acuerdos de nivel de servicio para tiempos de respuesta y resolución
+            Acuerdos de nivel de servicio para tiempos de respuesta y resolucion
           </p>
         </div>
-        <Button onClick={() => { setEditSla(null); setDialogOpen(true); }}>
+        <Button
+          onClick={() => {
+            setEditSla(null);
+            setDialogOpen(true);
+          }}
+        >
           <Plus className="mr-2 h-4 w-4" />
-          Nueva Política SLA
+          Nueva Politica SLA
         </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-emerald-600">{summary.active}</div>
+            <p className="text-xs text-muted-foreground">Reglas activas</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-sky-600">{summary.defaults}</div>
+            <p className="text-xs text-muted-foreground">Defaults activas</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-amber-600">{summary.scoped}</div>
+            <p className="text-xs text-muted-foreground">Reglas con alcance especifico</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-violet-600">{summary.exact}</div>
+            <p className="text-xs text-muted-foreground">Prioridad + tipo exactos</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        El backend elige la primera regla activa que coincide con prioridad y tipo; luego cae a coincidencias parciales y al default. Las horas hoy se calculan corridas. `business_hours` queda documentado, pero todavia no altera el motor SLA.
       </div>
 
       <DataTable
         columns={columns}
         data={slaPolicies}
         isLoading={isLoading}
+        searchKey="name"
+        searchPlaceholder="Buscar politica SLA..."
         emptyState={
           <EmptyState
             icon={Shield}
-            title="No hay políticas SLA"
-            description="Define tiempos de respuesta y resolución por prioridad."
-            action={{ label: "Nueva Política SLA", onClick: () => { setEditSla(null); setDialogOpen(true); } }}
+            title="No hay politicas SLA"
+            description="Define tiempos de respuesta y resolucion por prioridad."
+            action={{
+              label: "Nueva Politica SLA",
+              onClick: () => {
+                setEditSla(null);
+                setDialogOpen(true);
+              },
+            }}
           />
+        }
+        toolbar={
+          <div className="text-xs text-muted-foreground">
+            La columna Coincidencia replica el criterio real con el que se resuelve un ticket al crearse.
+          </div>
         }
       />
 
       <SlaDialog
         open={dialogOpen}
-        onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditSla(null); }}
+        onOpenChange={(value) => {
+          setDialogOpen(value);
+          if (!value) setEditSla(null);
+        }}
         onSubmit={handleSubmit}
         sla={editSla}
         isLoading={createMut.isPending || updateMut.isPending}

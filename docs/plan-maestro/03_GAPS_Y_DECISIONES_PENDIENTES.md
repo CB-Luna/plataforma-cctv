@@ -19,6 +19,16 @@ El mayor riesgo actual no es la falta de pantallas, sino la mezcla entre:
 - capacidades simuladas por UI,
 - y decisiones de producto aún no confirmadas.
 
+## Actualizacion Fase 4 (2026-04-07)
+
+Durante la ejecucion de Fase 4 se cerraron y/o dejaron explicitados estos puntos:
+
+- Tickets ya no dependen de UUID manual para cliente, sitio o poliza; la UI ahora usa selectores y previsualizacion contractual basada en reglas reales del backend.
+- Polizas ya no dependen de UUID manual para cliente o sitio; la cobertura operativa visible se estructura sobre `coverage_json`.
+- La edicion de tickets se degrada de forma intencional a campos no contractuales porque `PUT /tickets/:id` no recompone poliza ni snapshot SLA.
+- La edicion de polizas ya comunica que una poliza site-scoped no puede volver a cobertura cliente por update mientras la API no permita limpiar `site_id`.
+- La configuracion `business_hours` en SLA sigue siendo documental; el motor real continua calculando horas corridas.
+
 ## GAP de backend / API
 
 | ID | GAP | Evidencia | Impacto | Recomendación |

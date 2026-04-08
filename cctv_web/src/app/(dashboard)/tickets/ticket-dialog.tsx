@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +26,17 @@ import {
 import { listClients } from "@/lib/api/clients";
 import { listPolicies } from "@/lib/api/policies";
 import { listSites } from "@/lib/api/sites";
+import { listSlaPolicies } from "@/lib/api/sla";
+import { getTicket } from "@/lib/api/tickets";
+import {
+  describeResolvedPolicySource,
+  describeResolvedSlaSource,
+  describeSlaScope,
+  isPolicyCurrentlyActive,
+  resolveSlaCandidate,
+  resolveTicketPolicyCandidate,
+  toDateInputValue,
+} from "@/lib/contracts/contractual";
 import { useSiteStore } from "@/stores/site-store";
 import { matchSiteToClient } from "@/lib/site-context";
 import type { Ticket } from "@/types/api";
@@ -52,6 +63,20 @@ interface TicketDialogProps {
   isLoading?: boolean;
 }
 
+const typeLabels: Record<TicketFormValues["type"], string> = {
+  corrective: "Correctivo",
+  preventive: "Preventivo",
+  installation: "Instalacion",
+  other: "Otro",
+};
+
+const priorityLabels: Record<TicketFormValues["priority"], string> = {
+  low: "Baja",
+  medium: "Media",
+  high: "Alta",
+  urgent: "Urgente",
+};
+
 export function TicketDialog({
   open,
   onOpenChange,
@@ -60,6 +85,7 @@ export function TicketDialog({
   isLoading,
 }: TicketDialogProps) {
   const currentSite = useSiteStore((s) => s.currentSite);
+  const isEditMode = Boolean(ticket);
   const form = useForm<TicketFormValues>({
     resolver: zodResolver(ticketSchema),
     defaultValues: {
@@ -75,36 +101,98 @@ export function TicketDialog({
     },
   });
 
+  const { data: ticketDetail, isLoading: isLoadingTicketDetail } = useQuery({
+    queryKey: ["ticket-dialog", ticket?.id],
+    queryFn: () => getTicket(ticket!.id),
+    enabled: open && Boolean(ticket?.id),
+    staleTime: 60 * 1000,
+  });
+
   const { data: clients = [] } = useQuery({
     queryKey: ["clients", "ticket-form"],
     queryFn: () => listClients(200, 0),
     staleTime: 5 * 60 * 1000,
+    enabled: open,
   });
 
   const { data: sites = [] } = useQuery({
     queryKey: ["sites", "ticket-form"],
     queryFn: listSites,
     staleTime: 5 * 60 * 1000,
+    enabled: open,
   });
 
   const { data: policies = [] } = useQuery({
     queryKey: ["policies", "ticket-form"],
     queryFn: () => listPolicies({ limit: 200 }),
     staleTime: 5 * 60 * 1000,
+    enabled: open,
   });
 
+  const { data: slaPolicies = [] } = useQuery({
+    queryKey: ["sla-policies", "ticket-form"],
+    queryFn: listSlaPolicies,
+    staleTime: 5 * 60 * 1000,
+    enabled: open,
+  });
+
+  const effectiveTicket = ticketDetail ?? ticket;
+  const selectedClientId = form.watch("client_id");
+  const selectedSiteId = form.watch("site_id");
+  const selectedType = form.watch("type");
+  const selectedPriority = form.watch("priority");
+  const selectedPolicyId = form.watch("policy_id");
+  const selectedClient = clients.find((client) => client.id === selectedClientId);
+
+  const matchingSites = selectedClient
+    ? sites.filter((site) => matchSiteToClient(site, selectedClient))
+    : sites;
+  const siteOptions = matchingSites.length > 0 ? matchingSites : sites;
+
+  const policyOptions = useMemo(
+    () =>
+      policies.filter((policy) => {
+        if (!isPolicyCurrentlyActive(policy)) return false;
+        if (selectedClientId && policy.client_id !== selectedClientId) return false;
+        if (selectedSiteId && policy.site_id && policy.site_id !== selectedSiteId) return false;
+        return true;
+      }),
+    [policies, selectedClientId, selectedSiteId],
+  );
+
+  const candidatePolicy = useMemo(
+    () =>
+      resolveTicketPolicyCandidate({
+        policies: policyOptions,
+        clientId: selectedClientId,
+        siteId: selectedSiteId,
+        selectedPolicyId,
+      }),
+    [policyOptions, selectedClientId, selectedPolicyId, selectedSiteId],
+  );
+
+  const candidateSla = useMemo(
+    () =>
+      resolveSlaCandidate({
+        policies: slaPolicies,
+        priority: selectedPriority,
+        type: selectedType,
+      }),
+    [selectedPriority, selectedType, slaPolicies],
+  );
+
   useEffect(() => {
-    if (ticket) {
+    if (effectiveTicket) {
       form.reset({
-        title: ticket.title,
-        description: ticket.description ?? "",
-        client_id: ticket.client_id ?? "",
-        site_id: ticket.site_id ?? "",
-        type: (ticket.type as TicketFormValues["type"]) ?? "corrective",
-        priority: (ticket.priority as TicketFormValues["priority"]) ?? "medium",
-        policy_id: ticket.policy_id ?? "",
-        equipment_id: ticket.equipment_id ?? "",
-        scheduled_date: "",
+        title: effectiveTicket.title,
+        description: effectiveTicket.description ?? "",
+        client_id: effectiveTicket.client_id ?? "",
+        site_id: effectiveTicket.site_id ?? "",
+        type: (effectiveTicket.type as TicketFormValues["type"]) ?? "corrective",
+        priority: (effectiveTicket.priority as TicketFormValues["priority"]) ?? "medium",
+        policy_id: effectiveTicket.policy_id ?? ticketDetail?.policy?.policy_id ?? "",
+        equipment_id: effectiveTicket.equipment_id ?? "",
+        scheduled_date: toDateInputValue(ticketDetail?.scheduled_date),
       });
       return;
     }
@@ -120,25 +208,10 @@ export function TicketDialog({
       equipment_id: "",
       scheduled_date: "",
     });
-  }, [currentSite?.id, form, ticket]);
-
-  const selectedClientId = form.watch("client_id");
-  const selectedSiteId = form.watch("site_id");
-  const selectedClient = clients.find((client) => client.id === selectedClientId);
-
-  const matchingSites = selectedClient
-    ? sites.filter((site) => matchSiteToClient(site, selectedClient))
-    : sites;
-  const siteOptions = matchingSites.length > 0 ? matchingSites : sites;
-
-  const policyOptions = policies.filter((policy) => {
-    if (selectedClientId && policy.client_id !== selectedClientId) return false;
-    if (selectedSiteId && policy.site_id && policy.site_id !== selectedSiteId) return false;
-    return true;
-  });
+  }, [currentSite?.id, effectiveTicket, form, ticketDetail?.scheduled_date]);
 
   useEffect(() => {
-    if (!open || ticket || !currentSite) return;
+    if (!open || isEditMode || !currentSite) return;
 
     if (!form.getValues("site_id")) {
       form.setValue("site_id", currentSite.id, { shouldValidate: true });
@@ -150,21 +223,22 @@ export function TicketDialog({
         form.setValue("client_id", inferredClient.id, { shouldValidate: true });
       }
     }
-  }, [clients, currentSite, form, open, ticket]);
+  }, [clients, currentSite, form, isEditMode, open]);
 
   useEffect(() => {
+    if (isEditMode) return;
     if (!selectedSiteId) return;
     if (siteOptions.some((site) => site.id === selectedSiteId)) return;
 
     form.setValue("site_id", "", { shouldValidate: true });
     form.setValue("policy_id", "");
-  }, [form, selectedSiteId, siteOptions]);
+  }, [form, isEditMode, selectedSiteId, siteOptions]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{ticket ? "Editar ticket" : "Crear ticket"}</DialogTitle>
+          <DialogTitle>{isEditMode ? "Editar ticket" : "Crear ticket"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -186,146 +260,240 @@ export function TicketDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Cliente</Label>
-              <Select
-                value={selectedClientId || undefined}
-                onValueChange={(value) => {
-                  form.setValue("client_id", value ?? "", { shouldValidate: true });
-                  form.setValue("site_id", "", { shouldValidate: true });
-                  form.setValue("policy_id", "");
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.company_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.formState.errors.client_id && (
-                <p className="text-sm text-destructive">{form.formState.errors.client_id.message}</p>
-              )}
-            </div>
+          {isEditMode ? (
+            <>
+              <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                El backend actual no recompone poliza ni snapshot SLA en `PUT /tickets/:id`. Por eso el contexto contractual queda bloqueado despues de crear el ticket.
+              </div>
 
-            <div className="space-y-2">
-              <Label>Sitio / sucursal</Label>
-              <Select
-                value={selectedSiteId || undefined}
-                onValueChange={(value) => {
-                  form.setValue("site_id", value ?? "", { shouldValidate: true });
-                  form.setValue("policy_id", "");
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un sitio" />
-                </SelectTrigger>
-                <SelectContent>
-                  {siteOptions.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.formState.errors.site_id && (
-                <p className="text-sm text-destructive">{form.formState.errors.site_id.message}</p>
-              )}
-              {selectedClient && matchingSites.length === 0 && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border px-3 py-3">
+                  <p className="text-xs text-muted-foreground">Cliente</p>
+                  <p className="text-sm font-medium">{effectiveTicket?.client_name ?? "Sin cliente"}</p>
+                </div>
+                <div className="rounded-lg border px-3 py-3">
+                  <p className="text-xs text-muted-foreground">Sitio</p>
+                  <p className="text-sm font-medium">{effectiveTicket?.site_name ?? "Sin sitio"}</p>
+                </div>
+                <div className="rounded-lg border px-3 py-3">
+                  <p className="text-xs text-muted-foreground">Poliza ligada</p>
+                  <p className="text-sm font-medium">{effectiveTicket?.policy_number ?? "Auto-resuelta al crear o sin cobertura"}</p>
+                </div>
+                <div className="rounded-lg border px-3 py-3">
+                  <p className="text-xs text-muted-foreground">Tipo y prioridad</p>
+                  <p className="text-sm font-medium">
+                    {typeLabels[(effectiveTicket?.type as TicketFormValues["type"]) ?? "corrective"]} · {priorityLabels[(effectiveTicket?.priority as TicketFormValues["priority"]) ?? "medium"]}
+                  </p>
+                </div>
+              </div>
+
+              {isLoadingTicketDetail ? (
+                <div className="rounded-lg border px-3 py-3 text-sm text-muted-foreground">
+                  Cargando detalle contractual del ticket...
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="equipment_id">Activo / equipo (opcional)</Label>
+                  <Input
+                    id="equipment_id"
+                    placeholder="ID tecnico opcional si existe referencia externa"
+                    {...form.register("equipment_id")}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="scheduled_date">Fecha programada</Label>
+                  <Input id="scheduled_date" type="date" {...form.register("scheduled_date")} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Cliente</Label>
+                  <Select
+                    value={selectedClientId || undefined}
+                    onValueChange={(value) => {
+                      form.setValue("client_id", value ?? "", { shouldValidate: true });
+                      form.setValue("site_id", "", { shouldValidate: true });
+                      form.setValue("policy_id", "");
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.company_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.client_id && (
+                    <p className="text-sm text-destructive">{form.formState.errors.client_id.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Sitio / sucursal</Label>
+                  <Select
+                    value={selectedSiteId || undefined}
+                    onValueChange={(value) => {
+                      form.setValue("site_id", value ?? "", { shouldValidate: true });
+                      form.setValue("policy_id", "");
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un sitio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {siteOptions.map((site) => (
+                        <SelectItem key={site.id} value={site.id}>
+                          {site.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.site_id && (
+                    <p className="text-sm text-destructive">{form.formState.errors.site_id.message}</p>
+                  )}
+                  {selectedClient && matchingSites.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      El cruce cliente-sitio usa coincidencia por nombre comercial porque la API de sitios no expone `client_id`.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tipo</Label>
+                  <Select
+                    value={selectedType}
+                    onValueChange={(value) => form.setValue("type", value as TicketFormValues["type"])}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="corrective">Correctivo</SelectItem>
+                      <SelectItem value="preventive">Preventivo</SelectItem>
+                      <SelectItem value="installation">Instalacion</SelectItem>
+                      <SelectItem value="other">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Prioridad</Label>
+                  <Select
+                    value={selectedPriority}
+                    onValueChange={(value) => form.setValue("priority", value as TicketFormValues["priority"])}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Baja</SelectItem>
+                      <SelectItem value="medium">Media</SelectItem>
+                      <SelectItem value="high">Alta</SelectItem>
+                      <SelectItem value="urgent">Urgente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Poliza / cobertura (opcional)</Label>
+                <Select
+                  value={selectedPolicyId || "__none__"}
+                  onValueChange={(value) =>
+                    form.setValue("policy_id", value && value !== "__none__" ? value : "")
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin poliza vinculada" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Sin poliza vinculada</SelectItem>
+                    {policyOptions.map((policy) => (
+                      <SelectItem key={policy.id} value={policy.id}>
+                        {policy.policy_number} · {policy.site_name ?? "Cobertura cliente"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  El cruce cliente-sitio usa coincidencia por nombre comercial porque la API de sitios no expone `client_id`.
+                  Solo se muestran polizas activas y vigentes. Si no eliges una, el backend intentara resolver cobertura activa por cliente/sitio.
                 </p>
-              )}
-            </div>
-          </div>
+              </div>
 
-          <div className="space-y-2">
-            <Label>Poliza / cobertura (opcional)</Label>
-            <Select
-              value={form.watch("policy_id") || "__none__"}
-              onValueChange={(value) =>
-                form.setValue("policy_id", value && value !== "__none__" ? value : "")
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sin poliza vinculada" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">Sin poliza vinculada</SelectItem>
-                {policyOptions.map((policy) => (
-                  <SelectItem key={policy.id} value={policy.id}>
-                    {policy.policy_number} · {policy.client_name ?? "Cliente"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border px-4 py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Cobertura contractual estimada
+                  </p>
+                  {candidatePolicy ? (
+                    <div className="mt-2 space-y-1 text-sm">
+                      <p className="font-medium">{candidatePolicy.policy.policy_number}</p>
+                      <p className="text-muted-foreground">
+                        {describeResolvedPolicySource(candidatePolicy.source)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No hay poliza activa vigente para este cliente/sitio. El ticket podria quedar sin cobertura validada.
+                    </p>
+                  )}
+                </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="equipment_id">Activo / equipo (opcional)</Label>
-              <Input
-                id="equipment_id"
-                placeholder="ID tecnico opcional si existe referencia externa"
-                {...form.register("equipment_id")}
-              />
-            </div>
+                <div className="rounded-lg border px-4 py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Regla SLA estimada
+                  </p>
+                  {candidateSla ? (
+                    <div className="mt-2 space-y-1 text-sm">
+                      <p className="font-medium">{candidateSla.policy.name}</p>
+                      <p className="text-muted-foreground">
+                        {describeSlaScope(candidateSla.policy)} · {describeResolvedSlaSource(candidateSla.source)}
+                      </p>
+                      <p className="text-muted-foreground">
+                        {candidateSla.policy.response_time_hours}h respuesta · {candidateSla.policy.resolution_time_hours}h resolucion
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No hay una regla SLA activa que coincida. El backend permite tickets sin SLA.
+                    </p>
+                  )}
+                </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="scheduled_date">Fecha programada (opcional)</Label>
-              <Input id="scheduled_date" type="date" {...form.register("scheduled_date")} />
-            </div>
-          </div>
+              <div className="rounded-lg border border-dashed border-sky-300 bg-sky-50 px-4 py-3 text-xs text-sky-800">
+                La estimacion replica el orden real del backend: prioridad exacta, luego tipo exacto, luego regla default. El calculo usa horas corridas.
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Tipo</Label>
-              <Select
-                value={form.watch("type")}
-                onValueChange={(value) => form.setValue("type", value as TicketFormValues["type"])}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="corrective">Correctivo</SelectItem>
-                  <SelectItem value="preventive">Preventivo</SelectItem>
-                  <SelectItem value="installation">Instalacion</SelectItem>
-                  <SelectItem value="other">Otro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Prioridad</Label>
-              <Select
-                value={form.watch("priority")}
-                onValueChange={(value) => form.setValue("priority", value as TicketFormValues["priority"])}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Baja</SelectItem>
-                  <SelectItem value="medium">Media</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="urgent">Urgente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="equipment_id">Activo / equipo (opcional)</Label>
+                <Input
+                  id="equipment_id"
+                  placeholder="ID tecnico opcional si existe referencia externa"
+                  {...form.register("equipment_id")}
+                />
+              </div>
+            </>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Guardando..." : ticket ? "Actualizar" : "Crear ticket"}
+            <Button type="submit" disabled={isLoading || (isEditMode && isLoadingTicketDetail)}>
+              {isLoading ? "Guardando..." : isEditMode ? "Actualizar" : "Crear ticket"}
             </Button>
           </DialogFooter>
         </form>
