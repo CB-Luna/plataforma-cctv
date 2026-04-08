@@ -56,7 +56,7 @@ Eso mejoro mucho la base tecnica, pero no cerro completo el problema de negocio 
 
 En otras palabras:
 
-**se resolvio primero la plataforma existente, y apenas en C6.1/C6.2 se cerro el onboarding inicial y el catalogo visible de servicios; el modelo enterprise completo sigue abierto.**
+**se resolvio primero la plataforma existente, y durante C6.1-C6.5 se corrigio el rumbo del producto sin fingir que el modelo enterprise completo ya esta cerrado.**
 
 ## Regla corregida de avance
 
@@ -214,11 +214,11 @@ La Fase 6 ya no debe ejecutarse como bloque unico. Se propone este orden:
    Estado actual:
    Completado.
 4. `C6.4 Control de Acceso`
-   Resultado esperado:
-   Auditoria honesta del dominio y decision formal sobre su estado real.
+   Estado actual:
+   Completado.
 5. `C6.5 Consolidacion F6`
-   Resultado esperado:
-   Integracion de hallazgos y congelamiento del nuevo rumbo antes de Fase 7.
+   Estado actual:
+   Completado.
 
 ## Regla de cierre por checkpoint
 
@@ -234,6 +234,6 @@ Cada checkpoint debe cerrar con:
 
 El sistema no debe presentarse como "terminado" ni como "enterprise completo".
 
-La afirmacion correcta es esta:
+La afirmacion correcta al cierre de F6 es esta:
 
-**hoy existe una base tecnica y funcional fuerte para CCTV + operacion contractual + backoffice inicial, y ya quedaron resueltos C6.1, C6.2 y C6.3; aun asi la vision enterprise esperada por producto sigue abierta en aislamiento total del tenant y en Control de Acceso.**
+**hoy existe una base tecnica y funcional fuerte para CCTV + operacion contractual + backoffice inicial, y ya quedaron resueltos C6.1, C6.2, C6.3, C6.4 y C6.5; aun asi la vision enterprise esperada por producto sigue abierta en aislamiento mas profundo del tenant y en la futura construccion de `Control de Acceso` como dominio nuevo.**

@@ -49,12 +49,12 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 
 ## Bloqueos actuales
 
-- No existe flujo cerrado de alta de tenant con admin inicial listo para operar.
-- No existe definicion cerrada de que incluye realmente `basic`, `professional` o `enterprise`.
-- No existe criterio operativo cerrado de visibilidad por tenant + rol + servicio.
-- No existe shell tenant realmente separada del backoffice global.
+- No existe smoke live repetido del onboarding tenant contra backend levantado en el workspace.
+- No existe una politica cerrada de seguridad para el uso de `POST /auth/register` como bootstrap administrativo.
+- No existe una fuente unica de menu runtime por tenant + rol + servicio.
+- No existe shell tenant tecnicamente aislada del backoffice global.
 - No existe un dataset de validacion para tenant onboarding completo.
-- No existe evidencia auditada de un modulo operativo de `Control de Acceso`.
+- No existe un modulo operativo de `Control de Acceso`; la auditoria ya lo clasifico como dominio no construido.
 
 ## Deuda visual
 
@@ -65,12 +65,12 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 
 ## Deuda funcional
 
-- El onboarding del tenant termina antes de dejar a la empresa lista para iniciar sesion.
+- El onboarding del tenant ya cubre admin inicial, pero sigue sin smoke live repetido y sin politica cerrada para altas posteriores.
 - Los usuarios internos del tenant no tienen alta administrativa completa en la experiencia actual.
 - El menu runtime no capitaliza aun `menu_templates`.
 - Los sitios/sucursales siguen consumiendose sin CRUD real.
-- El portal tenant sigue parcial.
-- `Control de Acceso` sigue siendo expectativa, no modulo navegable.
+- El portal tenant sigue parcial a nivel de runtime aislado.
+- `Control de Acceso` sigue siendo expectativa de etapa futura, no modulo navegable.
 
 ## Deuda de datos demo
 
@@ -82,7 +82,7 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 ## Deuda de permisos y multi-tenant
 
 - El scope global frente al scope tenant no esta expresado en toda la UX.
-- La empresa activa existe, pero el tenant no tiene aun una identidad de portal suficientemente propia.
+- La empresa activa existe y el tenant ya tiene identidad visible de portal, pero no aislamiento tecnico propio.
 - El menu hardcodeado oculta el verdadero valor del backend multi-tenant.
 - Los servicios habilitados aun no participan formalmente en la visibilidad de producto.
 
@@ -90,14 +90,14 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 
 | Riesgo | Impacto | Probabilidad | Mitigacion | Bloqueo actual |
 |---|---|---|---|---|
-| Declarar "terminado" el sistema sin tenant onboarding real | Alto | Alta | Insertar Fase 6 antes de hardening y exigir evidencia de tenant operable | Si |
+| Declarar "terminado" el sistema sin smoke live del tenant onboarding y sin politica segura de bootstrap | Alto | Alta | Cerrar F6 con honestidad y repetir validacion live en F7 | Si |
 | Tratar `subscription_plan` como paquete funcional real | Alto | Alta | Separar plan comercial, servicio habilitado y modulo visible | Si |
-| Crear tenants sin admin inicial y llamar a eso onboarding completo | Alto | Alta | Definir flujo defendible o documentar bloqueo formal | Si |
+| Crear tenants sin cerrar el gobierno posterior del usuario admin inicial | Alto | Media | Aclarar el alcance del bootstrap y dejar alta general de usuarios como siguiente hueco | Parcial |
 | Reusar `POST /auth/register` sin decision de producto/seguridad | Alto | Media | Auditarlo y aprobar explicitamente su uso o descartarlo | Si |
 | Menu por tenant administrado pero no aplicado en runtime | Medio | Alta | Definir estrategia fija o dinamica y ejecutarla sin contradicciones | Si |
-| Portal tenant mezclado con backoffice global | Alto | Alta | Definir shell, narrativa y ownership reales del tenant | Si |
+| Portal tenant visible pero no aislado tecnicamente | Medio | Media | Decidir si la shell endurecida actual es suficiente o si se requiere aislamiento en la siguiente etapa | Parcial |
 | Falta de CRUD de sitios en backend | Alto | Alta | Mantener sitios como entidad consumida y documentar restriccion | Si |
-| Presentar `Control de Acceso` como modulo operativo sin evidencia | Alto | Alta | Auditarlo y clasificarlo como dominio inexistente o etapa futura | Si |
+| Reactivar `Control de Acceso` en menu o marketing como si fuera modulo actual | Alto | Alta | Mantener la conclusion C6.4 visible en UI, docs y backlog | Si |
 | Permisos sin guardas por pagina/accion en toda la superficie | Alto | Media | Implementar enforcement transversal y validarlo | Parcial |
 | Mapa basado en coordenadas sinteticas | Medio | Alta | Etiquetar como aproximacion o diferirlo de V1 core | No total |
 | Floor plans con persistencia parcial | Medio | Media | Mantener herramientas acotadas y validar reabrir/guardar | No total |
@@ -153,9 +153,9 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 1. Tratar tenant onboarding como problema central de negocio, no como detalle tardio de UI.
 2. Congelar la definicion de servicios habilitados antes de seguir decorando menus o planes.
 3. Separar con rigor lo que ya es backoffice inicial de lo que todavia no es portal tenant real.
-4. Auditar `Control de Acceso` antes de volver a mencionarlo como modulo habilitable.
-5. Entrar a hardening solo despues de corregir esta desviacion de alcance.
+4. Mantener `Control de Acceso` fuera del runtime actual hasta que exista una etapa propia del dominio.
+5. Entrar a hardening solo despues de corregir esta desviacion de alcance, y sin usarlo para maquillar producto faltante.
 
 ## Conclusion
 
-El proyecto ya esta suficientemente avanzado como para requerir disciplina de producto ademas de disciplina tecnica. La siguiente prioridad no es polish: es asegurar que la plataforma deje de prometer mas de lo que hoy puede demostrar.
+El proyecto ya esta suficientemente avanzado como para requerir disciplina de producto ademas de disciplina tecnica. Tras cerrar F6, la siguiente prioridad ya si puede ser hardening, pero con una condicion: no volver a prometer producto que el repo todavia no demuestra.

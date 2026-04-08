@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const COOKIE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3010";
+
 const BASE_TENANT = {
   id: "tenant-bimbo",
   name: "Bimbo",
@@ -280,7 +282,7 @@ async function mockPortalTenantContext(page: Page) {
     {
       name: "access_token",
       value: "mock-token",
-      url: "http://127.0.0.1:3061",
+      url: COOKIE_URL,
     },
   ]);
 }

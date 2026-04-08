@@ -380,6 +380,9 @@ export function PolicyDialog({
 
             <div className="space-y-2">
               <Label>Servicios cubiertos</Label>
+              <p className="text-xs text-muted-foreground">
+                Incluir "Control de Acceso" aqui solo documenta cobertura contractual. No habilita un modulo operativo nuevo en la web actual.
+              </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {serviceFamilies.map(([serviceKey, label]) => (
                   <label key={serviceKey} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">

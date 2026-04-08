@@ -11,6 +11,9 @@
 
 ## Backlog priorizado
 
+> Actualizacion post-F6 (2026-04-08):
+> este backlog ya no enumera el trabajo de correccion de rumbo que quedo cerrado, sino el trabajo residual despues de F6 y lo que sigue vivo para F7 o la etapa siguiente.
+
 | ID | Modulo | Tarea | Prioridad | Tipo | Dependencia | Esfuerzo estimado | Riesgo | Criterio de terminado |
 |---|---|---|---|---|---|---|---|---|
 | WEB-001 | Auth / multi-tenant | Alinear `LoginResponse`, `auth-store` y login page con el payload real que puede incluir `companies` | Critica | Integracion | Fase 0 aprobada; contrato actual `POST /auth/login` | M | Alto | El flujo de login usa el contrato real y deja de depender de una interpretacion incompleta del payload |
@@ -43,16 +46,16 @@
 | WEB-028 | Build / middleware | Atender la advertencia de Next 16 sobre `middleware` y migracion futura a `proxy` | Baja | Documentacion | Hardening; decision tecnica | S | Bajo | Existe decision documentada y plan de ajuste |
 | WEB-029 | IA | Confirmar ownership y alcance de configuracion de IA por tenant o plataforma | Baja | Gap | DEC-06 | S | Bajo | El modulo comunica con claridad su ambito de configuracion |
 | WEB-030 | Storage | Confirmar ownership y alcance de configuracion de storage por tenant o plataforma | Baja | Gap | DEC-06 | S | Bajo | El modulo comunica con claridad su ambito de configuracion |
-| WEB-031 | Tenant onboarding | Definir y documentar el flujo completo `crear tenant -> branding -> admin inicial -> login valido` | Critica | Gap | Fase 6; contrato `tenants` + `auth/register` | L | Alto | Existe un flujo defendible y una definicion de tenant listo para operar |
-| WEB-032 | Tenant onboarding | Auditar si el admin inicial puede crearse desde web con contrato actual o si queda bloqueado | Critica | Documentacion | API-10; decision DEC-09 | M | Alto | Queda explicitamente claro si es implementable ya o si necesita soporte backend adicional |
+| WEB-031 | Tenant onboarding | Repetir smoke live del flujo `crear tenant -> branding -> admin inicial -> login valido` contra backend levantado en el workspace | Alta | Integracion | F6 cerrada; contrato `tenants` + `auth/register` | M | Medio | Existe validacion live reproducible, no solo mockeada |
+| WEB-032 | Tenant onboarding | Formalizar politica de seguridad para el uso de `POST /auth/register` como bootstrap administrativo | Alta | Documentacion | API-10; decision DEC-09 | M | Alto | Queda explicitamente aprobado cuando aplica bootstrap inicial y cuando no |
 | WEB-033 | Users tenant | Implementar alta de usuario interno del tenant si se aprueba el flujo seguro sobre contrato actual | Alta | Integracion | WEB-032; validacion producto/seguridad | L | Alto | El tenant puede dar de alta usuarios internos sin hacks ni supuestos |
-| WEB-034 | Servicios habilitados | Definir el catalogo de servicios/modulos habilitables por empresa | Critica | Gap | BIZ-03; BIZ-06 | M | Alto | Existe una matriz clara servicio -> menu -> modulo -> tenant |
-| WEB-035 | Paquetes | Separar `subscription_plan` de paquete funcional real y ajustar copy/UI | Critica | UX | WEB-034 | M | Alto | La UI deja de vender `basic/professional/enterprise` como algo que aun no existe funcionalmente |
-| WEB-036 | Menu runtime | Definir criterio de visibilidad por tenant + rol + servicio y bajarlo a navegacion real | Alta | Gap | WEB-013; WEB-034 | L | Alto | El menu deja de depender solo de hardcode y respeta el modelo aprobado |
-| WEB-037 | Portal tenant | Definir shell, rutas y narrativa del portal tenant separada del backoffice global | Critica | UX | Fase 6; MT-01; MT-05 | L | Alto | Un usuario tenant entra a un espacio que se siente propio de su empresa |
-| WEB-038 | Roles tenant | Aterrizar la diferencia entre roles globales y roles internos del tenant en la UX | Alta | UX | DEC-03; WEB-037 | M | Medio | El usuario entiende que permisos son de plataforma y cuales de empresa |
-| WEB-039 | Control de Acceso | Auditar honestamente que existe hoy en repo para ese dominio | Critica | Documentacion | Fase 6; API-12; FE-15 | M | Alto | Existe conclusion verificable sobre si hay o no superficie real del modulo |
-| WEB-040 | Control de Acceso | Definir plan concreto para construir el modulo como dominio operativo, no como idea abstracta | Alta | Gap | WEB-039 | L | Alto | Existe fase propia, alcance y criterio de salida para ese dominio |
+| WEB-034 | Servicios habilitados | Endurecer el catalogo hacia una fuente administrable o backend si producto exige gobierno mas fuerte | Alta | Gap | BIZ-03; BIZ-06 | M | Alto | La matriz servicio -> menu -> modulo -> tenant deja de vivir solo en frontend |
+| WEB-035 | Paquetes | Mantener separacion entre `subscription_plan` y producto visible, evitando regresiones de copy y UX | Media | Documentacion | WEB-034 | S | Medio | Ninguna pantalla vuelve a vender `basic/professional/enterprise` como modulo ya construido |
+| WEB-036 | Menu runtime | Decidir si el runtime se quedara fijo hasta etapa 2 o si debe unificarse con `menu_templates` como fuente unica | Alta | Gap | WEB-013; WEB-034 | L | Alto | Existe una sola estrategia defendible de menu runtime |
+| WEB-037 | Portal tenant | Evaluar si el portal tenant necesita layout/rutas aisladas o si la shell endurecida actual es suficiente | Alta | UX | MT-01; MT-05 | M | Medio | Existe decision aprobada sobre aislamiento tecnico del portal |
+| WEB-038 | Roles tenant | Cerrar ciclo real de usuarios y roles internos, mas alla de listado, update y password | Alta | UX | DEC-03; WEB-033 | M | Medio | El tenant puede administrar su equipo con ownership claro |
+| WEB-039 | Control de Acceso | Mantener el dominio fuera del menu y del discurso de modulo actual despues de la auditoria C6.4 | Critica | Documentacion | C6.4 cerrada | S | Alto | Ninguna UI ni doc lo presenta como modulo existente |
+| WEB-040 | Control de Acceso | Diseñar la etapa propia del dominio como producto nuevo, con contrato, inventario y operacion reales | Alta | Gap | WEB-039 | L | Alto | Existe fase propia, alcance y criterio de salida para ese dominio |
 | WEB-041 | Sitios / sucursales | Explicitar en UI y docs que el CRUD de sitios sigue bloqueado por backend | Alta | Documentacion | API-03 | S | Medio | No se promete una administracion de sucursales que hoy no existe |
 
 ## Agrupacion sugerida por fase
@@ -95,7 +98,7 @@
 - WEB-029
 - WEB-030
 
-### Fase 6
+### Residual post-F6 / etapa siguiente
 
 - WEB-031
 - WEB-032
@@ -122,9 +125,9 @@
 - Mientras no se confirme DEC-09, el bootstrap del admin inicial del tenant no debe sobredisenarse.
 - Mientras no se confirme DEC-10, `subscription_plan` no debe tratarse como paquete funcional real.
 - Mientras no se confirme DEC-11, el sidebar no debe presentarse como si ya estuviera gobernado por tenant + rol + servicio.
-- Mientras no se confirme DEC-12, el portal tenant puede quedarse visualmente mezclado con el backoffice global.
+- Mientras no se confirme DEC-12, el portal tenant seguira apoyado en la shell endurecida actual y no en rutas/layout aislados.
 - Mientras el backend no exponga mejor soporte de sitios, la administracion real de sucursales debe tratarse como bloqueo.
-- Mientras no exista auditoria formal de `Control de Acceso`, no debe venderse como modulo disponible.
+- La auditoria formal de `Control de Acceso` ya quedo cerrada en C6.4; mientras no exista etapa propia del dominio, no debe venderse como modulo disponible.
 
 ## Lectura ejecutiva del backlog
 

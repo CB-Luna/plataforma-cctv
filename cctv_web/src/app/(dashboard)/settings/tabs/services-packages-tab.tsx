@@ -126,7 +126,7 @@ export function ServicesPackagesTab() {
         <CardHeader>
           <CardTitle className="text-base">Dominios planeados, sin modulo operativo aun</CardTitle>
           <CardDescription>
-            Se muestran aqui para dejar claro el gap actual. No se habilitan en runtime porque el repo todavia no tiene superficie web operativa para ellos.
+            Se muestran aqui para dejar claro el gap actual. No se habilitan en runtime porque el repo todavia no tiene superficie web ni API operativa auditada para ellos.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">

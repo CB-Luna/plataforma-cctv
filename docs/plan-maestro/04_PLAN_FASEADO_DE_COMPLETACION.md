@@ -25,8 +25,8 @@
 | F3 | Completada | 2026-04-07 | Camaras y NVR alineados al contrato manual real, importacion con parseo y mapeo, floor plans defendibles y mapa degradado con precision aproximada |
 | F4 | Completada | 2026-04-07 | Tickets, polizas y SLA ya exponen cobertura real y degradaciones honestas de update |
 | F5 | Completada con alcance administrativo parcial | 2026-04-07 | `/settings` ya separa plataforma vs tenant, branding tenant se rehidrata y existe consola inicial de `menu_templates`; esto NO equivale a tener tenant operable end-to-end |
-| F6 | En curso | 2026-04-07 | C6.1-C6.3 ya quedaron implementados en `cctv_web` con validacion por `vitest`, `next build` y smoke E2E mockeado; C6.4-C6.5 siguen pendientes |
-| F7 | Pendiente | - | Solo debe iniciarse despues de cerrar F6 y reauditar el estado real del producto |
+| F6 | Completada | 2026-04-08 | C6.1-C6.5 ya corrigieron el rumbo de producto con onboarding tenant, servicios habilitados, portal tenant, auditoria formal de `Control de Acceso` y consolidacion documental honesta |
+| F7 | Pendiente | - | Puede iniciarse despues del cierre formal de F6 y debe enfocarse en calidad, hardening y handoff sin inventar producto faltante |
 
 ## Nota de correccion de rumbo
 
@@ -271,8 +271,8 @@ La Fase 6 se ejecuta por checkpoints formales. Ningun checkpoint se considera ce
 | C6.1 | Completado con validacion contractual mockeada | Cerrar onboarding real de tenant |
 | C6.2 | Completado | Cerrar servicios habilitados y paquetes |
 | C6.3 | Completado | Definir portal tenant real |
-| C6.4 | Pendiente | Auditar `Control de Acceso` |
-| C6.5 | Pendiente | Consolidar F6 antes de hardening |
+| C6.4 | Completado | Auditar `Control de Acceso` |
+| C6.5 | Completado | Consolidar F6 antes de hardening |
 
 | Checkpoint | Nombre | Objetivo | Entregable principal | Gate de salida |
 |---|---|---|---|---|
@@ -430,6 +430,10 @@ Queda claro que vera una empresa tipo "Bimbo" al iniciar sesion y por que ya no 
 
 ### Checkpoint C6.4. Control de Acceso
 
+#### Estado del checkpoint
+
+Completado el 2026-04-08.
+
 #### Objetivo
 
 Auditar el dominio `Control de Acceso` con la misma honestidad con la que ya se audito CCTV.
@@ -452,11 +456,30 @@ Auditar el dominio `Control de Acceso` con la misma honestidad con la que ya se 
 - Lista de gaps de backend y frontend.
 - Plan faseado propio si el dominio debe construirse.
 
+#### Resultado materializado
+
+- Se audito el repo completo y se confirma que `Control de Acceso` no existe como modulo operativo real en web, mobile ni backend.
+- En frontend solo existe como servicio `planned` dentro de `service-catalog`, como familia contractual en polizas y como copy de producto; no hay rutas ni pantallas equivalentes a CCTV.
+- En backend solo existe semantica de seeds/categorias de equipo y no un grupo de endpoints dedicado en `main.go`.
+- En mobile no existe feature del dominio.
+- Se genero una auditoria formal en `docs/plan-maestro/09_AUDITORIA_CONTROL_DE_ACCESO.md`.
+- La UI administrativa ya comunica con mas fuerza que `Control de Acceso` sigue sin modulo web ni API operativa auditada.
+
+#### Degradaciones honestas aplicadas
+
+- `Control de Acceso` puede seguir apareciendo como familia de cobertura contractual o dominio planeado, pero no como modulo habilitable operativo.
+- No se creo ninguna pantalla placeholder ni mock funcional para "simular" el dominio.
+- El siguiente trabajo sobre ese dominio queda movido a una etapa futura con contrato y modelo propios.
+
 #### Criterio de salida
 
 Ya no se vuelve a mencionar `Control de Acceso` como modulo habilitable sin una etiqueta honesta de su estado real.
 
 ### Checkpoint C6.5. Consolidacion F6
+
+#### Estado del checkpoint
+
+Completado el 2026-04-08.
 
 #### Objetivo
 
@@ -473,6 +496,14 @@ Integrar hallazgos, congelar decisiones y dejar a Fase 7 con una base defendible
 - Plan maestro corregido.
 - Estado final de F6.
 - Lista de decisiones que requieren tu aprobacion antes de nuevo codigo.
+
+#### Resultado materializado
+
+- F6 queda formalmente cerrada como correccion de rumbo producto y no como fase de nuevo dominio.
+- Se actualizo el plan maestro, las validaciones, el backlog, los riesgos y la correccion de rumbo para reflejar el estado real despues de C6.4.
+- Se generaron dos documentos de cierre: `09_AUDITORIA_CONTROL_DE_ACCESO.md` y `10_CIERRE_FASE_6.md`.
+- Queda habilitada F7 como siguiente paso correcto, con la restriccion de no usar hardening para inventar producto faltante.
+- Tambien queda explicitada la regla posterior: al cerrar F7 debe generarse un nuevo paquete documental para la etapa siguiente antes de volver a programar dominios nuevos.
 
 #### Criterio de salida
 
@@ -548,13 +579,14 @@ Existe una definicion defendible de listo para entrega y un paquete documental n
 
 ## Siguiente paso recomendado
 
-La siguiente ejecucion correcta ya no es hardening ni el cierre completo de Fase 6.
+La siguiente ejecucion correcta ya no es C6.4 ni el cierre completo de Fase 6.
 
-La siguiente ejecucion debe ser **C6.4 Control de Acceso**.
+La siguiente ejecucion debe ser **Fase 7: calidad, hardening y handoff**.
 
 El razonamiento es:
 
 - C6.1 ya cerro el onboarding tenant hasta donde permite el contrato actual.
 - C6.2 ya cerro el catalogo visible de servicios y paquetes dentro del shell existente.
 - C6.3 ya cerro la experiencia tenant dentro de una shell compartida endurecida.
-- El siguiente hueco real es auditar `Control de Acceso` y dejar de tratarlo como modulo habilitable sin evidencia de repo.
+- C6.4 ya dejo auditado que `Control de Acceso` no existe como modulo real.
+- C6.5 ya congelo el nuevo rumbo y alinea backlog, riesgos y validaciones con esa realidad.

@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const COOKIE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3010";
+
 const BASE_TENANT = {
   id: "tenant-1",
   name: "Bimbo",
@@ -78,6 +80,8 @@ const SETTINGS_RESPONSE = {
   updated_at: BASE_TENANT.updated_at,
 };
 
+const SITES_RESPONSE = [];
+
 const ME_RESPONSE = {
   user: {
     id: "user-1",
@@ -105,23 +109,22 @@ const ME_RESPONSE = {
 };
 
 async function mockPhase6Context(page: Page) {
-  await page.route("**/api/v1/auth/me", async (route) => {
-    await route.fulfill({ json: ME_RESPONSE });
-  });
+  await page.route("**/api/v1/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const path = url.pathname;
 
-  await page.route("**/api/v1/settings", async (route) => {
-    if (route.request().method() === "GET") {
+    if (path.endsWith("/auth/me")) {
+      await route.fulfill({ json: ME_RESPONSE });
+      return;
+    }
+
+    if (path.endsWith("/settings")) {
       await route.fulfill({ json: SETTINGS_RESPONSE });
       return;
     }
 
-    await route.fulfill({ json: SETTINGS_RESPONSE });
-  });
-
-  await page.route("**/api/v1/tenants**", async (route) => {
-    const url = route.request().url();
-
-    if (url.includes("/tenants/stats")) {
+    if (path.endsWith("/tenants/stats")) {
       await route.fulfill({
         json: {
           total_tenants: TENANTS.length,
@@ -131,7 +134,17 @@ async function mockPhase6Context(page: Page) {
       return;
     }
 
-    await route.fulfill({ json: TENANTS });
+    if (path.endsWith("/tenants")) {
+      await route.fulfill({ json: TENANTS });
+      return;
+    }
+
+    if (path.endsWith("/sites")) {
+      await route.fulfill({ json: SITES_RESPONSE });
+      return;
+    }
+
+    await route.fulfill({ json: [] });
   });
 
   await page.addInitScript(({ tenant }) => {
@@ -144,7 +157,7 @@ async function mockPhase6Context(page: Page) {
     {
       name: "access_token",
       value: "mock-token",
-      url: "http://127.0.0.1:3060",
+      url: COOKIE_URL,
     },
   ]);
 }
@@ -164,6 +177,7 @@ test.describe("Fase 6 - onboarding tenant y servicios", () => {
     await expect(page.getByText("Enterprise", { exact: true })).toBeVisible();
     await expect(page.getByText("Gobierno vigente de visibilidad", { exact: true })).toBeVisible();
     await expect(page.getByText("Control de Acceso", { exact: true })).toBeVisible();
+    await expect(page.getByText(/no tiene rutas web ni API operativa/i)).toBeVisible();
   });
 
   test("servicios habilitados gobiernan tabs tenant del settings", async ({ page }) => {
@@ -184,7 +198,7 @@ test.describe("Fase 6 - onboarding tenant y servicios", () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText("Nuevo tenant operable", { exact: true })).toBeVisible();
     await expect(dialog.getByText("C6.2 Servicios y paquetes", { exact: true })).toBeVisible();
-    await expect(dialog.getByText("Servicios planeados, sin modulo web real", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("Servicios planeados, sin modulo web ni API operativa", { exact: true })).toBeVisible();
     await expect(dialog.getByText("Control de Acceso", { exact: true })).toBeVisible();
     await expect(dialog.getByText("C6.1 Onboarding tenant", { exact: true })).toBeVisible();
     await expect(dialog.getByText("Crear admin inicial ahora", { exact: true })).toBeVisible();

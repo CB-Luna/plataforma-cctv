@@ -82,7 +82,7 @@ export const PRODUCT_SERVICE_DEFINITIONS: Record<ProductServiceCode, ProductServ
     code: "access_control",
     label: "Control de Acceso",
     shortLabel: "Acceso",
-    description: "Dominio deseado por producto, pero sin superficie web operativa auditada en el repo actual.",
+    description: "Dominio auditado en C6.4: solo existe como semantica de catalogo y cobertura; no tiene rutas web ni API operativa en el repo actual.",
     status: "planned",
     assignable: false,
     modules: [],

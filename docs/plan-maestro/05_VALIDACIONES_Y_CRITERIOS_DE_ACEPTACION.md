@@ -141,14 +141,14 @@
 
 ## Fase 6. Correccion de rumbo producto
 
-- [ ] Existe una matriz aprobada de esperado por producto vs existente real vs faltante real.
-- [ ] Existe definicion de tenant operable end-to-end.
-- [ ] Existe conclusion explicita sobre si el bootstrap del admin inicial puede resolverse desde web con contrato actual.
-- [ ] Existe catalogo claro de servicios habilitados o, al menos, un modelo aprobado de como se representaran.
-- [ ] Existe criterio de visibilidad de menu por tenant + rol + servicio.
-- [ ] Existe definicion clara de que vera una empresa al iniciar sesion.
-- [ ] Existe auditoria honesta del estado real de `Control de Acceso`.
-- [ ] Queda claro que parte esta bloqueada por backend y que parte es implementable ya en web.
+- [x] Existe una matriz aprobada de esperado por producto vs existente real vs faltante real.
+- [x] Existe definicion de tenant operable end-to-end.
+- [x] Existe conclusion explicita sobre si el bootstrap del admin inicial puede resolverse desde web con contrato actual.
+- [x] Existe catalogo claro de servicios habilitados o, al menos, un modelo aprobado de como se representaran.
+- [x] Existe criterio de visibilidad de menu por tenant + rol + servicio.
+- [x] Existe definicion clara de que vera una empresa al iniciar sesion.
+- [x] Existe auditoria honesta del estado real de `Control de Acceso`.
+- [x] Queda claro que parte esta bloqueada por backend y que parte es implementable ya en web.
 
 ### Checkpoints Fase 6
 
@@ -176,16 +176,16 @@
 
 #### C6.4 Control de Acceso
 
-- [ ] Existe auditoria honesta de rutas, pantallas y APIs del dominio.
-- [ ] Queda claro si hoy el dominio existe, existe parcial o no existe.
-- [ ] Si no existe, se clasifica como etapa nueva y no como modulo ya disponible.
-- [ ] Existe un plan concreto para construirlo si sigue siendo objetivo del producto.
+- [x] Existe auditoria honesta de rutas, pantallas y APIs del dominio.
+- [x] Queda claro si hoy el dominio existe, existe parcial o no existe.
+- [x] Si no existe, se clasifica como etapa nueva y no como modulo ya disponible.
+- [x] Existe un plan concreto para construirlo si sigue siendo objetivo del producto.
 
 #### C6.5 Consolidacion F6
 
-- [ ] Plan, backlog, validaciones y riesgos quedan alineados al nuevo rumbo.
-- [ ] Existe recomendacion formal de siguiente paso antes de hardening.
-- [ ] No quedan contradicciones documentales sobre que si esta hecho y que no.
+- [x] Plan, backlog, validaciones y riesgos quedan alineados al nuevo rumbo.
+- [x] Existe recomendacion formal de siguiente paso antes de hardening.
+- [x] No quedan contradicciones documentales sobre que si esta hecho y que no.
 
 ## Fase 7. Calidad, hardening y handoff
 
@@ -228,16 +228,18 @@
 - Decision documentada cuando el alcance se reduce por GAP backend.
 - Afirmacion clara de que si quedo operativo y que no.
 
-## Evidencia ejecutada en C6.1, C6.2 y C6.3
+## Evidencia ejecutada en C6.1, C6.2, C6.3, C6.4 y C6.5
 
 - C6.1-C6.2:
   `npm test`: `55/55` OK
   `npm run build`: OK
   `npx playwright test e2e/phase-6-tenant-onboarding-services.spec.ts --project=chromium` con `E2E_BASE_URL=http://127.0.0.1:3060`: `3/3` OK usando mocks del contrato actual sobre `next start`
-- C6.3:
+- C6.3-C6.5:
   `npm test`: `58/58` OK
   `npm run build`: OK
-  `npx playwright test e2e/phase-6-tenant-onboarding-services.spec.ts e2e/phase-6-portal-tenant.spec.ts --project=chromium` con `E2E_BASE_URL=http://127.0.0.1:3061`: `6/6` OK usando mocks del contrato actual sobre `next start`
+  `npx playwright test e2e/phase-6-tenant-onboarding-services.spec.ts e2e/phase-6-portal-tenant.spec.ts --project=chromium` con `E2E_BASE_URL=http://127.0.0.1:3062`: `6/6` OK usando mocks del contrato actual sobre `next start`
+  auditoria de repo con `rg` sobre `cctv_web`, `cctv_mobile` y `cctv_server`
+  evidencia formal consolidada en `09_AUDITORIA_CONTROL_DE_ACCESO.md` y `10_CIERRE_FASE_6.md`
 - Limitacion reconocida: el smoke E2E de esta fase valida navegador real y contrato esperado, pero no golpea un backend vivo en este workspace.
 
 ## Conclusion
