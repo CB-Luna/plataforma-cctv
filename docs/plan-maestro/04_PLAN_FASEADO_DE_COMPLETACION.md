@@ -25,7 +25,7 @@
 | F3 | Completada | 2026-04-07 | Camaras y NVR alineados al contrato manual real, importacion con parseo y mapeo, floor plans defendibles y mapa degradado con precision aproximada |
 | F4 | Completada | 2026-04-07 | Tickets, polizas y SLA ya exponen cobertura real y degradaciones honestas de update |
 | F5 | Completada con alcance administrativo parcial | 2026-04-07 | `/settings` ya separa plataforma vs tenant, branding tenant se rehidrata y existe consola inicial de `menu_templates`; esto NO equivale a tener tenant operable end-to-end |
-| F6 | Pendiente | - | Debe reparar la desviacion entre lo implementado y la vision enterprise esperada |
+| F6 | En curso | 2026-04-07 | C6.1 y C6.2 ya quedaron implementados en `cctv_web` con validacion por `vitest`, `next build` y smoke E2E mockeado; C6.3-C6.5 siguen pendientes |
 | F7 | Pendiente | - | Solo debe iniciarse despues de cerrar F6 y reauditar el estado real del producto |
 
 ## Nota de correccion de rumbo
@@ -255,6 +255,208 @@ Las Fases 1-5 ordenaron la plataforma actual, pero no completaron estos requerim
 - Si no existe superficie real, dejarlo explicitamente fuera de "modulo habilitable operativo" hasta tener plan de construccion.
 - Definir un plan faseado especifico para construirlo como dominio operativo.
 
+### Checkpoints de Fase 6
+
+La Fase 6 se ejecuta por checkpoints formales. Ningun checkpoint se considera cerrado si no deja:
+
+- evidencia documental actualizada,
+- conclusion explicita de que si existe y que no existe,
+- bloqueos de backend separados de lo implementable ya en web,
+- y criterio claro para el siguiente checkpoint.
+
+#### Estado de checkpoints
+
+| Checkpoint | Estado | Objetivo corto |
+|---|---|---|
+| C6.1 | Completado con validacion contractual mockeada | Cerrar onboarding real de tenant |
+| C6.2 | Completado | Cerrar servicios habilitados y paquetes |
+| C6.3 | Pendiente | Definir portal tenant real |
+| C6.4 | Pendiente | Auditar `Control de Acceso` |
+| C6.5 | Pendiente | Consolidar F6 antes de hardening |
+
+| Checkpoint | Nombre | Objetivo | Entregable principal | Gate de salida |
+|---|---|---|---|---|
+| C6.1 | Onboarding tenant | Definir que significa dejar un tenant realmente operable | Flujo `tenant -> branding -> admin inicial -> login` documentado | Queda claro si el bootstrap admin es implementable ya o bloqueado |
+| C6.2 | Servicios y paquetes | Separar plan comercial, servicio habilitado, paquete, poliza, SLA y modulo visible | Matriz producto -> servicio -> menu -> tenant | Deja de existir ambiguedad sobre `subscription_plan` |
+| C6.3 | Portal tenant | Definir la experiencia real del tenant al iniciar sesion | Modelo de shell, ownership y navegacion tenant | Queda claro que ve un tenant vs que ve plataforma |
+| C6.4 | Control de Acceso | Auditar honestamente el dominio y decidir si existe o no como modulo real | Auditoria y conclusion formal del estado del dominio | Se deja de vender como modulo existente si no hay evidencia |
+| C6.5 | Consolidacion F6 | Integrar hallazgos y congelar el nuevo rumbo antes de hardening | Plan maestro corregido y backlog priorizado | Queda aprobada la salida de F6 y habilitada F7 |
+
+### Checkpoint C6.1. Onboarding tenant
+
+#### Estado del checkpoint
+
+Completado el 2026-04-07 con limitacion de validacion live: el flujo quedo implementado y probado con contrato mockeado en navegador real, pero no se corrio contra un backend levantado en este workspace durante este turno.
+
+#### Objetivo
+
+Definir el flujo real para que una empresa dada de alta quede lista para operar.
+
+#### Alcance
+
+- Alta de tenant.
+- Branding base.
+- Usuario admin inicial.
+- Evidencia de login real.
+
+#### Fuera de alcance
+
+- Programar hardening.
+- Asumir que crear tenant ya equivale a dejarlo listo.
+
+#### Entregables
+
+- Definicion de "tenant operable".
+- Matriz entre onboarding esperado y onboarding existente.
+- Conclusion clara sobre `POST /auth/register` y/o bloqueos del contrato.
+
+#### Resultado materializado
+
+- El alta de tenant ahora puede incluir branding base, seleccion de servicios habilitados y bootstrap opcional del admin inicial en el mismo flujo.
+- La web usa `POST /auth/register` para crear el admin inicial del tenant sin tocar `cctv_server/`.
+- El flujo intenta asignar automaticamente el rol global `tenant_admin` al usuario bootstrap.
+- El resultado del onboarding queda persistido como snapshot en `tenant.settings.onboarding` y se expone en tabla, dialogos y contexto tenant.
+- Si el tenant se creo sin admin o fallo la asignacion de rol, el estado queda visible y recuperable al editar la empresa.
+- El selector de empresa y el contexto tenant ahora muestran mejor el estado operativo y los servicios habilitados.
+
+#### Degradaciones honestas aplicadas
+
+- La validacion end-to-end con backend real no pudo correrse en este turno porque no habia servicios levantados en el workspace; se cubrio con build, tests y Playwright mockeando el contrato.
+- El bootstrap del admin inicial depende de que el rol global `tenant_admin` exista y siga asignable desde el contexto actual.
+- La administracion de usuarios internos adicionales sigue sin `POST /users`; por ahora el cierre operativo se centra en el admin inicial del tenant.
+
+#### Criterio de salida
+
+Se puede responder sin ambiguedad:
+
+**hoy como dejo lista una empresa para iniciar sesion y operar, o por que no puedo hacerlo aun.**
+
+### Checkpoint C6.2. Servicios y paquetes
+
+#### Estado del checkpoint
+
+Completado el 2026-04-07.
+
+#### Objetivo
+
+Cerrar la semantica del modelo comercial-funcional antes de seguir tocando menus o planes.
+
+#### Alcance
+
+- Servicio habilitado.
+- Paquete.
+- `subscription_plan`.
+- Poliza.
+- SLA.
+- Modulo visible.
+
+#### Fuera de alcance
+
+- Inventar persistencia nueva en backend.
+- Asumir que `basic/professional/enterprise` ya tiene significado funcional.
+
+#### Entregables
+
+- Matriz servicio -> paquete -> visibilidad.
+- Regla de como impacta a menu, portal tenant y narrativa comercial.
+- Lista de lo que puede gobernarse ya con permisos + `menu_templates`.
+
+#### Resultado materializado
+
+- Existe un catalogo frontend explicito de planes `basic`, `professional` y `enterprise`, con servicios sugeridos y estados de soporte.
+- Los servicios habilitados del tenant ahora viven en `tenant.settings.enabled_services`.
+- El sidebar runtime y las tabs de `/settings` ya responden a permisos + servicios habilitados + superficie real del modulo.
+- `/settings` ahora expone una tab global `Servicios y paquetes` para hacer visible el catalogo vigente, los dominios planeados y la regla real de visibilidad.
+- `subscription_plan` deja de presentarse como si fuera suficiente por si solo: se comunica como referencia comercial y se separa de la habilitacion real de modulos.
+
+#### Degradaciones honestas aplicadas
+
+- El catalogo de paquetes vive hoy en frontend porque el backend no expone un CRUD formal de paquetes/servicios.
+- `Control de Acceso` y `Redes` se documentan como dominios planeados, no como modulos operativos habilitables.
+- `menu_templates` sigue siendo una consola administrativa; todavia no es la fuente unica del sidebar runtime.
+
+#### Criterio de salida
+
+Deja de existir confusion entre plan comercial y producto visible.
+
+### Checkpoint C6.3. Portal tenant
+
+#### Objetivo
+
+Definir la experiencia del tenant como producto propio, no como una extension ambigua del backoffice global.
+
+#### Alcance
+
+- Shell tenant.
+- Roles internos.
+- Usuarios internos.
+- Navegacion y ownership.
+
+#### Fuera de alcance
+
+- Implementar dominios nuevos.
+- Declarar que `/settings` ya resuelve por si solo el portal tenant.
+
+#### Entregables
+
+- Modelo de experiencia tenant.
+- Frontera clara global vs tenant.
+- Criterio de rutas o shell dedicadas vs shell compartida endurecida.
+
+#### Criterio de salida
+
+Queda claro que vera una empresa tipo "Bimbo" al iniciar sesion y por que ya no se sentira dentro del backoffice global.
+
+### Checkpoint C6.4. Control de Acceso
+
+#### Objetivo
+
+Auditar el dominio `Control de Acceso` con la misma honestidad con la que ya se audito CCTV.
+
+#### Alcance
+
+- Existencia real de rutas.
+- Existencia real de pantallas.
+- Existencia real de APIs o contrato.
+- Plan de construccion si no existe.
+
+#### Fuera de alcance
+
+- Venderlo como modulo actual sin evidencia.
+- Programarlo todavia si primero no queda auditado.
+
+#### Entregables
+
+- Conclusion binaria: existe como modulo real, existe parcial, o no existe.
+- Lista de gaps de backend y frontend.
+- Plan faseado propio si el dominio debe construirse.
+
+#### Criterio de salida
+
+Ya no se vuelve a mencionar `Control de Acceso` como modulo habilitable sin una etiqueta honesta de su estado real.
+
+### Checkpoint C6.5. Consolidacion F6
+
+#### Objetivo
+
+Integrar hallazgos, congelar decisiones y dejar a Fase 7 con una base defendible.
+
+#### Alcance
+
+- Integracion de hallazgos de C6.1 a C6.4.
+- Ajustes a plan, backlog, validaciones y riesgos.
+- Recomendacion formal de siguiente etapa.
+
+#### Entregables
+
+- Plan maestro corregido.
+- Estado final de F6.
+- Lista de decisiones que requieren tu aprobacion antes de nuevo codigo.
+
+#### Criterio de salida
+
+No hay contradiccion entre lo que el producto dice ser, lo que el repo demuestra y lo que sigue pendiente.
+
 ### Fuera de alcance
 
 - Hardening final.
@@ -325,12 +527,12 @@ Existe una definicion defendible de listo para entrega y un paquete documental n
 
 ## Siguiente paso recomendado
 
-La siguiente ejecucion correcta ya no es hardening.
+La siguiente ejecucion correcta ya no es hardening ni el cierre completo de Fase 6.
 
-La siguiente ejecucion debe ser **Fase 6: Correccion de rumbo producto**.
+La siguiente ejecucion debe ser **C6.3 Portal tenant**.
 
 El razonamiento es:
 
-- Fase 5 ordeno el backoffice, pero no cerro tenant onboarding, servicios habilitados ni portal tenant real.
-- Hardening ahora solo maquillaria una desviacion de alcance que el propio repo y la propia documentacion ya reconocen.
-- Antes de seguir programando, el proyecto necesita reauditarse desde la vision enterprise esperada por negocio.
+- C6.1 ya cerro el onboarding tenant hasta donde permite el contrato actual.
+- C6.2 ya cerro el catalogo visible de servicios y paquetes dentro del shell existente.
+- El siguiente hueco real es que el tenant todavia no se siente como portal propio y `Control de Acceso` sigue sin auditoria formal.

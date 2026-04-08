@@ -12,6 +12,9 @@ import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatsCard } from "@/components/ui/stats-card";
 import { usePermissions } from "@/hooks/use-permissions";
+import { getApiErrorMessage } from "@/lib/api/errors";
+import { registerTenantUser } from "@/lib/api/auth";
+import { listRoles } from "@/lib/api/roles";
 import {
   activateTenant,
   createTenant,
@@ -21,9 +24,22 @@ import {
   updateTenant,
   uploadTenantLogo,
 } from "@/lib/api/tenants";
+import { assignRole } from "@/lib/api/users";
+import {
+  buildTenantSettings,
+  getOnboardingStatusMeta,
+  parseTenantProductProfile,
+  type AssignableServiceCode,
+  type CommercialPlanCode,
+  type TenantOnboardingSnapshot,
+} from "@/lib/product/service-catalog";
 import { useTenantStore } from "@/stores/tenant-store";
 import { getTenantColumns } from "../../tenants/columns";
 import { TenantDialog, type TenantFormValues } from "../../tenants/tenant-dialog";
+import {
+  TenantOnboardingResultDialog,
+  type TenantOnboardingResult,
+} from "../../tenants/tenant-onboarding-result-dialog";
 import { TenantLogoDialog } from "./tenant-logo-dialog";
 
 export function TenantsTab() {
@@ -35,6 +51,8 @@ export function TenantsTab() {
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
   const [brandingTenant, setBrandingTenant] = useState<Tenant | null>(null);
   const [brandingDialogOpen, setBrandingDialogOpen] = useState(false);
+  const [onboardingDialogOpen, setOnboardingDialogOpen] = useState(false);
+  const [onboardingResult, setOnboardingResult] = useState<TenantOnboardingResult | null>(null);
 
   const canCreateTenant = canAny("tenants.create", "tenants:create:all");
   const canEditTenant = canAny("tenants.update", "tenants:update:all");
@@ -52,27 +70,41 @@ export function TenantsTab() {
   });
 
   const createMutation = useMutation({
-    mutationFn: createTenant,
-    onSuccess: () => {
+    mutationFn: (data: TenantFormValues) => createTenantOperationally(data),
+    onSuccess: ({ tenant, result }) => {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
       queryClient.invalidateQueries({ queryKey: ["tenants", "stats"] });
       setDialogOpen(false);
-      toast.success("Empresa creada exitosamente");
+      setOnboardingResult(result);
+      setOnboardingDialogOpen(true);
+      const onboardingMeta = getOnboardingStatusMeta(result.status);
+      toast.success(`Empresa creada: ${onboardingMeta.label}`);
+      if (currentCompany && currentCompany.id === tenant.id) {
+        syncActiveCompany(currentCompany, tenant, setCompany);
+      }
     },
-    onError: () => toast.error("Error al crear empresa"),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: TenantFormValues }) => updateTenant(id, data),
-    onSuccess: (tenant) => {
+    mutationFn: ({ tenant, data }: { tenant: Tenant; data: TenantFormValues }) =>
+      updateTenantOperationally(tenant, data),
+    onSuccess: ({ tenant, result }) => {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
+      queryClient.invalidateQueries({ queryKey: ["tenants", "stats"] });
       queryClient.invalidateQueries({ queryKey: ["settings"] });
       syncActiveCompany(currentCompany, tenant, setCompany);
       setDialogOpen(false);
       setEditingTenant(null);
+      if (result) {
+        setOnboardingResult(result);
+        setOnboardingDialogOpen(true);
+        const onboardingMeta = getOnboardingStatusMeta(result.status);
+        toast.success(`Empresa actualizada: ${onboardingMeta.label}`);
+        return;
+      }
+
       toast.success("Empresa actualizada");
     },
-    onError: () => toast.error("Error al actualizar empresa"),
   });
 
   const toggleActiveMutation = useMutation({
@@ -124,11 +156,15 @@ export function TenantsTab() {
 
   async function handleSubmit(data: TenantFormValues) {
     if (editingTenant) {
-      await updateMutation.mutateAsync({ id: editingTenant.id, data });
+      await updateMutation.mutateAsync({ tenant: editingTenant, data });
       return;
     }
 
-    await createMutation.mutateAsync(data);
+    try {
+      await createMutation.mutateAsync(data);
+    } catch (error) {
+      toast.error(await getApiErrorMessage(error, "Error al crear empresa"));
+    }
   }
 
   return (
@@ -136,12 +172,13 @@ export function TenantsTab() {
       <ScopeCallout
         badge="Plataforma"
         accent="platform"
-        title="Empresas operadoras y branding corporativo"
-        description="Aqui se administra el plano global multi-tenant: altas, cupos, activacion y logo oficial por empresa. Si el tenant editado coincide con el contexto activo, el snapshot local se rehidrata para no dejar branding desalineado."
+        title="Empresas operadoras, onboarding y branding"
+        description="Aqui se administra el plano global multi-tenant: altas, cupos, branding corporativo, servicios habilitados y el bootstrap del admin inicial cuando se quiere dejar al tenant operable desde el alta."
         footer={
           <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
             <Badge variant="outline">{tenants.length} empresas detectadas</Badge>
             {currentCompany ? <Badge variant="secondary">Tenant activo actual: {currentCompany.name}</Badge> : null}
+            <Badge variant="outline">C6.1 + C6.2 activos</Badge>
           </div>
         }
       />
@@ -150,7 +187,7 @@ export function TenantsTab() {
         <div>
           <h3 className="text-lg font-semibold">Empresas del sistema</h3>
           <p className="text-sm text-muted-foreground">
-            Gestion global de organizaciones operadoras dentro de la plataforma multi-tenant.
+            Gestion global de organizaciones operadoras, sus servicios reales y su estado de onboarding.
           </p>
         </div>
         {canCreateTenant ? (
@@ -229,8 +266,249 @@ export function TenantsTab() {
         }}
         isSubmitting={uploadLogoMutation.isPending}
       />
+
+      <TenantOnboardingResultDialog
+        open={onboardingDialogOpen}
+        onOpenChange={setOnboardingDialogOpen}
+        result={onboardingResult}
+      />
     </div>
   );
+}
+
+async function createTenantOperationally(data: TenantFormValues): Promise<{
+  tenant: Tenant;
+  result: TenantOnboardingResult;
+}> {
+  const packageProfile = data.subscription_plan as CommercialPlanCode;
+  const enabledServices = data.enabled_services as AssignableServiceCode[];
+  const initialSnapshot = buildPendingOnboardingSnapshot(
+    data,
+    data.create_initial_admin
+      ? "Tenant creado. Pendiente confirmar bootstrap final del admin."
+      : "Tenant creado sin bootstrap de admin inicial.",
+  );
+
+  const tenant = await createTenant(
+    mapTenantFormToPayload(data, {
+      onboarding: initialSnapshot,
+    }),
+  );
+
+  const { snapshot: onboardingSnapshot, warnings } = data.create_initial_admin
+    ? await bootstrapTenantAdmin(tenant.id, data)
+    : {
+        snapshot: initialSnapshot,
+        warnings: ["El tenant se creo sin admin inicial. Para dejarlo operable hace falta bootstrapear un usuario con rol."],
+      };
+
+  let updatedTenant = tenant;
+  try {
+    updatedTenant = await updateTenant(
+      tenant.id,
+      mapTenantFormToPayload(data, {
+        existingSettings: tenant.settings,
+        onboarding: onboardingSnapshot,
+      }),
+    );
+  } catch (error) {
+    warnings.push(await getApiErrorMessage(error, "No se pudo persistir el snapshot final de onboarding en settings del tenant."));
+  }
+
+  return {
+    tenant: updatedTenant,
+    result: {
+      tenantName: updatedTenant.name,
+      tenantSlug: updatedTenant.slug,
+      packageProfile,
+      enabledServices,
+      adminEmail: onboardingSnapshot.adminEmail,
+      roleName: onboardingSnapshot.roleName,
+      status: onboardingSnapshot.status,
+      warnings,
+    },
+  };
+}
+
+async function updateTenantOperationally(
+  tenant: Tenant,
+  data: TenantFormValues,
+): Promise<{
+  tenant: Tenant;
+  result?: TenantOnboardingResult;
+}> {
+  const tenantProfile = parseTenantProductProfile(tenant);
+  const baseTenant = await updateTenant(
+    tenant.id,
+    mapTenantFormToPayload(data, {
+      existingSettings: tenant.settings,
+    }),
+  );
+
+  if (!data.create_initial_admin) {
+    return { tenant: baseTenant };
+  }
+
+  if (tenantProfile.onboarding.status === "ready") {
+    return {
+      tenant: baseTenant,
+      result: {
+        tenantName: baseTenant.name,
+        tenantSlug: baseTenant.slug,
+        packageProfile: data.subscription_plan as CommercialPlanCode,
+        enabledServices: data.enabled_services as AssignableServiceCode[],
+        adminEmail: tenantProfile.onboarding.adminEmail,
+        roleName: tenantProfile.onboarding.roleName,
+        status: tenantProfile.onboarding.status,
+        warnings: ["El tenant ya tenia onboarding listo. No se ejecuto un bootstrap adicional de admin."],
+      },
+    };
+  }
+
+  const { snapshot, warnings } = await bootstrapTenantAdmin(baseTenant.id, data);
+
+  let updatedTenant = baseTenant;
+  try {
+    updatedTenant = await updateTenant(
+      baseTenant.id,
+      mapTenantFormToPayload(data, {
+        existingSettings: baseTenant.settings,
+        onboarding: snapshot,
+      }),
+    );
+  } catch (error) {
+    warnings.push(await getApiErrorMessage(error, "No se pudo persistir el snapshot final de onboarding en settings del tenant."));
+  }
+
+  return {
+    tenant: updatedTenant,
+    result: {
+      tenantName: updatedTenant.name,
+      tenantSlug: updatedTenant.slug,
+      packageProfile: data.subscription_plan as CommercialPlanCode,
+      enabledServices: data.enabled_services as AssignableServiceCode[],
+      adminEmail: snapshot.adminEmail,
+      roleName: snapshot.roleName,
+      status: snapshot.status,
+      warnings,
+    },
+  };
+}
+
+async function bootstrapTenantAdmin(
+  tenantId: string,
+  data: TenantFormValues,
+): Promise<{
+  snapshot: TenantOnboardingSnapshot;
+  warnings: string[];
+}> {
+  const warnings: string[] = [];
+
+  try {
+    const createdUser = await registerTenantUser({
+      tenant_id: tenantId,
+      email: data.admin_email?.trim() ?? "",
+      password: data.admin_password?.trim() ?? "",
+      first_name: data.admin_first_name?.trim() ?? "",
+      last_name: data.admin_last_name?.trim() ?? "",
+      phone: data.admin_phone?.trim() || undefined,
+    });
+
+    try {
+      const roles = await listRoles();
+      const tenantAdminRole = roles.find((role) => role.name === "tenant_admin");
+
+      if (!tenantAdminRole) {
+        warnings.push("Se creo el admin inicial, pero no se encontro el rol `tenant_admin` para asignarlo automaticamente.");
+        return {
+          snapshot: {
+            status: "admin_created_pending_role",
+            adminEmail: createdUser.email,
+            adminName: `${createdUser.first_name} ${createdUser.last_name}`.trim(),
+            notes: "El usuario inicial se creo, pero no se encontro el rol tenant_admin en el contexto actual.",
+            updatedAt: new Date().toISOString(),
+          },
+          warnings,
+        };
+      }
+
+      await assignRole(createdUser.id, tenantAdminRole.id);
+      return {
+        snapshot: {
+          status: "ready",
+          adminEmail: createdUser.email,
+          adminName: `${createdUser.first_name} ${createdUser.last_name}`.trim(),
+          roleName: tenantAdminRole.name,
+          notes: "Tenant listo para iniciar sesion con admin inicial y servicios habilitados.",
+          updatedAt: new Date().toISOString(),
+        },
+        warnings,
+      };
+    } catch (error) {
+      warnings.push(await getApiErrorMessage(error, "El admin inicial se creo, pero no se pudo asignar el rol `tenant_admin`."));
+      return {
+        snapshot: {
+          status: "admin_created_pending_role",
+          adminEmail: createdUser.email,
+          adminName: `${createdUser.first_name} ${createdUser.last_name}`.trim(),
+          notes: "El usuario inicial se creo, pero la asignacion de rol quedo pendiente.",
+          updatedAt: new Date().toISOString(),
+        },
+        warnings,
+      };
+    }
+  } catch (error) {
+    warnings.push(await getApiErrorMessage(error, "El tenant se creo, pero no se pudo registrar el admin inicial."));
+    return {
+      snapshot: {
+        status: "admin_creation_failed",
+        adminEmail: data.admin_email?.trim() || undefined,
+        adminName: [data.admin_first_name, data.admin_last_name].filter(Boolean).join(" ").trim() || undefined,
+        notes: "El tenant se creo, pero el admin inicial no pudo registrarse.",
+        updatedAt: new Date().toISOString(),
+      },
+      warnings,
+    };
+  }
+}
+
+function buildPendingOnboardingSnapshot(
+  data: TenantFormValues,
+  notes: string,
+): TenantOnboardingSnapshot {
+  return {
+    status: "tenant_created_only",
+    adminEmail: data.admin_email?.trim() || undefined,
+    adminName: [data.admin_first_name, data.admin_last_name].filter(Boolean).join(" ").trim() || undefined,
+    notes,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function mapTenantFormToPayload(
+  data: TenantFormValues,
+  options?: {
+    existingSettings?: Record<string, unknown> | null;
+    onboarding?: TenantOnboardingSnapshot;
+  },
+) {
+  return {
+    name: data.name,
+    slug: data.slug,
+    domain: data.domain?.trim() || undefined,
+    primary_color: data.primary_color?.trim() || undefined,
+    secondary_color: data.secondary_color?.trim() || undefined,
+    tertiary_color: data.tertiary_color?.trim() || undefined,
+    subscription_plan: data.subscription_plan,
+    max_users: data.max_users,
+    max_clients: data.max_clients,
+    settings: buildTenantSettings({
+      existingSettings: options?.existingSettings,
+      packageProfile: data.subscription_plan as CommercialPlanCode,
+      enabledServices: data.enabled_services as AssignableServiceCode[],
+      onboarding: options?.onboarding,
+    }),
+  };
 }
 
 function syncActiveCompany(

@@ -290,7 +290,7 @@ test.describe("10 - Settings / Admin", () => {
   });
 
   test("muestra shell enterprise con scopes", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Backoffice enterprise" })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /Backoffice enterprise/i })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole("button", { name: /backoffice global/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /portal de empresa/i })).toBeVisible();
     await expect(page.getByRole("button", { name: "Empresas", exact: true })).toBeVisible();

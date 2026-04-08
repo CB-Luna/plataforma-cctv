@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Palette, Save, Settings2 } from "lucide-react";
 import { toast } from "sonner";
+import { ServiceBadges } from "@/components/product/service-badges";
 import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getSettings, updateTheme } from "@/lib/api/settings";
+import { getOnboardingStatusMeta, parseTenantProductProfile } from "@/lib/product/service-catalog";
 import { useTenantStore } from "@/stores/tenant-store";
 
 export function GeneralTab() {
@@ -32,6 +34,8 @@ export function GeneralTab() {
     queryKey: ["settings"],
     queryFn: getSettings,
   });
+  const tenantProductProfile = parseTenantProductProfile(settings ?? currentCompany);
+  const onboardingMeta = getOnboardingStatusMeta(tenantProductProfile.onboarding.status);
 
   const [primary, setPrimary] = useState("#000000");
   const [secondary, setSecondary] = useState("#000000");
@@ -103,6 +107,14 @@ export function GeneralTab() {
               value={<Badge variant="secondary">{settings?.subscription_plan || "N/D"}</Badge>}
             />
             <InfoRow
+              label="Servicios habilitados"
+              value={<ServiceBadges services={tenantProductProfile.enabledServices} compact />}
+            />
+            <InfoRow
+              label="Onboarding"
+              value={<Badge variant={onboardingMeta.tone}>{onboardingMeta.label}</Badge>}
+            />
+            <InfoRow
               label="Estado"
               value={
                 <Badge variant={settings?.is_active ? "default" : "destructive"}>
@@ -112,6 +124,7 @@ export function GeneralTab() {
             />
             <InfoRow label="Max. usuarios" value={settings?.max_users ?? "-"} />
             <InfoRow label="Max. clientes" value={settings?.max_clients ?? "-"} />
+            <InfoRow label="Admin bootstrap" value={tenantProductProfile.onboarding.adminEmail ?? "-"} />
             <InfoRow
               label="Creado"
               value={settings ? new Date(settings.created_at).toLocaleDateString("es-MX") : "-"}
@@ -120,6 +133,34 @@ export function GeneralTab() {
               label="Actualizado"
               value={settings ? new Date(settings.updated_at).toLocaleDateString("es-MX") : "-"}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Contexto operativo del tenant</CardTitle>
+          <CardDescription>
+            Resumen de servicios y estado de onboarding que hoy gobiernan la experiencia visible del tenant activo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+              Servicios visibles
+            </p>
+            <div className="mt-2">
+              <ServiceBadges services={tenantProductProfile.enabledServices} />
+            </div>
+          </div>
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={onboardingMeta.tone}>{onboardingMeta.label}</Badge>
+              <Badge variant="outline">Origen: {tenantProductProfile.source === "explicit" ? "explicito" : "legacy"}</Badge>
+            </div>
+            <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+              {tenantProductProfile.onboarding.notes || "Sin notas de onboarding registradas en el snapshot actual."}
+            </p>
           </div>
         </CardContent>
       </Card>

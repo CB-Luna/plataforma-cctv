@@ -150,6 +150,43 @@
 - [ ] Existe auditoria honesta del estado real de `Control de Acceso`.
 - [ ] Queda claro que parte esta bloqueada por backend y que parte es implementable ya en web.
 
+### Checkpoints Fase 6
+
+#### C6.1 Onboarding tenant
+
+- [x] Existe definicion aprobada de `tenant operable`.
+- [x] Existe trazabilidad completa entre alta de tenant, branding, admin inicial y login.
+- [x] Queda claro si el admin inicial puede resolverse ya con contrato actual.
+- [x] Si el bootstrap falla o queda sin rol, el bloqueo queda visible en `tenant.settings.onboarding` y en la UI administrativa.
+- [ ] Queda pendiente repetir el smoke contra backend real levantado en el workspace; la validacion actual fue por contrato mockeado.
+
+#### C6.2 Servicios y paquetes
+
+- [x] `subscription_plan` deja de presentarse como paquete funcional ya resuelto.
+- [x] Existe una matriz clara entre servicio habilitado, paquete, poliza, SLA y modulo visible.
+- [x] Existe criterio aprobado de como eso afecta menu y portal tenant.
+- [x] Queda separada la parte implementable en web de la parte que depende de backend.
+
+#### C6.3 Portal tenant
+
+- [ ] Existe definicion clara de que vera un usuario tenant al iniciar sesion.
+- [ ] Existe frontera visible y conceptual entre plataforma global y portal tenant.
+- [ ] Roles internos del tenant quedan diferenciados de roles globales.
+- [ ] Queda documentado si se requieren rutas/shells dedicadas o si basta endurecer la shell actual.
+
+#### C6.4 Control de Acceso
+
+- [ ] Existe auditoria honesta de rutas, pantallas y APIs del dominio.
+- [ ] Queda claro si hoy el dominio existe, existe parcial o no existe.
+- [ ] Si no existe, se clasifica como etapa nueva y no como modulo ya disponible.
+- [ ] Existe un plan concreto para construirlo si sigue siendo objetivo del producto.
+
+#### C6.5 Consolidacion F6
+
+- [ ] Plan, backlog, validaciones y riesgos quedan alineados al nuevo rumbo.
+- [ ] Existe recomendacion formal de siguiente paso antes de hardening.
+- [ ] No quedan contradicciones documentales sobre que si esta hecho y que no.
+
 ## Fase 7. Calidad, hardening y handoff
 
 - [ ] Existe smoke test reproducible del flujo principal.
@@ -190,6 +227,13 @@
 - Lista de limitaciones conocidas que permanecen abiertas.
 - Decision documentada cuando el alcance se reduce por GAP backend.
 - Afirmacion clara de que si quedo operativo y que no.
+
+## Evidencia ejecutada en C6.1 y C6.2
+
+- `npm test`: `55/55` OK
+- `npm run build`: OK
+- `npx playwright test e2e/phase-6-tenant-onboarding-services.spec.ts --project=chromium` con `E2E_BASE_URL=http://127.0.0.1:3060`: `3/3` OK usando mocks del contrato actual sobre `next start`
+- Limitacion reconocida: el smoke E2E de esta fase valida navegador real y contrato esperado, pero no golpea un backend vivo en este workspace.
 
 ## Conclusion
 

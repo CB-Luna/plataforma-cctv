@@ -7,6 +7,7 @@ import { useTenantStore } from "@/stores/tenant-store";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { getMe } from "@/lib/api/auth";
 import { getRouteAccessRule } from "@/lib/auth/access-control";
+import { isRouteEnabledForServices, parseTenantProductProfile } from "@/lib/product/service-catalog";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -33,6 +34,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const routeAccessRule = useMemo(() => getRouteAccessRule(pathname), [pathname]);
   const hasRouteAccess = !routeAccessRule || hasAnyPermission(...routeAccessRule.anyOf);
+  const enabledServices = useMemo(
+    () => parseTenantProductProfile(currentCompany).enabledServices,
+    [currentCompany],
+  );
+  const hasServiceAccess = useMemo(
+    () => isRouteEnabledForServices(pathname, enabledServices),
+    [enabledServices, pathname],
+  );
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -101,8 +110,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Sheet>
 
           <main className="flex-1 overflow-y-auto bg-bg-page p-4 md:p-6">
-            {hasRouteAccess ? (
+            {hasRouteAccess && hasServiceAccess ? (
               children
+            ) : !hasServiceAccess ? (
+              <AccessDeniedState
+                title="Servicio no habilitado"
+                description="La ruta existe en la plataforma, pero no esta habilitada para el tenant activo segun sus servicios asignados."
+              />
             ) : (
               <AccessDeniedState
                 title={routeAccessRule?.title ?? "Sin acceso"}

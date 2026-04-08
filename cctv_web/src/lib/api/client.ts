@@ -31,3 +31,8 @@ export const api = ky.create({
     ],
   },
 });
+
+export const publicApi = ky.create({
+  prefixUrl: API_URL,
+  timeout: 30_000,
+});

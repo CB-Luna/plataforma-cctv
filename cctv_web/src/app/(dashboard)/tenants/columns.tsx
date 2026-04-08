@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Building2, MoreHorizontal, Pencil, Power, PowerOff, Upload } from "lucide-react";
 import type { Tenant } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table";
+import { ServiceBadges } from "@/components/product/service-badges";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getOnboardingStatusMeta, parseTenantProductProfile } from "@/lib/product/service-catalog";
 
 interface TenantColumnActions {
   onEdit: (tenant: Tenant) => void;
@@ -63,6 +65,41 @@ export function getTenantColumns(
       cell: ({ row }) => {
         const plan = row.getValue<string>("subscription_plan") ?? "basic";
         return <Badge variant={plan === "enterprise" ? "default" : "secondary"}>{plan}</Badge>;
+      },
+    },
+    {
+      id: "services",
+      header: "Servicios",
+      cell: ({ row }) => {
+        const profile = parseTenantProductProfile(row.original);
+
+        return (
+          <div className="space-y-2">
+            <ServiceBadges services={profile.enabledServices} compact />
+            <p className="text-xs text-muted-foreground">
+              {profile.source === "explicit" ? "Asignacion explicita" : "Visibilidad legacy por defecto"}
+            </p>
+          </div>
+        );
+      },
+    },
+    {
+      id: "onboarding",
+      header: "Onboarding",
+      cell: ({ row }) => {
+        const profile = parseTenantProductProfile(row.original);
+        const statusMeta = getOnboardingStatusMeta(profile.onboarding.status);
+
+        return (
+          <div className="space-y-1">
+            <Badge variant={statusMeta.tone}>{statusMeta.label}</Badge>
+            {profile.onboarding.adminEmail ? (
+              <p className="max-w-[180px] truncate text-xs text-muted-foreground">{profile.onboarding.adminEmail}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Sin admin bootstrap</p>
+            )}
+          </div>
+        );
       },
     },
     {

@@ -23,10 +23,10 @@ test.describe("Fase 5 - backoffice enterprise", () => {
   });
 
   test("settings separa plataforma y tenant activo", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Backoffice enterprise" })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /Backoffice enterprise/i })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole("button", { name: /backoffice global/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /portal de empresa/i })).toBeVisible();
-    await expect(page.getByText(/deja de ser una sola bolsa/i)).toBeVisible();
+    await expect(page.getByText(/separa plataforma global/i)).toBeVisible();
   });
 
   test("plantillas de menu expone consola global real", async ({ page }) => {

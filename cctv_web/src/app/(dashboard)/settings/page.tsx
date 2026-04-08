@@ -7,6 +7,7 @@ import {
   Building2,
   HardDrive,
   LayoutTemplate,
+  Package2,
   Settings2,
   Shield,
   Users,
@@ -16,11 +17,13 @@ import { Badge } from "@/components/ui/badge";
 import { TabLayout, type TabItem } from "@/components/ui/tab-layout";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useTenantStore } from "@/stores/tenant-store";
+import { isSettingsTabEnabledForServices, parseTenantProductProfile } from "@/lib/product/service-catalog";
 import { cn } from "@/lib/utils";
 import { GeneralTab } from "./tabs/general-tab";
 import { IntelligenceTab } from "./tabs/intelligence-tab";
 import { MenuTemplatesTab } from "./tabs/menu-templates-tab";
 import { RolesTab } from "./tabs/roles-tab";
+import { ServicesPackagesTab } from "./tabs/services-packages-tab";
 import { StorageTab } from "./tabs/storage-tab";
 import { TenantsTab } from "./tabs/tenants-tab";
 import { UsersTab } from "./tabs/users-tab";
@@ -42,6 +45,16 @@ const tabs: SettingsTabDefinition[] = [
     component: <TenantsTab />,
     scope: "platform",
     summary: "Gestion global de tenants, branding corporativo y estado operativo.",
+    access: ["tenants.read", "tenants:read:all"],
+  },
+  {
+    key: "servicios",
+    label: "Servicios y paquetes",
+    icon: Package2,
+    color: "amber",
+    component: <ServicesPackagesTab />,
+    scope: "platform",
+    summary: "Catalogo vigente de planes, servicios habilitados y criterio real de visibilidad por tenant.",
     access: ["tenants.read", "tenants:read:all"],
   },
   {
@@ -145,7 +158,18 @@ export default function SettingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const visibleTabs = useMemo(() => tabs.filter((tab) => canAny(...tab.access)), [canAny]);
+  const enabledServices = useMemo(
+    () => parseTenantProductProfile(currentCompany).enabledServices,
+    [currentCompany],
+  );
+  const tenantProductProfile = useMemo(() => parseTenantProductProfile(currentCompany), [currentCompany]);
+  const visibleTabs = useMemo(
+    () =>
+      tabs.filter(
+        (tab) => canAny(...tab.access) && isSettingsTabEnabledForServices(tab.key, enabledServices),
+      ),
+    [canAny, enabledServices],
+  );
   const requestedTab = searchParams.get("tab");
   const activeTabItem = visibleTabs.find((tab) => tab.key === requestedTab) ?? visibleTabs[0];
   const activeTab = activeTabItem?.key;
@@ -175,14 +199,15 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">Fase 5</Badge>
+            <Badge variant="outline">Fase 6</Badge>
             <Badge className={activeScopeMeta.badgeClass}>{activeScopeMeta.badge}</Badge>
             {currentCompany ? <Badge variant="secondary">{currentCompany.name}</Badge> : null}
+            <Badge variant="outline">Plan: {tenantProductProfile.packageProfile}</Badge>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Backoffice enterprise</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Backoffice enterprise y producto</h1>
             <p className="mt-1 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-              `/settings` deja de ser una sola bolsa y ahora separa plataforma global de configuracion del tenant activo, con ownership visible y tabs alineadas al contrato real.
+              `/settings` separa plataforma global del portal tenant y ahora tambien expone el catalogo vigente de servicios y paquetes que gobierna visibilidad real.
             </p>
           </div>
         </div>
@@ -227,6 +252,9 @@ export default function SettingsPage() {
             <Badge variant="outline">{scopeTabs.length} tabs visibles</Badge>
             {activeScope === "tenant" && currentCompany ? (
               <Badge variant="secondary">Tenant: {currentCompany.slug}</Badge>
+            ) : null}
+            {currentCompany ? (
+              <Badge variant="outline">{tenantProductProfile.enabledServices.length} servicios visibles</Badge>
             ) : null}
           </div>
         </div>
