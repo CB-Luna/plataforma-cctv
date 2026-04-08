@@ -1,21 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listNvrs, getNvrStats, createNvr, updateNvr, deleteNvr } from "@/lib/api/nvrs";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, HardDrive, Server, ShieldAlert } from "lucide-react";
+import { toast } from "sonner";
+import { createNvr, deleteNvr, getNvrStats, listNvrs, updateNvr } from "@/lib/api/nvrs";
+import { listSites } from "@/lib/api/sites";
 import type { NvrServer } from "@/types/api";
-import { DataTable } from "@/components/data-table";
-import { ExportButton } from "@/components/shared/export-button";
+import { useSiteStore } from "@/stores/site-store";
+import { filterByActiveSite } from "@/lib/site-context";
 import { getColumns } from "./columns";
 import { NvrDialog, type NvrFormValues } from "./nvr-dialog";
+import { SiteContextBanner } from "@/components/context/site-context-banner";
+import { DataTable } from "@/components/data-table";
+import { ExportButton } from "@/components/shared/export-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Server, HardDrive, Activity } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
-import { toast } from "sonner";
 
 export default function NvrsPage() {
   const queryClient = useQueryClient();
+  const currentSite = useSiteStore((state) => state.currentSite);
+  const clearSite = useSiteStore((state) => state.clearSite);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingNvr, setEditingNvr] = useState<NvrServer | null>(null);
 
@@ -29,14 +36,21 @@ export default function NvrsPage() {
     queryFn: getNvrStats,
   });
 
+  const { data: sites = [] } = useQuery({
+    queryKey: ["sites"],
+    queryFn: listSites,
+  });
+
   const createMutation = useMutation({
     mutationFn: createNvr,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nvrs"] });
+      queryClient.invalidateQueries({ queryKey: ["nvrs", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
       toast.success("NVR creado correctamente");
       setDialogOpen(false);
     },
-    onError: () => toast.error("Error al crear el NVR"),
+    onError: () => toast.error("No se pudo crear el NVR"),
   });
 
   const updateMutation = useMutation({
@@ -44,89 +58,143 @@ export default function NvrsPage() {
       updateNvr(id, data as Parameters<typeof updateNvr>[1]),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nvrs"] });
-      toast.success("NVR actualizado correctamente");
+      queryClient.invalidateQueries({ queryKey: ["nvrs", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      toast.success("Base del NVR actualizada");
       setDialogOpen(false);
       setEditingNvr(null);
     },
-    onError: () => toast.error("Error al actualizar el NVR"),
+    onError: () => toast.error("No se pudo actualizar el NVR"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteNvr,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nvrs"] });
+      queryClient.invalidateQueries({ queryKey: ["nvrs", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
       toast.success("NVR eliminado correctamente");
     },
-    onError: () => toast.error("Error al eliminar el NVR"),
+    onError: () => toast.error("No se pudo eliminar el NVR"),
   });
 
-  const columns = getColumns({
-    onEdit: (nvr) => {
-      setEditingNvr(nvr);
-      setDialogOpen(true);
-    },
+  const siteNames = useMemo(
+    () => new Map(sites.map((site) => [site.id, site.name])),
+    [sites],
+  );
+
+  const scopedNvrs = useMemo(
+    () => filterByActiveSite(nvrs, currentSite?.id),
+    [currentSite?.id, nvrs],
+  );
+
+  const displayStats = useMemo(() => {
+    if (!currentSite) return stats;
+
+    const activeServers = scopedNvrs.filter((nvr) => {
+      const status = nvr.status ?? (nvr.is_active ? "active" : "inactive");
+      return status === "active";
+    });
+
+    return {
+      total_servers: scopedNvrs.length,
+      active_servers: activeServers.length,
+      inactive_servers: scopedNvrs.length - activeServers.length,
+      total_cameras: scopedNvrs.reduce((acc, nvr) => acc + (nvr.camera_channels ?? 0), 0),
+      total_storage_tb: scopedNvrs.reduce((acc, nvr) => acc + (nvr.total_storage_tb ?? 0), 0),
+    };
+  }, [currentSite, scopedNvrs, stats]);
+
+  const exportRows = useMemo(() => scopedNvrs.map((nvr) => ({
+    ...nvr,
+    site_name: nvr.site_id ? siteNames.get(nvr.site_id) ?? "Sitio asignado" : "Sin sitio",
+  })), [scopedNvrs, siteNames]);
+
+  const columns = useMemo(() => getColumns({
     onDelete: (nvr) => {
-      if (confirm(`¿Eliminar el NVR "${nvr.name}"?`)) {
+      if (confirm(`Eliminar el NVR "${nvr.name}"?`)) {
         deleteMutation.mutate(nvr.id);
       }
     },
-    onView: (nvr) => {
+    onOpen: (nvr) => {
       setEditingNvr(nvr);
       setDialogOpen(true);
     },
-  });
+    siteNames,
+  }), [deleteMutation, siteNames]);
 
   async function handleSubmit(data: NvrFormValues) {
     if (editingNvr) {
       await updateMutation.mutateAsync({ id: editingNvr.id, data });
-    } else {
-      await createMutation.mutateAsync(data as Parameters<typeof createNvr>[0]);
+      return;
     }
+
+    await createMutation.mutateAsync(data as Parameters<typeof createNvr>[0]);
   }
 
   return (
     <div className="space-y-6">
+      <SiteContextBanner
+        site={currentSite}
+        description="La lista, los KPI y el alta manual se acotan al sitio activo. Limpia el contexto para volver al agregado global del tenant."
+        onClear={clearSite}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Servidores NVR</h2>
           <p className="text-muted-foreground">
-            Gestión de servidores de grabación en red.
+            Infraestructura de grabacion con contexto operativo por sitio y edicion manual parcial.
           </p>
         </div>
-        <Button onClick={() => { setEditingNvr(null); setDialogOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={() => {
+          setEditingNvr(null);
+          setDialogOpen(true);
+        }}>
           Nuevo NVR
         </Button>
       </div>
 
-      {/* Stats cards */}
-      {stats && (
+      <Card className="border-amber-200 bg-amber-50/80">
+        <CardContent className="flex flex-col gap-3 py-4 md:flex-row md:items-start">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <div className="space-y-1 text-sm text-amber-950">
+            <p className="font-medium">Fase 3: capacidades manuales alineadas al contrato</p>
+            <p className="text-xs text-amber-900">
+              La alta manual cubre el servidor y su contexto base. La edicion desde UI solo actualiza los
+              campos que el backend realmente sostiene: nombre, codigo, modelo, edicion, version y notas.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {displayStats && (
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Servidores</CardTitle>
+              <CardTitle className="text-sm font-medium">Total servidores</CardTitle>
               <Server className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.total_servers}</div>
+              <div className="text-2xl font-bold">{displayStats.total_servers}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Activos</CardTitle>
-              <Activity className="h-4 w-4 text-green-500" />
+              <AlertTriangle className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.active_servers}</div>
+              <div className="text-2xl font-bold text-green-600">{displayStats.active_servers}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Cámaras</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Canales declarados</CardTitle>
+              <Server className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.total_cameras}</div>
+              <div className="text-2xl font-bold">{displayStats.total_cameras}</div>
             </CardContent>
           </Card>
           <Card>
@@ -135,7 +203,7 @@ export default function NvrsPage() {
               <HardDrive className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.total_storage_tb} TB</div>
+              <div className="text-2xl font-bold">{displayStats.total_storage_tb} TB</div>
             </CardContent>
           </Card>
         </div>
@@ -143,37 +211,49 @@ export default function NvrsPage() {
 
       <DataTable
         columns={columns}
-        data={nvrs}
+        data={scopedNvrs}
         isLoading={isLoading}
         searchKey="name"
         searchPlaceholder="Buscar NVR..."
-        emptyState={
+        emptyState={(
           <EmptyState
             icon={Server}
             title="No hay servidores NVR"
-            description="Registra tu primer servidor de grabación en red."
-            action={{ label: "Nuevo NVR", onClick: () => { setEditingNvr(null); setDialogOpen(true); } }}
+            description={
+              currentSite
+                ? "No hay NVR visibles para el sitio activo. Limpia el contexto o registra un servidor manual."
+                : "Registra tu primer servidor de grabacion en red."
+            }
+            action={{ label: "Nuevo NVR", onClick: () => {
+              setEditingNvr(null);
+              setDialogOpen(true);
+            } }}
           />
-        }
-        toolbar={
+        )}
+        toolbar={(
           <ExportButton
-            data={nvrs as unknown as Record<string, unknown>[]}
+            data={exportRows as unknown as Record<string, unknown>[]}
             columns={[
               { header: "Nombre", accessorKey: "name" },
-              { header: "IP", accessorKey: "ip_address" },
-              { header: "Estado", accessorKey: "status" },
+              { header: "Sitio", accessorKey: "site_name" },
               { header: "Modelo", accessorKey: "model" },
-              { header: "Fabricante", accessorKey: "manufacturer" },
-              { header: "Canales", accessorKey: "channel_count" },
+              { header: "Edicion", accessorKey: "edition" },
+              { header: "Canales", accessorKey: "camera_channels" },
+              { header: "Estado", accessorKey: "status" },
             ]}
-            filename="NVRs"
+            filename="nvrs"
           />
-        }
+        )}
       />
 
       <NvrDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={(value) => {
+          setDialogOpen(value);
+          if (!value) {
+            setEditingNvr(null);
+          }
+        }}
         nvr={editingNvr}
         onSubmit={handleSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}

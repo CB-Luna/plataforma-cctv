@@ -7,7 +7,7 @@
 | Fase | Nombre | Resultado principal |
 |---|---|---|
 | F0 | Alineacion y decisiones de producto | Modelo aprobado y backlog congelado por nucleo |
-| F1 | Consolidacion multi-tenant y scopes | Contexto de empresa confiable y no engañoso |
+| F1 | Consolidacion multi-tenant y scopes | Contexto de empresa confiable y no enganoso |
 | F2 | Maestros operativos y UX de contexto | Cliente-sitio-activo operables sin UUIDs manuales |
 | F3 | Cierre CCTV core | Inventario, importacion, planos y mapa en estado defendible |
 | F4 | Operacion contractual | Tickets, polizas y SLA coherentes con cobertura real |
@@ -19,12 +19,12 @@
 | Fase | Estado | Fecha | Evidencia |
 |---|---|---|---|
 | F0 | Completada | 2026-04-07 | Paquete `docs/plan-maestro/` aprobado y decisiones de producto cerradas |
-| F1 | Completada | 2026-04-07 | Flujo login/select-company/contexto activo implementado en `cctv_web`, switch engañoso retirado, guards minimos aplicados, `npm test`, `npm run build` y smoke Playwright verdes |
+| F1 | Completada | 2026-04-07 | Flujo login/select-company/contexto activo implementado en `cctv_web`, switch enganoso retirado, guards minimos aplicados, `npm test`, `npm run build` y smoke Playwright verdes |
 | F2 | Completada | 2026-04-07 | Formularios de tickets y polizas ya no dependen de UUID manual para contexto principal, aliases administrativos apuntan a la tab correcta de `/settings`, contexto de sitio aplica en tickets/polizas/inventario, `npm test`, `npm run build` y Playwright Fase 2 verdes |
-| F3 | Pendiente | — | Requiere cierre funcional de CCTV core |
-| F4 | Pendiente | — | Requiere cierre contractual de polizas y SLA |
-| F5 | Pendiente | — | Requiere consolidacion de backoffice enterprise |
-| F6 | Pendiente | — | Requiere hardening final, QA ampliado y handoff |
+| F3 | Completada | 2026-04-07 | Camaras y NVR alineados al contrato manual real, importacion con parseo+mapeo+validacion, floor plans sin perdida de semantica y mapa degradado con precision aproximada, `npm test`, `npm run build` y Playwright Fase 3 verdes |
+| F4 | Pendiente | - | Requiere cierre contractual de polizas y SLA |
+| F5 | Pendiente | - | Requiere consolidacion de backoffice enterprise |
+| F6 | Pendiente | - | Requiere hardening final, QA ampliado y handoff |
 
 ## Fase 0. Alineacion y decisiones de producto
 
@@ -32,15 +32,11 @@
 
 Congelar vocabulario, alcance y decisiones criticas antes de tocar logica funcional.
 
-### Por que existe
-
-El repo ya tenia demasiadas piezas avanzadas para seguir implementando desde intuicion. Sin esta fase, cualquier trabajo posterior reforzaba incoherencias.
-
 ### Alcance
 
 - Aprobar el paquete `docs/plan-maestro/`.
 - Confirmar modelo tenant-cliente-sitio.
-- Confirmar estrategia de login/cambio de empresa.
+- Confirmar estrategia de login y cambio de empresa.
 - Confirmar que entra en V1 operativa.
 - Confirmar que capacidades se degradan explicitamente por GAP backend.
 
@@ -53,17 +49,11 @@ El repo ya tenia demasiadas piezas avanzadas para seguir implementando desde int
 
 Existe confirmacion explicita del modelo objetivo y de la Fase 1 como siguiente ejecucion.
 
-### Entregables esperados
-
-- Documentacion validada.
-- Lista de decisiones cerradas.
-- Lista de decisiones diferidas pero visibles.
-
 ## Fase 1. Consolidacion multi-tenant y scopes
 
 ### Objetivo
 
-Hacer confiable el contexto de empresa/tenant y eliminar comportamientos que aparentan un cambio de contexto no respaldado por el contrato real.
+Hacer confiable el contexto de empresa y eliminar comportamientos que aparentan un cambio de contexto no respaldado por el contrato real.
 
 ### Estado del checkpoint
 
@@ -72,10 +62,10 @@ Completado el 2026-04-07.
 ### Resultado materializado
 
 - `LoginResponse` ya se alinea al payload real con `companies`.
-- El login multiempresa ahora usa seleccion explicita de empresa antes de emitir el contexto final de trabajo.
-- Se elimino la dependencia funcional de `X-Company-ID` y el selector engañoso de empresa en header.
+- El login multiempresa usa seleccion explicita de empresa antes de emitir el contexto final de trabajo.
+- Se elimino la dependencia funcional de `X-Company-ID` y el selector enganoso de empresa en header.
 - El tenant activo queda persistido como snapshot local y se rehidrata desde `/auth/me`.
-- La navegacion fija de Fase 1 ya respeta permisos por ruta.
+- La navegacion fija de Fase 1 respeta permisos por ruta.
 - Se agregaron guards minimos por pagina y acciones principales en tickets, clientes y configuracion.
 
 ### Validacion ejecutada
@@ -87,11 +77,6 @@ Completado el 2026-04-07.
 ### Criterio de salida
 
 No existen mas switches de empresa visuales sin sustento de contrato.
-
-### Entregables esperados
-
-- Flujo de autenticacion y contexto tenant confiable.
-- Criterios de permisos y scope documentados en frontend.
 
 ## Fase 2. Maestros operativos y UX de contexto
 
@@ -139,69 +124,54 @@ Completado el 2026-04-07.
 
 La operacion basica ya no depende de conocimiento tecnico de IDs para usuarios funcionales.
 
-### Entregables esperados
-
-- Formularios operativos normalizados.
-- Contexto cliente-sitio utilizable en la experiencia.
-
 ## Fase 3. Cierre CCTV core
 
 ### Objetivo
 
 Dejar el bloque CCTV en estado operable y honesto respecto a sus limitaciones reales.
 
-### Por que existe
+### Estado del checkpoint
 
-El sistema ya tiene inventario, camaras, NVR, modelos, importacion, planos, topologia, mapa y CAPEX. Falta distinguir que queda realmente listo y que debe degradarse o restringirse.
+Completado el 2026-04-07.
+
+### Resultado materializado
+
+- `camaras` ahora aplica contexto de sitio en tabla, KPIs y exportacion; el alta manual se acota a los campos que el backend realmente persiste y la edicion se retira porque no existe `PUT /inventory/cameras/{id}`.
+- `nvrs` ahora aplica contexto de sitio, expone columna de sucursal y separa con claridad la alta manual base de la edicion parcial que el contrato si soporta.
+- `imports` ya parsea CSV/XLSX en frontend, expone el mapeo de columnas, usa el analisis del backend cuando esta disponible y crea batches con `column_mapping` y `data` reales.
+- `floor-plans` ahora guarda una proyeccion legacy para compatibilidad y, ademas, una version enriquecida del documento editor para no perder habitaciones, zonas, puertas o poligonos.
+- `map` ahora comunica explicitamente que la georreferencia es aproximada por ciudad y se alinea al sitio activo cuando existe contexto operativo seleccionado.
+
+### Degradaciones honestas aplicadas
+
+- La alta manual de camaras no promete tipo, IP, MAC, megapixeles ni estado operativo avanzado porque el backend actual no los persiste desde este formulario.
+- La edicion manual de camaras queda diferida por GAP real de API.
+- La alta y edicion manual de NVR no promete red, almacenamiento, fechas ni estado avanzado; esos datos siguen entrando por importacion o procesos especializados.
+- El mapa se mantiene como modulo complementario y referencial mientras la API no entregue latitud y longitud reales.
 
 ### Alcance
 
 - Revisar CRUD real de camaras y NVR.
 - Cerrar importacion masiva con la interfaz que el backend si puede consumir.
-- Limitar o corregir guardado de floor plans.
+- Corregir guardado de floor plans para no perder semantica del editor.
 - Resolver como se presenta el mapa mientras no haya coordenadas reales.
-- Confirmar rol de CAPEX/garantias como vista derivada.
+- Verificar consistencia entre camaras, NVR, floor plans y contexto sitio-activo.
 
 ### Fuera de alcance
 
 - Nuevos endpoints de geolocalizacion.
 - Nuevos endpoints de catalogo maestro inexistentes.
 
-### Tareas detalladas
+### Validacion ejecutada
 
-1. Tratar edicion de camaras segun contrato real: soportada o degradada.
-2. Hacer operativa la importacion creando `data` y `column_mapping` utiles o rebajando el alcance visible.
-3. Revisar compatibilidad entre editor de planos y formato persistido.
-4. Definir mensaje y alcance del mapa con coordenadas aproximadas.
-5. Verificar consistencia entre camaras, NVR, floor plans y topology por sitio.
-6. Revisar exportaciones y columnas reales en camaras y NVR.
-
-### Dependencias
-
-- Fase 2 completada para contexto sitio-activo.
-- Decision explicita sobre si el mapa es core o complementario.
-
-### Riesgos
-
-- Mantener funcionalidades demoables pero no confiables.
-- Perder informacion al guardar floor plans.
-
-### Validaciones
-
-- NVR CRUD funcional.
-- Camaras en estado consistente con contrato real.
-- Importacion utilizable con datos reales.
-- Plano guarda y reabre sin degradar informacion permitida.
-- Topologia refleja activos del sitio.
+- `npm test` en `cctv_web`: OK.
+- `npm run build` en `cctv_web`: OK.
+- Playwright Fase 3 en `http://localhost:3030`: OK sobre camaras/NVR, importacion, mapa y persistencia defendible de floor plans.
+- Playwright smoke adicional en `http://localhost:3030`: OK sobre `/inventory`, `/camera-models` y `/cameras` sin hydration mismatch.
 
 ### Criterio de salida
 
 El bloque CCTV puede demostrarse y operarse sin promesas falsas de contrato.
-
-### Entregables esperados
-
-- CCTV core estabilizado.
-- Lista explicita de workarounds todavia vigentes.
 
 ## Fase 4. Operacion contractual
 
@@ -228,7 +198,7 @@ Separar y cerrar la administracion enterprise del portal operativo.
 
 ### Alcance
 
-- Empresas/tenants.
+- Empresas y tenants.
 - Usuarios.
 - Roles y permisos.
 - Tema y configuracion general.
@@ -259,10 +229,10 @@ Existe una definicion defendible de listo para entrega y de GAP aceptado.
 
 ## Siguiente paso recomendado
 
-La siguiente ejecucion en codigo debe ser **Fase 3: Cierre CCTV core**.
+La siguiente ejecucion en codigo debe ser **Fase 4: Operacion contractual**.
 
 El razonamiento es:
 
-- Fase 2 ya bajo la friccion operativa del usuario funcional.
-- Ahora toca cerrar el bloque CCTV que sigue mas visible y mas expuesto a sobrepromesa.
-- Importacion, floor plans, mapa y consistencia camaras/NVR son el siguiente riesgo real para una demo enterprise defendible.
+- Fase 3 ya dejo el bloque CCTV en un estado demostrable y defendible.
+- El siguiente riesgo enterprise no es visual sino contractual: tickets, polizas, SLA y cobertura todavia necesitan cerrarse como un solo flujo.
+- Resolver Fase 4 antes de ampliar backoffice evita que la operacion siga separada de las reglas reales de servicio y cobertura.

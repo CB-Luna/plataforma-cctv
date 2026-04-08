@@ -10,13 +10,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 interface ColumnActions {
-  onEdit: (nvr: NvrServer) => void;
   onDelete: (nvr: NvrServer) => void;
-  onView: (nvr: NvrServer) => void;
+  onOpen: (nvr: NvrServer) => void;
+  siteNames: Map<string, string>;
 }
 
 export function getColumns(actions: ColumnActions): ColumnDef<NvrServer>[] {
@@ -32,6 +31,15 @@ export function getColumns(actions: ColumnActions): ColumnDef<NvrServer>[] {
           )}
         </div>
       ),
+    },
+    {
+      id: "site",
+      header: "Sitio",
+      cell: ({ row }) => {
+        const siteId = row.original.site_id ?? "";
+        if (!siteId) return "Sin sitio";
+        return actions.siteNames.get(siteId) ?? "Sitio asignado";
+      },
     },
     {
       accessorKey: "model",
@@ -83,13 +91,9 @@ export function getColumns(actions: ColumnActions): ColumnDef<NvrServer>[] {
             <MoreHorizontal className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => actions.onView(row.original)}>
-              <Eye className="mr-2 h-4 w-4" />
-              Ver detalle
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onEdit(row.original)}>
+            <DropdownMenuItem onClick={() => actions.onOpen(row.original)}>
               <Pencil className="mr-2 h-4 w-4" />
-              Editar
+              Ver / editar base
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => actions.onDelete(row.original)}

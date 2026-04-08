@@ -1,5 +1,10 @@
 import { api } from "./client";
-import type { ImportBatch, ImportBatchItem, ImportStats } from "@/types/api";
+import type {
+  ImportAssistantAnalysisResponse,
+  ImportBatch,
+  ImportBatchItem,
+  ImportStats,
+} from "@/types/api";
 
 export async function listImportBatches(params?: {
   limit?: number;
@@ -70,4 +75,14 @@ export async function validateImportData(data: {
   warnings: Record<string, unknown>[];
 }> {
   return api.post("inventory/import/validate", { json: data }).json();
+}
+
+export async function analyzeImportSource(data: {
+  source_filename?: string;
+  source_type?: string;
+  sheet_names?: string[];
+  headers?: string[];
+  sample_data?: Record<string, unknown>[];
+}): Promise<ImportAssistantAnalysisResponse> {
+  return api.post("inventory/import/assistant/analyze", { json: data }).json<ImportAssistantAnalysisResponse>();
 }

@@ -1,25 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { DataTable } from "@/components/data-table";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getColumns } from "./columns";
-import { ImportDialog, type ImportFormValues } from "./import-dialog";
-import { BatchDetailDialog } from "./batch-detail-dialog";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { FileCheck, FileWarning, Loader2, ShieldAlert, Upload } from "lucide-react";
+import type { ImportBatch } from "@/types/api";
 import {
-  listImportBatches,
-  createImportBatch,
-  processImportBatch,
   cancelImportBatch,
+  createImportBatch,
   deleteImportBatch,
   getImportStats,
+  listImportBatches,
+  processImportBatch,
 } from "@/lib/api/imports";
-import type { ImportBatch } from "@/types/api";
-import { toast } from "sonner";
-import { Upload, FileCheck, FileWarning, Loader2 } from "lucide-react";
+import { getColumns } from "./columns";
+import { BatchDetailDialog } from "./batch-detail-dialog";
+import { ImportDialog, type ImportSubmissionPayload } from "./import-dialog";
+import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function ImportsPage() {
   const queryClient = useQueryClient();
@@ -37,22 +37,22 @@ export default function ImportsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (values: ImportFormValues & { data: Record<string, unknown>[] }) =>
+    mutationFn: (values: ImportSubmissionPayload) =>
       createImportBatch({
         batch_name: values.batch_name,
         source_type: values.source_type,
         source_filename: values.source_filename,
         target_table: values.target_table,
-        column_mapping: {},
+        column_mapping: values.column_mapping,
         data: values.data,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["import-batches"] });
       queryClient.invalidateQueries({ queryKey: ["import-stats"] });
       setCreateOpen(false);
-      toast.success("Lote de importación creado");
+      toast.success("Lote de importacion creado");
     },
-    onError: () => toast.error("Error al crear lote"),
+    onError: () => toast.error("No se pudo crear el lote de importacion"),
   });
 
   const processMutation = useMutation({
@@ -62,7 +62,7 @@ export default function ImportsPage() {
       queryClient.invalidateQueries({ queryKey: ["import-stats"] });
       toast.success("Procesamiento iniciado");
     },
-    onError: () => toast.error("Error al procesar lote"),
+    onError: () => toast.error("No se pudo procesar el lote"),
   });
 
   const cancelMutation = useMutation({
@@ -71,7 +71,7 @@ export default function ImportsPage() {
       queryClient.invalidateQueries({ queryKey: ["import-batches"] });
       toast.success("Lote cancelado");
     },
-    onError: () => toast.error("Error al cancelar"),
+    onError: () => toast.error("No se pudo cancelar el lote"),
   });
 
   const deleteMutation = useMutation({
@@ -81,7 +81,7 @@ export default function ImportsPage() {
       queryClient.invalidateQueries({ queryKey: ["import-stats"] });
       toast.success("Lote eliminado");
     },
-    onError: () => toast.error("Error al eliminar"),
+    onError: () => toast.error("No se pudo eliminar el lote"),
   });
 
   const columns = getColumns({
@@ -89,30 +89,47 @@ export default function ImportsPage() {
     onProcess: (batch) => processMutation.mutate(batch.id),
     onCancel: (batch) => cancelMutation.mutate(batch.id),
     onDelete: (batch) => {
-      if (confirm("¿Eliminar este lote de importación?")) {
+      if (confirm("Eliminar este lote de importacion?")) {
         deleteMutation.mutate(batch.id);
       }
     },
   });
 
-  const statsData = stats as { total_batches?: number; pending_batches?: number; completed_batches?: number; failed_batches?: number } | undefined;
+  const statsData = stats as {
+    total_batches?: number;
+    pending_batches?: number;
+    completed_batches?: number;
+    failed_batches?: number;
+  } | undefined;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Importación masiva</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Importacion masiva</h1>
           <p className="text-muted-foreground">
-            Importa cámaras y NVR desde archivos CSV o Excel
+            Carga CSV o Excel, revisa el mapeo y crea batches reales para camaras y NVR.
           </p>
         </div>
         <Button onClick={() => setCreateOpen(true)}>
           <Upload className="mr-2 h-4 w-4" />
-          Nueva importación
+          Nueva importacion
         </Button>
       </div>
 
-      {/* Stats cards */}
+      <Card className="border-amber-200 bg-amber-50/80">
+        <CardContent className="flex flex-col gap-3 py-4 md:flex-row md:items-start">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <div className="space-y-1 text-sm text-amber-950">
+            <p className="font-medium">Fase 3: flujo utilizable y honesto</p>
+            <p className="text-xs text-amber-900">
+              La UI ya no crea lotes vacios. El archivo se parsea localmente, se expone el mapeo de
+              columnas y el backend recibe `column_mapping` y `data` reales antes de procesar.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -138,9 +155,7 @@ export default function ImportsPage() {
             <FileCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {statsData?.completed_batches ?? 0}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{statsData?.completed_batches ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -149,30 +164,26 @@ export default function ImportsPage() {
             <FileWarning className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {statsData?.failed_batches ?? 0}
-            </div>
+            <div className="text-2xl font-bold text-destructive">{statsData?.failed_batches ?? 0}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Data table */}
       <DataTable
         columns={columns}
         data={(batches as ImportBatch[]) ?? []}
         isLoading={isLoading}
-        searchPlaceholder="Buscar lotes…"
-        emptyState={
+        searchPlaceholder="Buscar lotes..."
+        emptyState={(
           <EmptyState
             icon={Upload}
             title="No hay importaciones"
-            description="Importa cámaras y NVRs desde archivos CSV o Excel."
-            action={{ label: "Nueva importación", onClick: () => setCreateOpen(true) }}
+            description="Carga un archivo CSV o Excel, revisa el mapeo y crea tu primer lote."
+            action={{ label: "Nueva importacion", onClick: () => setCreateOpen(true) }}
           />
-        }
+        )}
       />
 
-      {/* Create dialog */}
       <ImportDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
@@ -180,10 +191,13 @@ export default function ImportsPage() {
         isLoading={createMutation.isPending}
       />
 
-      {/* Detail dialog */}
       <BatchDetailDialog
         open={!!detailBatch}
-        onOpenChange={(open) => { if (!open) setDetailBatch(null); }}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailBatch(null);
+          }
+        }}
         batch={detailBatch}
       />
     </div>

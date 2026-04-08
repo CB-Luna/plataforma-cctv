@@ -10,13 +10,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react";
+import { MoreHorizontal, Trash2, Eye } from "lucide-react";
 
 interface ColumnActions {
-  onEdit: (camera: Camera) => void;
   onDelete: (camera: Camera) => void;
   onView: (camera: Camera) => void;
+  siteNames: Map<string, string>;
+  nvrNames: Map<string, string>;
 }
 
 export function getColumns(actions: ColumnActions): ColumnDef<Camera>[] {
@@ -32,6 +32,24 @@ export function getColumns(actions: ColumnActions): ColumnDef<Camera>[] {
           )}
         </div>
       ),
+    },
+    {
+      id: "site",
+      header: "Sitio",
+      cell: ({ row }) => {
+        const siteId = row.original.site_id ?? "";
+        if (!siteId) return "Sin sitio";
+        return actions.siteNames.get(siteId) ?? "Sitio asignado";
+      },
+    },
+    {
+      id: "nvr",
+      header: "NVR",
+      cell: ({ row }) => {
+        const nvrId = row.original.nvr_server_id ?? "";
+        if (!nvrId) return "Sin NVR";
+        return actions.nvrNames.get(nvrId) ?? "NVR asignado";
+      },
     },
     {
       accessorKey: "camera_type",
@@ -115,10 +133,6 @@ export function getColumns(actions: ColumnActions): ColumnDef<Camera>[] {
             <DropdownMenuItem onClick={() => actions.onView(row.original)}>
               <Eye className="mr-2 h-4 w-4" />
               Ver detalle
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onEdit(row.original)}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Editar
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => actions.onDelete(row.original)}

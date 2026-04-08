@@ -24,10 +24,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listFloorPlanSites } from "@/lib/api/floor-plans";
+import { useSiteStore } from "@/stores/site-store";
+import { SiteContextBanner } from "@/components/context/site-context-banner";
 
 export default function FloorPlansPage() {
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
+  const currentSite = useSiteStore((state) => state.currentSite);
+  const clearSite = useSiteStore((state) => state.clearSite);
 
   const { data: sites = [], isLoading } = useQuery({
     queryKey: ["floor-plan-sites"],
@@ -43,6 +47,9 @@ export default function FloorPlansPage() {
   // Filtered sites
   const filtered = useMemo(() => {
     let result = sites;
+    if (currentSite) {
+      result = result.filter((site) => site.id === currentSite.id);
+    }
     if (clientFilter !== "all") {
       result = result.filter((s) => s.client_name === clientFilter);
     }
@@ -67,6 +74,12 @@ export default function FloorPlansPage() {
 
   return (
     <div className="space-y-6">
+      <SiteContextBanner
+        site={currentSite}
+        description="La lista de planos queda acotada al sitio activo. Limpia el contexto para volver al inventario completo de sucursales."
+        onClear={clearSite}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Planos Interactivos</h1>

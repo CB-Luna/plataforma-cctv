@@ -416,6 +416,17 @@ export interface ImportStats {
   total_rows_imported: number;
 }
 
+export interface ImportAssistantAnalysisResponse {
+  template_name?: string;
+  confidence?: number;
+  mode?: string;
+  suggested_targets?: string[];
+  findings?: string[];
+  recommended_mappings?: Record<string, Record<string, string>>;
+  analysis_id?: string;
+  model_used?: string;
+}
+
 // ──── Tickets ────
 
 export interface Ticket {

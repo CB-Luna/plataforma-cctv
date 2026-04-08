@@ -1,16 +1,86 @@
 "use client";
 
+import { useCallback, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useCallback, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Info } from "lucide-react";
 import { getFloorPlanBySite, saveFloorPlan } from "@/lib/api/floor-plans";
 import { useFloorPlanEditorStore } from "@/stores/floor-plan-editor-store";
 import { FloorPlanEditorLayout } from "@/components/floor-plan-editor/floor-plan-editor-layout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import type { FloorPlanDocument, SaveFloorPlanRequest } from "@/types/api";
-import type { EditorCamera, EditorElement } from "@/lib/floor-plan/types";
+import type { EditorCamera, EditorElement, SerializedDocument } from "@/lib/floor-plan/types";
+
+interface ExtendedFloorPlanDocument extends FloorPlanDocument {
+  editor_document?: SerializedDocument;
+}
+
+function buildEditorDocument(
+  document: ExtendedFloorPlanDocument | undefined,
+  canvas: { width?: number; height?: number; grid?: number },
+): SerializedDocument {
+  if (document?.editor_document) {
+    return document.editor_document;
+  }
+
+  const editorElements: EditorElement[] = [];
+  const editorCameras: EditorCamera[] = [];
+
+  for (const element of document?.elements ?? []) {
+    if (element.type === "camera") {
+      editorCameras.push({
+        id: element.id,
+        linkedCameraId: element.entity_id ?? null,
+        name: element.name,
+        iconType: "dome",
+        x: element.x,
+        y: element.y,
+        rotation: element.rotation ?? 0,
+        fovAngle: element.fov_angle ?? 90,
+        range: element.fov_range ?? 80,
+        color: element.color,
+      });
+      continue;
+    }
+
+    if (element.type === "nvr") {
+      editorElements.push({
+        id: element.id,
+        type: "room",
+        x: element.x,
+        y: element.y,
+        width: 24,
+        height: 24,
+        name: element.name,
+        fillColor: element.color ?? "#8b5cf6",
+        strokeColor: "#6d28d9",
+      });
+      continue;
+    }
+
+    editorElements.push({
+      id: element.id,
+      type: "text",
+      x: element.x,
+      y: element.y,
+      text: element.name,
+      fontSize: 14,
+    });
+  }
+
+  return {
+    elements: editorElements,
+    cameras: editorCameras,
+    config: {
+      canvasWidth: canvas.width ?? 1200,
+      canvasHeight: canvas.height ?? 800,
+      gridSize: canvas.grid ?? 20,
+      gridEnabled: true,
+    },
+  };
+}
 
 export default function FloorPlanDetailPage() {
   const params = useParams();
@@ -19,134 +89,104 @@ export default function FloorPlanDetailPage() {
   const siteId = params.id as string;
   const initializedRef = useRef(false);
 
-  const loadDocument = useFloorPlanEditorStore((s) => s.loadDocument);
-  const serializeDocument = useFloorPlanEditorStore((s) => s.serializeDocument);
-  const planName = useFloorPlanEditorStore((s) => s.planName);
+  const loadDocument = useFloorPlanEditorStore((state) => state.loadDocument);
+  const serializeDocument = useFloorPlanEditorStore((state) => state.serializeDocument);
+  const planName = useFloorPlanEditorStore((state) => state.planName);
 
   const { data, isLoading } = useQuery({
     queryKey: ["floor-plan", siteId],
     queryFn: () => getFloorPlanBySite(siteId),
   });
 
-  // Initialize store from server data
   useEffect(() => {
     if (!data || initializedRef.current) return;
     initializedRef.current = true;
 
-    const fp = data.floor_plan;
-    const apiElements = fp?.document?.elements ?? [];
-    // Convert legacy API elements → new editor format
-    const editorElements: EditorElement[] = [];
-    const editorCameras: EditorCamera[] = [];
-    for (const el of apiElements) {
-      if (el.type === "camera") {
-        editorCameras.push({
-          id: el.id,
-          linkedCameraId: el.entity_id ?? null,
-          name: el.name,
-          iconType: "dome",
-          x: el.x,
-          y: el.y,
-          rotation: el.rotation ?? 0,
-          fovAngle: el.fov_angle ?? 90,
-          range: el.fov_range ?? 80,
-          color: el.color,
-        });
-      } else if (el.type === "nvr") {
-        // Keep NVRs as room elements for now
-        editorElements.push({
-          id: el.id,
-          type: "room",
-          x: el.x,
-          y: el.y,
-          width: 24,
-          height: 24,
-          name: el.name,
-          fillColor: el.color ?? "#8b5cf6",
-          strokeColor: "#6d28d9",
-        });
-      } else {
-        editorElements.push({
-          id: el.id,
-          type: "text",
-          x: el.x,
-          y: el.y,
-          text: el.name,
-          fontSize: 14,
-        });
-      }
-    }
+    const floorPlan = data.floor_plan;
+    const editorDocument = buildEditorDocument(
+      floorPlan?.document as ExtendedFloorPlanDocument | undefined,
+      {
+        width: floorPlan?.canvas_width,
+        height: floorPlan?.canvas_height,
+        grid: floorPlan?.grid_size,
+      },
+    );
 
     loadDocument(
       {
-        elements: editorElements,
-        cameras: editorCameras,
+        ...editorDocument,
         config: {
-          canvasWidth: fp?.canvas_width ?? 1200,
-          canvasHeight: fp?.canvas_height ?? 800,
-          gridSize: fp?.grid_size ?? 20,
-          gridEnabled: true,
+          canvasWidth: floorPlan?.canvas_width ?? editorDocument.config.canvasWidth,
+          canvasHeight: floorPlan?.canvas_height ?? editorDocument.config.canvasHeight,
+          gridSize: floorPlan?.grid_size ?? editorDocument.config.gridSize,
+          gridEnabled: editorDocument.config.gridEnabled ?? true,
         },
       },
-      fp?.name ?? `Plano - ${data.site.name}`,
+      floorPlan?.name ?? `Plano - ${data.site.name}`,
       siteId,
     );
-  }, [data, siteId, loadDocument]);
+  }, [data, loadDocument, siteId]);
 
-  const saveMut = useMutation({
-    mutationFn: (req: SaveFloorPlanRequest) => saveFloorPlan(siteId, req),
+  const saveMutation = useMutation({
+    mutationFn: (payload: SaveFloorPlanRequest) => saveFloorPlan(siteId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["floor-plan", siteId] });
       queryClient.invalidateQueries({ queryKey: ["floor-plan-sites"] });
       toast.success("Plano guardado");
     },
-    onError: () => toast.error("Error al guardar plano"),
+    onError: () => toast.error("No se pudo guardar el plano"),
   });
 
   const handleSave = useCallback(() => {
-    const doc = serializeDocument();
-    // Map back to API format
-    const apiElements = [
-      ...doc.cameras.map((c) => ({
-        id: c.id,
+    const editorDocument = serializeDocument();
+    const legacyElements = [
+      ...editorDocument.cameras.map((camera) => ({
+        id: camera.id,
         type: "camera" as const,
-        entity_id: c.linkedCameraId ?? undefined,
-        name: c.name,
-        x: c.x,
-        y: c.y,
-        rotation: c.rotation,
-        fov_angle: c.fovAngle,
-        fov_range: c.range,
-        color: c.color,
+        entity_id: camera.linkedCameraId ?? undefined,
+        name: camera.name,
+        x: camera.x,
+        y: camera.y,
+        rotation: camera.rotation,
+        fov_angle: camera.fovAngle,
+        fov_range: camera.range,
+        color: camera.color,
       })),
-      ...doc.elements.map((el) => ({
-        id: el.id,
-        type: (el.type === "room" || el.type === "zone" ? "label" : "label") as "camera" | "nvr" | "label",
-        name: el.name ?? el.text ?? "",
-        x: el.x,
-        y: el.y,
-        color: el.fillColor,
+      ...editorDocument.elements.map((element) => ({
+        id: element.id,
+        type: "label" as const,
+        name: element.name ?? element.text ?? "",
+        x: element.x,
+        y: element.y,
+        color: element.fillColor,
       })),
     ];
-    const apiDoc: FloorPlanDocument = { elements: apiElements };
-    saveMut.mutate({
+
+    const existingDocument = (data?.floor_plan?.document as ExtendedFloorPlanDocument | undefined) ?? {};
+    const document: ExtendedFloorPlanDocument = {
+      ...existingDocument,
+      elements: legacyElements,
+      editor_document: editorDocument,
+      backgroundImage: existingDocument.backgroundImage,
+    };
+
+    saveMutation.mutate({
       name: planName,
       version: data?.floor_plan?.version ?? 1,
-      canvas_width: doc.config.canvasWidth,
-      canvas_height: doc.config.canvasHeight,
-      grid_size: doc.config.gridSize,
+      canvas_width: editorDocument.config.canvasWidth,
+      canvas_height: editorDocument.config.canvasHeight,
+      grid_size: editorDocument.config.gridSize,
       background_file_id: data?.floor_plan?.background_file_id,
-      document: apiDoc,
+      document,
     });
-  }, [serializeDocument, planName, data, saveMut, siteId]);
+  }, [data?.floor_plan?.background_file_id, data?.floor_plan?.document, data?.floor_plan?.version, planName, saveMutation, serializeDocument]);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Cargando plano...</div>;
+    return <div className="flex h-64 items-center justify-center text-muted-foreground">Cargando plano...</div>;
   }
 
   return (
-    <div className="space-y-2">
-      {/* Header */}
+    <div className="space-y-3">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => router.push("/floor-plans")}>
           <ArrowLeft className="h-5 w-5" />
@@ -154,12 +194,25 @@ export default function FloorPlanDetailPage() {
         <div>
           <h1 className="text-xl font-bold tracking-tight">{data?.site.name}</h1>
           <p className="text-xs text-muted-foreground">
-            {data?.site.camera_count} cámaras · {data?.site.nvr_count} NVRs
+            {data?.site.camera_count} camaras · {data?.site.nvr_count} NVRs
           </p>
         </div>
       </div>
 
-      <FloorPlanEditorLayout onSave={handleSave} isSaving={saveMut.isPending} />
+      <Card className="border-sky-200 bg-sky-50/80">
+        <CardContent className="flex gap-3 py-4 text-sm text-sky-950">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" />
+          <div>
+            <p className="font-medium">Persistencia defendible del editor</p>
+            <p className="mt-1 text-xs text-sky-800">
+              El guardado conserva una proyeccion legacy para compatibilidad y, ademas, una version
+              enriquecida del documento editor para no perder habitaciones, zonas, puertas o poligonos.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <FloorPlanEditorLayout onSave={handleSave} isSaving={saveMutation.isPending} />
     </div>
   );
 }

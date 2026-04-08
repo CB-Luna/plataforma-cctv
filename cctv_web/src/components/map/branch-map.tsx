@@ -33,13 +33,11 @@ interface BranchMapProps {
 }
 
 export default function BranchMap({ sites, filterClient }: BranchMapProps) {
-  // Assign coordinates to sites based on city lookup
   const sitesWithCoords: SiteWithCoords[] = sites
     .filter((s) => !filterClient || s.client_name === filterClient)
     .map((site, idx) => {
       const coords = getCityCoords(site.city, site.state);
       if (coords) return { ...site, ...coords };
-      // Fallback: spread around Monterrey area with deterministic offset
       return {
         ...site,
         lat: 25.6866 + (idx % 5) * 0.05 - 0.1,
@@ -78,6 +76,9 @@ export default function BranchMap({ sites, filterClient }: BranchMapProps) {
                   {[site.address, site.city, site.state].filter(Boolean).join(", ")}
                 </p>
               )}
+              <p className="rounded bg-amber-50 px-2 py-1 text-[11px] text-amber-800">
+                Posicion referencial por ciudad; no representa coordenadas exactas del predio.
+              </p>
               <div className="flex gap-4 border-t pt-2 text-xs">
                 <span className="flex items-center gap-1">
                   {createElement(Camera, { className: "h-3 w-3" })}

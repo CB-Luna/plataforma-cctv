@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useEffect } from "react";
 import type { NvrServer } from "@/types/api";
+import { listSites } from "@/lib/api/sites";
+import { useSiteStore } from "@/stores/site-store";
 import {
   Dialog,
   DialogContent,
@@ -14,8 +17,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,31 +28,43 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AlertTriangle, Info } from "lucide-react";
+
+const optionalString = () =>
+  z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().optional(),
+  );
+
+const optionalNumber = () =>
+  z.preprocess((value) => {
+    if (value === "" || value == null || Number.isNaN(value)) return undefined;
+    return value;
+  }, z.number().int().min(0).optional());
 
 const nvrSchema = z.object({
-  name: z.string().min(2, "Mínimo 2 caracteres"),
-  code: z.string().optional(),
-  model: z.string().optional(),
-  ip_address: z.string().optional(),
-  subnet_mask: z.string().optional(),
-  gateway: z.string().optional(),
-  mac_address: z.string().optional(),
-  camera_channels: z.number().int().min(0).optional(),
-  tpv_channels: z.number().int().min(0).optional(),
-  lpr_channels: z.number().int().min(0).optional(),
-  total_storage_tb: z.number().min(0).optional(),
-  recording_days: z.number().int().min(0).optional(),
-  processor: z.string().optional(),
-  ram_gb: z.number().int().min(0).optional(),
-  os_name: z.string().optional(),
-  edition: z.string().optional(),
-  vms_version: z.string().optional(),
-  service_tag: z.string().optional(),
-  status: z.string().optional(),
-  notes: z.string().optional(),
+  site_id: z.string().min(1, "Selecciona un sitio"),
+  name: z.string().min(2, "Minimo 2 caracteres"),
+  code: optionalString(),
+  vms_server_id: optionalString(),
+  edition: optionalString(),
+  vms_version: optionalString(),
+  camera_channels: optionalNumber(),
+  tpv_channels: optionalNumber(),
+  lpr_channels: optionalNumber(),
+  integration_connections: optionalNumber(),
+  model: optionalString(),
+  service_tag: optionalString(),
+  service_code: optionalString(),
+  processor: optionalString(),
+  ram_gb: optionalNumber(),
+  os_name: optionalString(),
+  system_type: optionalString(),
+  notes: optionalString(),
 });
 
-type NvrFormValues = z.infer<typeof nvrSchema>;
+type NvrFormValues = z.output<typeof nvrSchema>;
+type NvrFormInput = z.input<typeof nvrSchema>;
 
 export type { NvrFormValues };
 
@@ -66,7 +83,14 @@ export function NvrDialog({
   onSubmit,
   isSubmitting,
 }: NvrDialogProps) {
-  const isEdit = !!nvr;
+  const currentSite = useSiteStore((state) => state.currentSite);
+  const isEdit = Boolean(nvr);
+
+  const { data: sites = [] } = useQuery({
+    queryKey: ["sites"],
+    queryFn: listSites,
+    enabled: open,
+  });
 
   const {
     register,
@@ -75,203 +99,269 @@ export function NvrDialog({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<NvrFormValues>({
+  } = useForm<NvrFormInput, unknown, NvrFormValues>({
     resolver: zodResolver(nvrSchema),
     defaultValues: {
-      status: "active",
+      site_id: currentSite?.id ?? "",
     },
   });
 
   useEffect(() => {
     if (nvr) {
       reset({
+        site_id: nvr.site_id ?? currentSite?.id ?? "",
         name: nvr.name,
         code: nvr.code ?? "",
-        model: nvr.model ?? "",
-        ip_address: nvr.ip_address ?? "",
-        subnet_mask: nvr.subnet_mask ?? "",
-        gateway: nvr.gateway ?? "",
-        mac_address: nvr.mac_address ?? "",
+        vms_server_id: nvr.vms_server_id ?? "",
+        edition: nvr.edition ?? "",
+        vms_version: nvr.vms_version ?? "",
         camera_channels: nvr.camera_channels ?? undefined,
         tpv_channels: nvr.tpv_channels ?? undefined,
         lpr_channels: nvr.lpr_channels ?? undefined,
-        total_storage_tb: nvr.total_storage_tb ?? undefined,
-        recording_days: nvr.recording_days ?? undefined,
+        integration_connections: nvr.integration_connections ?? undefined,
+        model: nvr.model ?? "",
+        service_tag: nvr.service_tag ?? "",
+        service_code: nvr.service_code ?? "",
         processor: nvr.processor ?? "",
         ram_gb: nvr.ram_gb ?? undefined,
         os_name: nvr.os_name ?? "",
-        edition: nvr.edition ?? "",
-        vms_version: nvr.vms_version ?? "",
-        service_tag: nvr.service_tag ?? "",
-        status: nvr.status ?? "active",
+        system_type: nvr.system_type ?? "",
         notes: nvr.notes ?? "",
       });
-    } else {
-      reset({ status: "active" });
+      return;
     }
-  }, [nvr, reset]);
 
-  const handleOpenChange = (val: boolean) => {
-    if (!val) reset({ status: "active" });
-    onOpenChange(val);
+    reset({
+      site_id: currentSite?.id ?? "",
+      name: "",
+      code: "",
+      vms_server_id: "",
+      edition: "",
+      vms_version: "",
+      camera_channels: undefined,
+      tpv_channels: undefined,
+      lpr_channels: undefined,
+      integration_connections: undefined,
+      model: "",
+      service_tag: "",
+      service_code: "",
+      processor: "",
+      ram_gb: undefined,
+      os_name: "",
+      system_type: "",
+      notes: "",
+    });
+  }, [currentSite?.id, nvr, reset]);
+
+  const handleOpenChange = (value: boolean) => {
+    if (!value) {
+      reset({ site_id: currentSite?.id ?? "" });
+    }
+    onOpenChange(value);
   };
-
-  const statusVal = watch("status");
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar NVR" : "Nuevo NVR"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar NVR base" : "Nuevo NVR"}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Actualiza la información del servidor NVR."
-              : "Completa los datos del servidor NVR."}
+              ? "La edicion manual solo cubre los campos que el backend realmente actualiza. Red, almacenamiento, fechas y estado avanzado siguen dependiendo de importacion o procesos especializados."
+              : "La alta manual registra el contexto del servidor y su configuracion base. Los campos tecnicos avanzados se mantienen honestamente acotados al contrato actual."}
           </DialogDescription>
         </DialogHeader>
 
+        <div className="grid gap-3 md:grid-cols-2">
+          <Card className="border-amber-200 bg-amber-50/80">
+            <CardContent className="flex gap-3 py-4">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+              <div className="text-sm text-amber-950">
+                <p className="font-medium">Contrato manual parcial</p>
+                <p className="mt-1 text-xs text-amber-800">
+                  La UI no promete captura manual de IP, MAC, almacenamiento, dias de grabacion ni
+                  fechas operativas porque el backend actual no las persiste desde este formulario.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-sky-200 bg-sky-50/80">
+            <CardContent className="flex gap-3 py-4">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" />
+              <div className="text-sm text-sky-950">
+                <p className="font-medium">Contexto recomendado</p>
+                <p className="mt-1 text-xs text-sky-800">
+                  Vincula cada NVR a un sitio. Ese contexto es el que consumen inventario, floor plans y
+                  topologia cuando la operacion se filtra por sucursal.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* General */}
           <fieldset className="space-y-4">
-            <legend className="text-sm font-semibold text-muted-foreground">General</legend>
-            <div className="grid grid-cols-2 gap-4">
+            <legend className="text-sm font-semibold text-muted-foreground">Contexto operativo</legend>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Sitio / sucursal *</Label>
+                <Select
+                  value={watch("site_id") ?? ""}
+                  onValueChange={(value) => setValue("site_id", value ?? "", { shouldValidate: true })}
+                  disabled={isEdit}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un sitio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sites.map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.site_id && <p className="text-xs text-destructive">{errors.site_id.message}</p>}
+                {isEdit && (
+                  <p className="text-xs text-muted-foreground">
+                    El cambio de sitio no se expone en edicion manual con el contrato actual.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vms_server_id">ID / referencia VMS</Label>
+                <Input
+                  id="vms_server_id"
+                  {...register("vms_server_id")}
+                  disabled={isEdit}
+                />
+                {isEdit && (
+                  <p className="text-xs text-muted-foreground">
+                    La referencia VMS permanece visible, pero hoy no se actualiza desde UI.
+                  </p>
+                )}
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-semibold text-muted-foreground">Identificacion</legend>
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre *</Label>
                 <Input id="name" {...register("name")} />
                 {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="code">Código</Label>
+                <Label htmlFor="code">Codigo</Label>
                 <Input id="code" placeholder="NVR-001" {...register("code")} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="model">Modelo</Label>
-                <Input id="model" placeholder="Dell PowerEdge R640" {...register("model")} />
+                <Input id="model" {...register("model")} />
               </div>
               <div className="space-y-2">
-                <Label>Estado</Label>
-                <Select
-                  value={statusVal}
-                  onValueChange={(val) => { if (val) setValue("status", val); }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Activo</SelectItem>
-                    <SelectItem value="inactive">Inactivo</SelectItem>
-                    <SelectItem value="maintenance">Mantenimiento</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </fieldset>
-
-          {/* Red */}
-          <fieldset className="space-y-4">
-            <legend className="text-sm font-semibold text-muted-foreground">Red</legend>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ip_address">IP</Label>
-                <Input id="ip_address" placeholder="192.168.1.100" {...register("ip_address")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mac_address">MAC</Label>
-                <Input id="mac_address" placeholder="00:1A:2B:3C:4D:5E" {...register("mac_address")} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="subnet_mask">Máscara de subred</Label>
-                <Input id="subnet_mask" placeholder="255.255.255.0" {...register("subnet_mask")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gateway">Gateway</Label>
-                <Input id="gateway" placeholder="192.168.1.1" {...register("gateway")} />
-              </div>
-            </div>
-          </fieldset>
-
-          {/* Canales y Almacenamiento */}
-          <fieldset className="space-y-4">
-            <legend className="text-sm font-semibold text-muted-foreground">Canales y Almacenamiento</legend>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="camera_channels">Canales cámara</Label>
-                <Input id="camera_channels" type="number" {...register("camera_channels", { valueAsNumber: true })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tpv_channels">Canales TPV</Label>
-                <Input id="tpv_channels" type="number" {...register("tpv_channels", { valueAsNumber: true })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lpr_channels">Canales LPR</Label>
-                <Input id="lpr_channels" type="number" {...register("lpr_channels", { valueAsNumber: true })} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="total_storage_tb">Almacenamiento (TB)</Label>
-                <Input id="total_storage_tb" type="number" step="0.1" {...register("total_storage_tb", { valueAsNumber: true })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="recording_days">Días de grabación</Label>
-                <Input id="recording_days" type="number" {...register("recording_days", { valueAsNumber: true })} />
-              </div>
-            </div>
-          </fieldset>
-
-          {/* Hardware */}
-          <fieldset className="space-y-4">
-            <legend className="text-sm font-semibold text-muted-foreground">Hardware y Software</legend>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="processor">Procesador</Label>
-                <Input id="processor" {...register("processor")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ram_gb">RAM (GB)</Label>
-                <Input id="ram_gb" type="number" {...register("ram_gb", { valueAsNumber: true })} />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="os_name">Sistema operativo</Label>
-                <Input id="os_name" {...register("os_name")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edition">Edición VMS</Label>
+                <Label htmlFor="edition">Edicion</Label>
                 <Input id="edition" {...register("edition")} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="vms_version">Versión VMS</Label>
+                <Label htmlFor="vms_version">Version VMS</Label>
                 <Input id="vms_version" {...register("vms_version")} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="service_tag">Service Tag</Label>
-              <Input id="service_tag" {...register("service_tag")} />
+          </fieldset>
+
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-semibold text-muted-foreground">Capacidad manual disponible</legend>
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="camera_channels">Canales camara</Label>
+                <Input
+                  id="camera_channels"
+                  type="number"
+                  {...register("camera_channels", { valueAsNumber: true })}
+                  disabled={isEdit}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tpv_channels">Canales TPV</Label>
+                <Input
+                  id="tpv_channels"
+                  type="number"
+                  {...register("tpv_channels", { valueAsNumber: true })}
+                  disabled={isEdit}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lpr_channels">Canales LPR</Label>
+                <Input
+                  id="lpr_channels"
+                  type="number"
+                  {...register("lpr_channels", { valueAsNumber: true })}
+                  disabled={isEdit}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="integration_connections">Integraciones</Label>
+                <Input
+                  id="integration_connections"
+                  type="number"
+                  {...register("integration_connections", { valueAsNumber: true })}
+                  disabled={isEdit}
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="space-y-2">
+                <Label htmlFor="service_tag">Service Tag</Label>
+                <Input id="service_tag" {...register("service_tag")} disabled={isEdit} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="service_code">Service Code</Label>
+                <Input id="service_code" {...register("service_code")} disabled={isEdit} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="processor">Procesador</Label>
+                <Input id="processor" {...register("processor")} disabled={isEdit} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ram_gb">RAM (GB)</Label>
+                <Input
+                  id="ram_gb"
+                  type="number"
+                  {...register("ram_gb", { valueAsNumber: true })}
+                  disabled={isEdit}
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="os_name">Sistema operativo</Label>
+                <Input id="os_name" {...register("os_name")} disabled={isEdit} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="system_type">Tipo de sistema</Label>
+                <Input id="system_type" {...register("system_type")} disabled={isEdit} />
+              </div>
             </div>
           </fieldset>
 
-          {/* Notas */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notas</Label>
-            <textarea
-              id="notes"
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("notes")}
-            />
-          </div>
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-semibold text-muted-foreground">Notas</legend>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notas operativas</Label>
+              <Textarea id="notes" {...register("notes")} />
+            </div>
+          </fieldset>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-              Cancelar
+              Cerrar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Guardando..." : isEdit ? "Actualizar" : "Crear"}
+              {isSubmitting ? "Guardando..." : isEdit ? "Actualizar base" : "Crear NVR"}
             </Button>
           </DialogFooter>
         </form>
