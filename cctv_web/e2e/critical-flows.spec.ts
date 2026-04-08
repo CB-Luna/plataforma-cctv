@@ -8,8 +8,8 @@ const TEST_PASSWORD = "Password123!";
 async function doLogin(page: Page) {
   await page.goto("/login");
   await expect(page.getByText("Accede a tu cuenta")).toBeVisible();
-  await page.getByLabel("Email").fill(TEST_EMAIL);
-  await page.getByLabel("Contraseña").fill(TEST_PASSWORD);
+  await page.locator("#email").fill(TEST_EMAIL);
+  await page.locator("#password").fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Ingresar" }).click();
   await page.waitForURL(/\/(select-company|dashboard)/, { timeout: 15_000 });
 }
@@ -289,29 +289,29 @@ test.describe("10 - Settings / Admin", () => {
     await page.goto("/settings");
   });
 
-  test("muestra TabLayout con tabs", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Configuración" })).toBeVisible({ timeout: 10_000 });
-    // TabLayout renders buttons — tab labels: Usuarios, Empresas, Roles y Permisos, Tema, IA, Storage
-    await expect(page.getByRole("button", { name: /usuarios/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /empresas/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /roles/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Tema", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /storage/i })).toBeVisible();
+  test("muestra shell enterprise con scopes", async ({ page }) => {
+    await expect(page.getByRole("heading", { name: "Backoffice enterprise" })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("button", { name: /backoffice global/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /portal de empresa/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Empresas", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Plantillas de menu", exact: true })).toBeVisible();
   });
 
-  test("navegación entre tabs funciona", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /usuarios/i })).toBeVisible({ timeout: 10_000 });
-    // Click Empresas tab (state-based, stays on /settings)
-    await page.getByRole("button", { name: /empresas/i }).click();
+  test("navegación entre scopes y tabs funciona", async ({ page }) => {
+    await expect(page.getByRole("button", { name: "Empresas", exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole("button", { name: "Plantillas de menu", exact: true }).click();
     expect(page.url()).toContain("/settings");
-    // Click Roles tab
+    await page.getByRole("button", { name: /portal de empresa/i }).click();
+    await expect(page.getByRole("button", { name: /usuarios/i })).toBeVisible();
     await page.getByRole("button", { name: /roles/i }).click();
     expect(page.url()).toContain("/settings");
   });
 
   test("configuración muestra contenido del tenant", async ({ page }) => {
     await expect(page.locator("main")).toBeVisible();
-    // Settings debe mostrar información general del tenant
+    await page.getByRole("button", { name: /portal de empresa/i }).click();
+    await page.getByRole("button", { name: "Tema", exact: true }).click();
+    await expect(page.getByText("Branding y configuracion visual del tenant", { exact: true })).toBeVisible();
     const mainText = await page.locator("main").textContent();
     expect(mainText?.length).toBeGreaterThan(50);
   });

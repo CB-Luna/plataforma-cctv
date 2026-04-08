@@ -65,16 +65,30 @@ export interface Permission {
 // GET /menu response
 export interface MenuResponse {
   items: MenuItem[];
+  user_info?: MenuUserInfo;
 }
 
 export interface MenuItem {
   id: string;
   label: string;
   icon: string;
-  route?: string;
-  permission?: string;
+  route?: string | null;
+  permission?: string | null;
+  badge?: MenuBadge | null;
   order: number;
   children?: MenuItem[];
+}
+
+export interface MenuBadge {
+  value: string;
+  color: string;
+}
+
+export interface MenuUserInfo {
+  name: string;
+  email: string;
+  avatar?: string | null;
+  role: string;
 }
 
 // GET /settings response
@@ -145,6 +159,64 @@ export interface TenantStats {
   total_tenants: number;
   active_tenants: number;
 }
+
+export interface MenuTemplate {
+  id: string;
+  name: string;
+  description?: string | null;
+  is_default: boolean;
+  tenant_count: number;
+  created_at: string;
+}
+
+export interface MenuTenantBasic {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url?: string | null;
+}
+
+export interface AdminMenuItem {
+  id: string;
+  tenant_id?: string | null;
+  template_id?: string | null;
+  code: string;
+  label: string;
+  title: string;
+  icon?: string | null;
+  route?: string | null;
+  parent_id?: string | null;
+  required_permission?: string | null;
+  display_order: number;
+  order_index: number;
+  is_active: boolean;
+  is_visible: boolean;
+  badge_text?: string | null;
+  badge_color?: string | null;
+  description?: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  template_count: number;
+}
+
+export interface TemplateItemAssignment {
+  id: string;
+  template_id: string;
+  menu_item_id: string;
+  display_order: number;
+  is_visible: boolean;
+  item_code: string;
+  item_label: string;
+  item_icon: string;
+  item_route: string;
+}
+
+export interface CreateMenuTemplateRequest {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateMenuTemplateRequest extends CreateMenuTemplateRequest {}
 
 // --- Clients (Fase 2) ---
 

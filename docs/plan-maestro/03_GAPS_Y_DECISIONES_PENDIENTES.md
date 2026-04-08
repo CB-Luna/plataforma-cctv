@@ -29,6 +29,16 @@ Durante la ejecucion de Fase 4 se cerraron y/o dejaron explicitados estos puntos
 - La edicion de polizas ya comunica que una poliza site-scoped no puede volver a cobertura cliente por update mientras la API no permita limpiar `site_id`.
 - La configuracion `business_hours` en SLA sigue siendo documental; el motor real continua calculando horas corridas.
 
+## Actualizacion Fase 5 (2026-04-07)
+
+Durante la ejecucion de Fase 5 se cerraron y/o dejaron explicitados estos puntos:
+
+- `/settings` ya separa de forma visible `Plataforma` vs `Tenant activo`, por lo que ownership global y tenant dejan de verse mezclados.
+- La gestion de empresas ya incorpora upload de logo por tenant y rehidrata el snapshot local cuando coincide con la empresa activa.
+- La web ya cuenta con una consola inicial de `menu_templates` operando sobre el backend real para plantillas, tenants asignados y composicion base del menu.
+- La configuracion tenant de tema ahora sincroniza la paleta con el snapshot local usado por header y theme provider.
+- La navegacion runtime sigue fija por decision honesta de fase; el backend de menu ya se administra, pero aun no gobierna el sidebar operativo.
+
 ## GAP de backend / API
 
 | ID | GAP | Evidencia | Impacto | Recomendación |
@@ -53,11 +63,11 @@ Durante la ejecucion de Fase 4 se cerraron y/o dejaron explicitados estos puntos
 | FE-04 | Importación masiva no sube archivo ni genera carga útil útil | `import-dialog.tsx` manda `data: []` y solo guarda filename | Flujo aparenta importar cuando no completa el proceso | Rehacer flujo o marcarlo como carga manual asistida |
 | FE-05 | Tickets usan UUID manual para cliente, sitio y técnico | `ticket-dialog.tsx`, `ticket-actions.tsx` | UX frágil, propensa a error | Reemplazar por selectores y búsquedas |
 | FE-06 | Pólizas usan UUID manual para cliente, sitio y activos | `policy-dialog.tsx`, `policies/[id]/page.tsx` | UX frágil y poco enterprise | Reemplazar por selectores ligados a datos reales |
-| FE-07 | Sidebar no usa el menú dinámico completo del backend | `sidebar.tsx` construye menú hardcodeado | El menú por tenant/plantilla no se materializa | Definir si el frontend debe volverse realmente dinámico |
+| FE-07 | Sidebar runtime aun no usa el menú dinámico completo del backend | `sidebar.tsx` sigue hardcodeado; Fase 5 ya agrego consola real de `menu_templates` en `/settings` | El producto administra plantillas, pero todavia no las capitaliza en la navegacion diaria | Dejar la integracion runtime del menu como cierre posterior y no prometer dinamismo ya operativo |
 | FE-08 | No hay guardas de permisos por página/acción | `usePermissions` existe pero está sin uso real; permisos se usan casi solo en sidebar | Riesgo de acciones visibles fuera de scope | Añadir política de permisos transversal |
 | FE-09 | Mapa usa coordenadas sintéticas | `branch-map.tsx`, `city-coordinates.ts` | Módulo demostrable, pero no confiable para operación real | Etiquetarlo como aproximado o sacarlo de core |
 | FE-10 | Persistencia de floor plans es parcial | `floor-plans/[id]/page.tsx` convierte muchos elementos a `label` al guardar | Pérdida de semántica del plano | Limitar herramientas o mejorar mapeo permitido por backend |
-| FE-11 | No hay UI para logo de tenant pese a existir endpoint | `tenants.ts` expone `uploadTenantLogo`; no hay referencia UI | Configuración de empresa queda incompleta | Incorporar como tarea de cierre de configuración |
+| FE-11 | Branding de tenant no tiene flujo avanzado de media | Fase 5 ya usa `uploadTenantLogo`, pero no hay recorte, validacion fuerte ni variantes por canal | El branding base existe, pero no esta endurecido para casos enterprise complejos | Mantener upload simple y dejar tratamiento avanzado para hardening posterior |
 | FE-12 | Varias rutas administrativas son solo redirects a `/settings` | `/users`, `/roles`, `/storage`, `/intelligence`, `/tenants` | Duplica superficie sin navegación profunda por URL | Decidir si se mantienen como aliases o se eliminan |
 
 ## GAP de modelo de negocio
@@ -85,8 +95,8 @@ Durante la ejecucion de Fase 4 se cerraron y/o dejaron explicitados estos puntos
 |---|---|---|---|---|
 | MT-01 | Multiempresa prometida, pero no cerrada | login, select-company, header, auth-store, middleware backend | Riesgo mayor de producto | Hacer de esto la primera fase real |
 | MT-02 | `currentCompany` no se hidrata desde storage de forma robusta | `tenant-store.ts` no reconstruye empresa; layout cae al primer company disponible | Cambios de contexto poco previsibles | Definir fuente única del tenant activo |
-| MT-03 | La configuración parece híbrida, pero no está explicitado qué es global y qué es tenant | `/settings` mezcla tabs de empresas, usuarios, tema, IA y storage | Confusión de ownership | Separar configuración global vs tenant en diseño y docs |
-| MT-04 | Menú por tenant existe en backend, no en experiencia real | backend de menú avanzado + sidebar hardcodeado | El producto no capitaliza su base multi-tenant | Decidir si el menú será verdaderamente dinámico |
+| MT-03 | La configuración híbrida ya es visible, pero aun no existe particion por rutas o productos | Fase 5 separo scopes en `/settings`, aunque varios aliases siguen aterrizando en una sola shell | Menor confusion, pero el backoffice aun depende de una pantalla compartida | Decidir en Fase 6 si basta el shell actual o si conviene abrir rutas/shells dedicados |
+| MT-04 | Menú por tenant ya se administra, pero no gobierna el sidebar operativo | backend de menú avanzado + consola Fase 5 + sidebar hardcodeado | La base multi-tenant ya esta preparada, pero la experiencia final sigue parcial | Confirmar si la V1 cierra con menu fijo o si el runtime dinamico pasa a una fase posterior |
 
 ## GAP de datos demo / seeds / mocks
 

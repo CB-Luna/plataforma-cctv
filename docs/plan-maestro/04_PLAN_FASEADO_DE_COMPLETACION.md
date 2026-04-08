@@ -23,7 +23,7 @@
 | F2 | Completada | 2026-04-07 | Formularios de tickets y polizas ya no dependen de UUID manual para contexto principal, aliases administrativos apuntan a la tab correcta de `/settings`, contexto de sitio aplica en tickets/polizas/inventario, `npm test`, `npm run build` y Playwright Fase 2 verdes |
 | F3 | Completada | 2026-04-07 | Camaras y NVR alineados al contrato manual real, importacion con parseo+mapeo+validacion, floor plans sin perdida de semantica y mapa degradado con precision aproximada, `npm test`, `npm run build` y Playwright Fase 3 verdes |
 | F4 | Completada | 2026-04-07 | Tickets, polizas y SLA ya exponen cobertura real, snapshot SLA, degradaciones honestas de update y validacion Playwright Fase 4 |
-| F5 | Pendiente | - | Requiere consolidacion de backoffice enterprise |
+| F5 | Completada | 2026-04-07 | `/settings` ya separa plataforma vs tenant, branding tenant se rehidrata, existe consola global inicial de `menu_templates`, logo de empresa operadora ya es administrable y Playwright Fase 5 quedo verde |
 | F6 | Pendiente | - | Requiere hardening final, QA ampliado y handoff |
 
 ## Fase 0. Alineacion y decisiones de producto
@@ -226,6 +226,26 @@ La capa contractual deja de ser un conjunto de modulos sueltos y se vuelve un fl
 
 Separar y cerrar la administracion enterprise del portal operativo.
 
+### Estado del checkpoint
+
+Completado el 2026-04-07.
+
+### Resultado materializado
+
+- `/settings` ahora funciona como shell enterprise con separacion visible entre `Backoffice global` y `Portal de empresa`, usando tabs agrupadas por ownership real.
+- `empresas` ya opera branding corporativo con upload de logo por tenant y rehidrata el snapshot local cuando la empresa editada coincide con el tenant activo.
+- `tema` ahora deja explicito que solo gobierna branding del tenant activo y sincroniza la paleta con el snapshot local usado por header y theme provider.
+- `usuarios`, `roles`, `storage` e `ia` ya comunican alcance tenant y limitaciones reales del contrato para no mezclar administracion global con operacion interna.
+- Se agrego una consola inicial de `menu_templates` sobre el backend real: listar, crear, editar, eliminar, asignar tenants, definir composicion base e inspeccionar el menu efectivo resuelto por `GET /menu`.
+- `/settings` y sus aliases administrativos aceptan tambien permisos de `menu`, para no bloquear perfiles globales que solo gestionan plantillas.
+
+### Degradaciones honestas aplicadas
+
+- El sidebar runtime de la web sigue fijo; la consola de plantillas ya administra backend real, pero la navegacion operativa todavia no se hidrata dinamicamente desde `menu_templates`.
+- La composicion de plantilla ya puede resolverse en bloque, pero el orden fino y la visibilidad por item siguen como cierre posterior del modulo de menu.
+- El CRUD separado de roles globales de plataforma no existe aun como superficie explicita; `roles` sigue operando principalmente sobre el tenant activo.
+- Branding corporativo ahora soporta upload de logo, pero no incluye recorte, validacion avanzada ni variantes por canal.
+
 ### Alcance
 
 - Empresas y tenants.
@@ -235,6 +255,20 @@ Separar y cerrar la administracion enterprise del portal operativo.
 - Storage.
 - IA.
 - Evaluacion del modulo de menu por plantillas.
+
+### Fuera de alcance
+
+- Convertir el sidebar operacional a runtime 100% dinamico.
+- Crear CRUD separado de roles globales inexistente en backend/web actual.
+- Resolver orden y visibilidad avanzada por item dentro de cada plantilla.
+
+### Validacion ejecutada
+
+- `npm test` en `cctv_web`: OK.
+- `npm run build` en `cctv_web`: OK.
+- Playwright Fase 5 en `http://localhost:3050`: OK sobre separacion plataforma/tenant, consola global de menu y ownership explicito de tema/IA/storage.
+- Playwright regression de admin/settings en `http://localhost:3050`: OK sobre shell enterprise y navegacion entre scopes/tabs.
+- Playwright regression de aliases administrativos en `http://localhost:3050`: OK sobre `/users`, `/roles` y `/storage` redirigiendo a la tab correcta.
 
 ### Criterio de salida
 
@@ -259,10 +293,10 @@ Existe una definicion defendible de listo para entrega y de GAP aceptado.
 
 ## Siguiente paso recomendado
 
-La siguiente ejecucion en codigo debe ser **Fase 5: Backoffice enterprise**.
+La siguiente ejecucion en codigo debe ser **Fase 6: Calidad, hardening y handoff**.
 
 El razonamiento es:
 
-- Fase 4 ya dejo tickets, polizas y SLA en una capa contractual coherente y con limitaciones honestas.
-- El siguiente riesgo enterprise ya no esta en la operacion diaria, sino en separar ownership global vs tenant dentro de `/settings`, roles, tenants, storage e IA.
-- Resolver Fase 5 antes del hardening final evita que la administracion siga mezclada con el portal operativo.
+- Fase 5 ya despejo el principal riesgo enterprise de ownership y backoffice mezclado.
+- El siguiente cuello de botella ya no es de producto, sino de calidad de entrega: QA ampliado, seeds, scripts, puertos, release notes y cierre de riesgos aceptados.
+- Endurecer ahora evita cerrar una demo fuerte sin checklist final de salida.

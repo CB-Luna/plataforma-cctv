@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Users } from "lucide-react";
-import { usePermissions } from "@/hooks/use-permissions";
+import type { UserAdmin } from "@/types/api";
+import { ScopeCallout } from "@/components/settings/scope-callout";
+import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { listUsers, updateUser, changePassword, deactivateUser, assignRole, removeRole } from "@/lib/api/users";
+import { usePermissions } from "@/hooks/use-permissions";
 import { listRoles } from "@/lib/api/roles";
+import { assignRole, changePassword, deactivateUser, listUsers, removeRole, updateUser } from "@/lib/api/users";
 import { getColumns } from "../../users/columns";
-import { UserDialog, PasswordDialog, RolesDialog, type UserFormValues } from "../../users/user-dialogs";
-import type { UserAdmin } from "@/types/api";
+import { PasswordDialog, RolesDialog, UserDialog, type UserFormValues } from "../../users/user-dialogs";
 
 export function UsersTab() {
   const queryClient = useQueryClient();
@@ -38,7 +40,7 @@ export function UsersTab() {
     queryFn: listRoles,
   });
 
-  const updateMut = useMutation({
+  const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UserFormValues }) => updateUser(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -49,17 +51,17 @@ export function UsersTab() {
     onError: () => toast.error("Error al actualizar usuario"),
   });
 
-  const changePwMut = useMutation({
+  const changePasswordMutation = useMutation({
     mutationFn: ({ id, password }: { id: string; password: string }) => changePassword(id, { password }),
     onSuccess: () => {
-      toast.success("ContraseÃ±a cambiada");
+      toast.success("Contrasena cambiada");
       setPwDialogOpen(false);
       setPwUser(null);
     },
-    onError: () => toast.error("Error al cambiar contraseÃ±a"),
+    onError: () => toast.error("Error al cambiar contrasena"),
   });
 
-  const deactivateMut = useMutation({
+  const deactivateMutation = useMutation({
     mutationFn: deactivateUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -68,7 +70,7 @@ export function UsersTab() {
     onError: () => toast.error("Error al desactivar usuario"),
   });
 
-  const assignRoleMut = useMutation({
+  const assignRoleMutation = useMutation({
     mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) => assignRole(userId, roleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -77,7 +79,7 @@ export function UsersTab() {
     onError: () => toast.error("Error al asignar rol"),
   });
 
-  const removeRoleMut = useMutation({
+  const removeRoleMutation = useMutation({
     mutationFn: ({ userId, roleId }: { userId: string; roleId: string }) => removeRole(userId, roleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -88,10 +90,23 @@ export function UsersTab() {
 
   const columns = getColumns(
     {
-      onEdit: (user) => { setEditUser(user); setEditDialogOpen(true); },
-      onChangePassword: (user) => { setPwUser(user); setPwDialogOpen(true); },
-      onManageRoles: (user) => { setRolesUser(user); setRolesDialogOpen(true); },
-      onDeactivate: (user) => { if (confirm(`Â¿Desactivar a ${user.first_name} ${user.last_name}?`)) deactivateMut.mutate(user.id); },
+      onEdit: (user) => {
+        setEditUser(user);
+        setEditDialogOpen(true);
+      },
+      onChangePassword: (user) => {
+        setPwUser(user);
+        setPwDialogOpen(true);
+      },
+      onManageRoles: (user) => {
+        setRolesUser(user);
+        setRolesDialogOpen(true);
+      },
+      onDeactivate: (user) => {
+        if (confirm(`Desactivar a ${user.first_name} ${user.last_name}?`)) {
+          deactivateMutation.mutate(user.id);
+        }
+      },
     },
     {
       canEdit: canEditUser,
@@ -103,6 +118,20 @@ export function UsersTab() {
 
   return (
     <div className="space-y-6">
+      <ScopeCallout
+        badge="Tenant activo"
+        accent="tenant"
+        title="Usuarios internos de la empresa operadora"
+        description="Esta consola administra personas del tenant activo y sus roles internos. La identidad global de plataforma y el cambio de empresa no se resuelven aqui."
+        footer={
+          <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
+            <Badge variant="outline">{users.length} usuarios</Badge>
+            <Badge variant="outline">{roles.length} roles cargados</Badge>
+            <Badge variant="secondary">Roles globales explicitos: GAP separado</Badge>
+          </div>
+        }
+      />
+
       <DataTable
         columns={columns}
         data={users}
@@ -111,33 +140,42 @@ export function UsersTab() {
           <EmptyState
             icon={Users}
             title="No hay usuarios"
-            description="Los usuarios se gestionan desde el sistema de autenticaciÃ³n."
+            description="Los usuarios de este tenant se gestionan desde el sistema de autenticacion."
           />
         }
       />
 
       <UserDialog
         open={editDialogOpen}
-        onOpenChange={(open) => { setEditDialogOpen(open); if (!open) setEditUser(null); }}
-        onSubmit={(values) => editUser && updateMut.mutate({ id: editUser.id, data: values })}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) setEditUser(null);
+        }}
+        onSubmit={(values) => editUser && updateMutation.mutate({ id: editUser.id, data: values })}
         user={editUser}
-        isLoading={updateMut.isPending}
+        isLoading={updateMutation.isPending}
       />
 
       <PasswordDialog
         open={pwDialogOpen}
-        onOpenChange={(open) => { setPwDialogOpen(open); if (!open) setPwUser(null); }}
-        onSubmit={(values) => pwUser && changePwMut.mutate({ id: pwUser.id, password: values.password })}
-        isLoading={changePwMut.isPending}
+        onOpenChange={(open) => {
+          setPwDialogOpen(open);
+          if (!open) setPwUser(null);
+        }}
+        onSubmit={(values) => pwUser && changePasswordMutation.mutate({ id: pwUser.id, password: values.password })}
+        isLoading={changePasswordMutation.isPending}
       />
 
       <RolesDialog
         open={rolesDialogOpen}
-        onOpenChange={(open) => { setRolesDialogOpen(open); if (!open) setRolesUser(null); }}
+        onOpenChange={(open) => {
+          setRolesDialogOpen(open);
+          if (!open) setRolesUser(null);
+        }}
         user={rolesUser}
         allRoles={roles}
-        onAssign={(roleId) => rolesUser && assignRoleMut.mutate({ userId: rolesUser.id, roleId })}
-        onRemove={(roleId) => rolesUser && removeRoleMut.mutate({ userId: rolesUser.id, roleId })}
+        onAssign={(roleId) => rolesUser && assignRoleMutation.mutate({ userId: rolesUser.id, roleId })}
+        onRemove={(roleId) => rolesUser && removeRoleMutation.mutate({ userId: rolesUser.id, roleId })}
       />
     </div>
   );

@@ -1,25 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, HardDrive, FileText, Settings2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, HardDrive, Plus, Settings2 } from "lucide-react";
 import { toast } from "sonner";
-import { usePermissions } from "@/hooks/use-permissions";
-import { StatsCard } from "@/components/ui/stats-card";
+import type { StorageConfiguration } from "@/types/api";
+import { ScopeCallout } from "@/components/settings/scope-callout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { StatsCard } from "@/components/ui/stats-card";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
-  listStorageConfigurations,
-  listStorageProviders,
   createStorageConfiguration,
-  updateStorageConfiguration,
   deleteStorageConfiguration,
   getFileStats,
+  listStorageConfigurations,
+  listStorageProviders,
+  updateStorageConfiguration,
 } from "@/lib/api/storage";
 import { getColumns } from "../../storage/columns";
 import { ConfigDialog, type ConfigFormValues } from "../../storage/config-dialog";
-import type { StorageConfiguration } from "@/types/api";
 
 export function StorageTab() {
   const queryClient = useQueryClient();
@@ -46,35 +48,35 @@ export function StorageTab() {
     queryFn: getFileStats,
   });
 
-  const createMut = useMutation({
+  const createMutation = useMutation({
     mutationFn: (data: ConfigFormValues) => createStorageConfiguration(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["storage-configs"] });
-      toast.success("ConfiguraciÃ³n creada");
+      toast.success("Configuracion creada");
       setDialogOpen(false);
     },
-    onError: () => toast.error("Error al crear configuraciÃ³n"),
+    onError: () => toast.error("Error al crear configuracion"),
   });
 
-  const updateMut = useMutation({
+  const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ConfigFormValues }) =>
       updateStorageConfiguration(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["storage-configs"] });
-      toast.success("ConfiguraciÃ³n actualizada");
+      toast.success("Configuracion actualizada");
       setDialogOpen(false);
       setEditConfig(null);
     },
-    onError: () => toast.error("Error al actualizar"),
+    onError: () => toast.error("Error al actualizar configuracion"),
   });
 
-  const deleteMut = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: deleteStorageConfiguration,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["storage-configs"] });
-      toast.success("ConfiguraciÃ³n eliminada");
+      toast.success("Configuracion eliminada");
     },
-    onError: () => toast.error("Error al eliminar"),
+    onError: () => toast.error("Error al eliminar configuracion"),
   });
 
   function handleSubmit(values: ConfigFormValues) {
@@ -82,25 +84,26 @@ export function StorageTab() {
     for (const key of Object.keys(clean) as (keyof ConfigFormValues)[]) {
       if (clean[key] === "") delete clean[key];
     }
-    if (editConfig) {
-      updateMut.mutate({ id: editConfig.id, data: clean });
-    } else {
-      createMut.mutate(clean);
-    }
-  }
 
-  function formatBytes(bytes: number) {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+    if (editConfig) {
+      updateMutation.mutate({ id: editConfig.id, data: clean });
+      return;
+    }
+
+    createMutation.mutate(clean);
   }
 
   const columns = getColumns(
     {
-      onEdit: (config) => { setEditConfig(config); setDialogOpen(true); },
-      onDelete: (config) => { if (confirm(`Â¿Eliminar "${config.config_name}"?`)) deleteMut.mutate(config.id); },
+      onEdit: (config) => {
+        setEditConfig(config);
+        setDialogOpen(true);
+      },
+      onDelete: (config) => {
+        if (confirm(`Eliminar "${config.config_name}"?`)) {
+          deleteMutation.mutate(config.id);
+        }
+      },
     },
     {
       canEdit: canEditConfig,
@@ -110,17 +113,41 @@ export function StorageTab() {
 
   return (
     <div className="space-y-6">
+      <ScopeCallout
+        badge="Tenant activo"
+        accent="tenant"
+        title="Storage operativo del tenant"
+        description="Los providers base existen a nivel plataforma, pero esta tab controla las configuraciones y archivos que usa el tenant activo para su operacion."
+        footer={
+          <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
+            <Badge variant="outline">{providers.length} providers catalogados</Badge>
+            <Badge variant="outline">{configs.length} configuraciones del tenant</Badge>
+          </div>
+        }
+      />
+
       <div className="flex items-center justify-end">
-        {canCreateConfig && (
-          <Button onClick={() => { setEditConfig(null); setDialogOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Nueva ConfiguraciÃ³n
+        {canCreateConfig ? (
+          <Button
+            onClick={() => {
+              setEditConfig(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva configuracion
           </Button>
-        )}
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatsCard title="Archivos Totales" value={stats?.total_files ?? 0} icon={FileText} color="blue" />
-        <StatsCard title="Almacenamiento Usado" value={stats ? formatBytes(stats.total_storage_size_bytes) : "0 B"} icon={HardDrive} color="purple" />
+        <StatsCard title="Archivos totales" value={stats?.total_files ?? 0} icon={FileText} color="blue" />
+        <StatsCard
+          title="Almacenamiento usado"
+          value={stats ? formatBytes(stats.total_storage_size_bytes) : "0 B"}
+          icon={HardDrive}
+          color="purple"
+        />
         <StatsCard title="Configuraciones" value={configs.length} icon={Settings2} color="teal" />
       </div>
 
@@ -132,20 +159,41 @@ export function StorageTab() {
           <EmptyState
             icon={HardDrive}
             title="Sin configuraciones de almacenamiento"
-            description="Configura un proveedor de almacenamiento para gestionar archivos."
-            action={canCreateConfig ? { label: "Nueva ConfiguraciÃ³n", onClick: () => { setEditConfig(null); setDialogOpen(true); } } : undefined}
+            description="Configura un proveedor de almacenamiento para este tenant."
+            action={
+              canCreateConfig
+                ? {
+                    label: "Nueva configuracion",
+                    onClick: () => {
+                      setEditConfig(null);
+                      setDialogOpen(true);
+                    },
+                  }
+                : undefined
+            }
           />
         }
       />
 
       <ConfigDialog
         open={dialogOpen}
-        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditConfig(null); }}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditConfig(null);
+        }}
         onSubmit={handleSubmit}
         config={editConfig}
         providers={providers}
-        isLoading={createMut.isPending || updateMut.isPending}
+        isLoading={createMutation.isPending || updateMutation.isPending}
       />
     </div>
   );
+}
+
+function formatBytes(bytes: number) {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }

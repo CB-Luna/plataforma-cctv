@@ -24,6 +24,8 @@ const SETTINGS_ACCESS = [
   "ai_models.read",
   "ai_models:read:own",
   "ai_models:read:all",
+  "menu.read",
+  "menu:read:all",
   "themes:read:own",
   "themes:read:all",
   "admin.read",

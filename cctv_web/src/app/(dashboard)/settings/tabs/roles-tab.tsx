@@ -1,25 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Shield } from "lucide-react";
-import { usePermissions } from "@/hooks/use-permissions";
+import { toast } from "sonner";
+import type { RoleAdmin } from "@/types/api";
+import { ScopeCallout } from "@/components/settings/scope-callout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { listRoles, createRole, updateRole } from "@/lib/api/roles";
+import { usePermissions } from "@/hooks/use-permissions";
+import { createRole, listRoles, updateRole } from "@/lib/api/roles";
 import { getColumns } from "../../roles/columns";
-import { RoleDialog, PermissionsDialog, type RoleFormValues } from "../../roles/role-dialogs";
-import type { RoleAdmin } from "@/types/api";
+import { PermissionsDialog, RoleDialog, type RoleFormValues } from "../../roles/role-dialogs";
 
 export function RolesTab() {
   const queryClient = useQueryClient();
   const { canAny } = usePermissions();
   const [editRole, setEditRole] = useState<RoleAdmin | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [permRole, setPermRole] = useState<RoleAdmin | null>(null);
-  const [permDialogOpen, setPermDialogOpen] = useState(false);
+  const [permissionsRole, setPermissionsRole] = useState<RoleAdmin | null>(null);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
 
   const canCreateRole = canAny("roles.create", "roles:create:all");
   const canEditRole = canAny("roles.update", "roles:update:own", "roles:update:all");
@@ -31,7 +33,7 @@ export function RolesTab() {
     queryFn: listRoles,
   });
 
-  const createMut = useMutation({
+  const createMutation = useMutation({
     mutationFn: (data: RoleFormValues) => createRole(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
@@ -41,7 +43,7 @@ export function RolesTab() {
     onError: () => toast.error("Error al crear rol"),
   });
 
-  const updateMut = useMutation({
+  const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: RoleFormValues }) => updateRole(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["roles"] });
@@ -54,17 +56,28 @@ export function RolesTab() {
 
   function handleSubmit(values: RoleFormValues) {
     if (editRole) {
-      updateMut.mutate({ id: editRole.id, data: values });
-    } else {
-      createMut.mutate(values);
+      updateMutation.mutate({ id: editRole.id, data: values });
+      return;
     }
+
+    createMutation.mutate(values);
   }
 
   const columns = getColumns(
     {
-      onEdit: (role) => { setEditRole(role); setDialogOpen(true); },
-      onPermissions: (role) => { setPermRole(role); setPermDialogOpen(true); },
-      onDelete: (role) => { if (confirm(`Â¿Eliminar rol "${role.name}"?`)) toast.info("Eliminar rol no soportado por la API"); },
+      onEdit: (role) => {
+        setEditRole(role);
+        setDialogOpen(true);
+      },
+      onPermissions: (role) => {
+        setPermissionsRole(role);
+        setPermissionsDialogOpen(true);
+      },
+      onDelete: (role) => {
+        if (confirm(`Eliminar rol "${role.name}"?`)) {
+          toast.info("Eliminar rol aun no esta soportado por el contrato de backend");
+        }
+      },
     },
     {
       canEdit: canEditRole,
@@ -75,12 +88,31 @@ export function RolesTab() {
 
   return (
     <div className="space-y-6">
+      <ScopeCallout
+        badge="Tenant activo"
+        accent="tenant"
+        title="Roles internos y permisos del tenant"
+        description="Esta consola gobierna roles internos del tenant activo. Los system roles o un plano global de plataforma no tienen CRUD separado en la API actual y se mantienen como GAP documentado."
+        footer={
+          <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
+            <Badge variant="outline">{roles.length} roles visibles</Badge>
+            <Badge variant="secondary">Eliminacion de roles: no soportada por API</Badge>
+          </div>
+        }
+      />
+
       <div className="flex items-center justify-end">
-        {canCreateRole && (
-          <Button onClick={() => { setEditRole(null); setDialogOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Nuevo Rol
+        {canCreateRole ? (
+          <Button
+            onClick={() => {
+              setEditRole(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo rol
           </Button>
-        )}
+        ) : null}
       </div>
 
       <DataTable
@@ -91,24 +123,40 @@ export function RolesTab() {
           <EmptyState
             icon={Shield}
             title="No hay roles definidos"
-            description="Crea roles para gestionar permisos de acceso."
-            action={canCreateRole ? { label: "Nuevo Rol", onClick: () => { setEditRole(null); setDialogOpen(true); } } : undefined}
+            description="Crea roles internos para gestionar permisos de acceso dentro del tenant."
+            action={
+              canCreateRole
+                ? {
+                    label: "Nuevo rol",
+                    onClick: () => {
+                      setEditRole(null);
+                      setDialogOpen(true);
+                    },
+                  }
+                : undefined
+            }
           />
         }
       />
 
       <RoleDialog
         open={dialogOpen}
-        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditRole(null); }}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditRole(null);
+        }}
         onSubmit={handleSubmit}
         role={editRole}
-        isLoading={createMut.isPending || updateMut.isPending}
+        isLoading={createMutation.isPending || updateMutation.isPending}
       />
 
       <PermissionsDialog
-        open={permDialogOpen}
-        onOpenChange={(open) => { setPermDialogOpen(open); if (!open) setPermRole(null); }}
-        role={permRole}
+        open={permissionsDialogOpen}
+        onOpenChange={(open) => {
+          setPermissionsDialogOpen(open);
+          if (!open) setPermissionsRole(null);
+        }}
+        role={permissionsRole}
       />
     </div>
   );

@@ -47,7 +47,7 @@ test.describe("Fase 2 - contexto operativo", () => {
   test("alias administrativos redirigen a la tab correcta de settings", async ({ page }) => {
     await page.goto("/users");
     await page.waitForURL("**/settings?tab=usuarios", { timeout: 10_000 });
-    await expect(page.getByRole("heading", { name: "Configuracion", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Backoffice enterprise" })).toBeVisible();
 
     await page.goto("/roles");
     await page.waitForURL("**/settings?tab=roles", { timeout: 10_000 });

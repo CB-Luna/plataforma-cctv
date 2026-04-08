@@ -1,30 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Brain, Activity, DollarSign, RefreshCw } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Activity, Brain, DollarSign, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { usePermissions } from "@/hooks/use-permissions";
-import { StatsCard } from "@/components/ui/stats-card";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import type { ModelConfig } from "@/types/api";
+import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { StatsCard } from "@/components/ui/stats-card";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
-  listModelConfigs,
   createModelConfig,
-  updateModelConfig,
   deleteModelConfig,
+  getUsageStats,
+  listModelConfigs,
+  listPromptTemplates,
+  reindexAllEmbeddings,
   setDefaultModelConfig,
   toggleModelConfigActive,
-  listPromptTemplates,
-  getUsageStats,
-  reindexAllEmbeddings,
+  updateModelConfig,
 } from "@/lib/api/intelligence";
 import { getColumns } from "../../intelligence/columns";
 import { ModelDialog, type ModelFormValues } from "../../intelligence/model-dialog";
-import type { ModelConfig } from "@/types/api";
 
 export function IntelligenceTab() {
   const queryClient = useQueryClient();
@@ -54,7 +55,7 @@ export function IntelligenceTab() {
     queryFn: getUsageStats,
   });
 
-  const createMut = useMutation({
+  const createMutation = useMutation({
     mutationFn: (data: ModelFormValues) => createModelConfig(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["model-configs"] });
@@ -64,7 +65,7 @@ export function IntelligenceTab() {
     onError: () => toast.error("Error al crear modelo"),
   });
 
-  const updateMut = useMutation({
+  const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ModelFormValues }) => updateModelConfig(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["model-configs"] });
@@ -75,7 +76,7 @@ export function IntelligenceTab() {
     onError: () => toast.error("Error al actualizar modelo"),
   });
 
-  const deleteMut = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: deleteModelConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["model-configs"] });
@@ -84,7 +85,7 @@ export function IntelligenceTab() {
     onError: () => toast.error("Error al eliminar modelo"),
   });
 
-  const setDefaultMut = useMutation({
+  const setDefaultMutation = useMutation({
     mutationFn: setDefaultModelConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["model-configs"] });
@@ -93,7 +94,7 @@ export function IntelligenceTab() {
     onError: () => toast.error("Error al establecer predeterminado"),
   });
 
-  const toggleActiveMut = useMutation({
+  const toggleActiveMutation = useMutation({
     mutationFn: toggleModelConfigActive,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["model-configs"] });
@@ -102,13 +103,13 @@ export function IntelligenceTab() {
     onError: () => toast.error("Error al cambiar estado"),
   });
 
-  const reindexMut = useMutation({
+  const reindexMutation = useMutation({
     mutationFn: reindexAllEmbeddings,
     onSuccess: (results) => {
       const total = results.reduce((sum, result) => sum + result.indexed, 0);
-      toast.success(`Re-indexaciÃ³n completa: ${total} registros indexados`);
+      toast.success(`Reindexacion completa: ${total} registros indexados`);
     },
-    onError: () => toast.error("Error en re-indexaciÃ³n"),
+    onError: () => toast.error("Error al reindexar embeddings"),
   });
 
   function handleSubmit(values: ModelFormValues) {
@@ -119,18 +120,26 @@ export function IntelligenceTab() {
     if (!clean.description) delete clean.description;
 
     if (editModel) {
-      updateMut.mutate({ id: editModel.id, data: clean });
-    } else {
-      createMut.mutate(clean);
+      updateMutation.mutate({ id: editModel.id, data: clean });
+      return;
     }
+
+    createMutation.mutate(clean);
   }
 
   const columns = getColumns(
     {
-      onEdit: (model) => { setEditModel(model); setDialogOpen(true); },
-      onDelete: (model) => { if (confirm(`Â¿Eliminar modelo "${model.name}"?`)) deleteMut.mutate(model.id); },
-      onSetDefault: (model) => setDefaultMut.mutate(model.id),
-      onToggleActive: (model) => toggleActiveMut.mutate(model.id),
+      onEdit: (model) => {
+        setEditModel(model);
+        setDialogOpen(true);
+      },
+      onDelete: (model) => {
+        if (confirm(`Eliminar modelo "${model.name}"?`)) {
+          deleteMutation.mutate(model.id);
+        }
+      },
+      onSetDefault: (model) => setDefaultMutation.mutate(model.id),
+      onToggleActive: (model) => toggleActiveMutation.mutate(model.id),
     },
     {
       canEdit: canEditModel,
@@ -142,37 +151,72 @@ export function IntelligenceTab() {
 
   return (
     <div className="space-y-6">
+      <ScopeCallout
+        badge="Tenant activo"
+        accent="tenant"
+        title="IA operativa por tenant"
+        description="Los modelos, limites de consumo y reindexacion se ejecutan en el contexto del tenant activo. Las plantillas listadas aqui salen del backend real y pueden incluir catalogo compartido."
+        footer={
+          <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
+            <Badge variant="outline">{models.length} modelos configurados</Badge>
+            <Badge variant="outline">{templates.length} plantillas disponibles</Badge>
+            <Badge variant="secondary">Uso mostrado segun tenant activo</Badge>
+          </div>
+        }
+      />
+
       <div className="flex items-center justify-end gap-2">
         <Button
           variant="outline"
-          onClick={() => reindexMut.mutate()}
-          disabled={reindexMut.isPending || !canReindex}
+          onClick={() => reindexMutation.mutate()}
+          disabled={reindexMutation.isPending || !canReindex}
         >
-          <RefreshCw className={`mr-2 h-4 w-4 ${reindexMut.isPending ? "animate-spin" : ""}`} />
-          Re-indexar Embeddings
+          <RefreshCw className={`mr-2 h-4 w-4 ${reindexMutation.isPending ? "animate-spin" : ""}`} />
+          Reindexar embeddings
         </Button>
-        {canCreateModel && (
-          <Button onClick={() => { setEditModel(null); setDialogOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Nuevo Modelo
+        {canCreateModel ? (
+          <Button
+            onClick={() => {
+              setEditModel(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo modelo
           </Button>
-        )}
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <StatsCard
           title="Llamadas API"
           value={usage?.total_api_calls ?? 0}
-          subtitle={usage ? `${usage.successful_calls} exitosas Â· ${usage.failed_calls} fallidas` : undefined}
+          subtitle={usage ? `${usage.successful_calls} exitosas · ${usage.failed_calls} fallidas` : undefined}
           icon={Activity}
           color="blue"
         />
-        <StatsCard title="Tokens Usados" value={(usage?.total_tokens ?? 0).toLocaleString()} icon={Brain} color="purple" />
-        <StatsCard title="Costo Total USD" value={`$${(usage?.total_cost_usd ?? 0).toFixed(2)}`} icon={DollarSign} color="amber" />
-        <StatsCard title="Plantillas Activas" value={templates.filter((template) => template.is_active).length} icon={Brain} color="teal" />
+        <StatsCard
+          title="Tokens usados"
+          value={(usage?.total_tokens ?? 0).toLocaleString()}
+          icon={Brain}
+          color="purple"
+        />
+        <StatsCard
+          title="Costo total USD"
+          value={`$${(usage?.total_cost_usd ?? 0).toFixed(2)}`}
+          icon={DollarSign}
+          color="amber"
+        />
+        <StatsCard
+          title="Plantillas activas"
+          value={templates.filter((template) => template.is_active).length}
+          icon={Brain}
+          color="teal"
+        />
       </div>
 
       <div>
-        <h2 className="mb-4 text-xl font-semibold">Modelos Configurados</h2>
+        <h2 className="mb-4 text-xl font-semibold">Modelos configurados</h2>
         <DataTable
           columns={columns}
           data={models}
@@ -181,16 +225,26 @@ export function IntelligenceTab() {
             <EmptyState
               icon={Brain}
               title="Sin modelos de IA configurados"
-              description="Configura un modelo de inteligencia artificial."
-              action={canCreateModel ? { label: "Nuevo Modelo", onClick: () => { setEditModel(null); setDialogOpen(true); } } : undefined}
+              description="Configura un modelo de inteligencia artificial para el tenant activo."
+              action={
+                canCreateModel
+                  ? {
+                      label: "Nuevo modelo",
+                      onClick: () => {
+                        setEditModel(null);
+                        setDialogOpen(true);
+                      },
+                    }
+                  : undefined
+              }
             />
           }
         />
       </div>
 
-      {templates.length > 0 && (
+      {templates.length ? (
         <div>
-          <h2 className="mb-4 text-xl font-semibold">Plantillas de Prompts</h2>
+          <h2 className="mb-4 text-xl font-semibold">Plantillas de prompts</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {templates.map((template) => (
               <Card key={template.id}>
@@ -201,35 +255,42 @@ export function IntelligenceTab() {
                       {template.is_active ? "Activa" : "Inactiva"}
                     </Badge>
                   </CardTitle>
-                  <CardDescription>{template.category} Â· v{template.version}</CardDescription>
+                  <CardDescription>
+                    {template.category} · v{template.version}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {template.description && <p className="text-sm text-muted-foreground">{template.description}</p>}
-                  {template.variables.length > 0 && (
+                  {template.description ? (
+                    <p className="text-sm text-muted-foreground">{template.description}</p>
+                  ) : null}
+                  {template.variables.length ? (
                     <div className="flex flex-wrap gap-1">
                       {template.variables.map((variable) => (
                         <Badge key={variable} variant="outline" className="text-xs">{`{${variable}}`}</Badge>
                       ))}
                     </div>
-                  )}
-                  <div className="flex gap-4 text-xs text-muted-foreground">
-                    {template.temperature != null && <span>Temp: {template.temperature}</span>}
-                    {template.max_tokens != null && <span>Max Tokens: {template.max_tokens}</span>}
-                    {template.response_format && <span>Formato: {template.response_format}</span>}
+                  ) : null}
+                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                    {template.temperature != null ? <span>Temp: {template.temperature}</span> : null}
+                    {template.max_tokens != null ? <span>Max tokens: {template.max_tokens}</span> : null}
+                    {template.response_format ? <span>Formato: {template.response_format}</span> : null}
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       <ModelDialog
         open={dialogOpen}
-        onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditModel(null); }}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditModel(null);
+        }}
         onSubmit={handleSubmit}
         model={editModel}
-        isLoading={createMut.isPending || updateMut.isPending}
+        isLoading={createMutation.isPending || updateMutation.isPending}
       />
     </div>
   );
