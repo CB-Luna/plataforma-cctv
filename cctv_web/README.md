@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# cctv_web
 
-## Getting Started
+Frontend Next.js del monorepo CCTV.
 
-First, run the development server:
+## Puerto operativo actual
+
+- Frontend local: `http://127.0.0.1:3011`
+- Playwright por defecto: `http://127.0.0.1:3011`
+- Backend live cuando se use contrato real: `http://localhost:8088/api/v1`
+
+## Comandos base
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run start
+npm run test
+npm run test:smoke
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Secuencia reproducible recomendada
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. `npm run dev`
+   Usa el shell local en `3011` para desarrollo interactivo.
+2. `npm run build`
+   Verifica que el frontend compile en modo produccion.
+3. `npm run start`
+   Levanta la build en `3011`.
+4. `npm run test:smoke`
+   Ejecuta el smoke reproducible de Fase 7 sobre `next start`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Modos de validacion
 
-## Learn More
+- `npm run test`
+  Vitest para stores, hooks, utilidades y componentes.
+- `npm run test:smoke`
+  Playwright sobre `next start` en `3011` con contrato mockeado en navegador real.
+- `npm run test:e2e`
+  Suite Playwright abierta. Puede requerir mocks adicionales o backend live segun el spec.
 
-To learn more about Next.js, take a look at the following resources:
+## Regla importante
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+El smoke actual no golpea un backend vivo del workspace. Valida shell real, rutas reales y contrato esperado por medio de mocks controlados.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`3010` queda como referencia historica del monorepo, pero la base operativa vigente de Fase 7 para este frontend es `3011` porque `3010` ya estaba ocupado en este workspace.
 
-## Deploy on Vercel
+La evidencia y limitaciones vigentes de Fase 7 estan documentadas en:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `docs/plan-maestro/11_ENTORNO_REPRODUCIBLE_Y_SMOKE_F7.md`
+- `docs/plan-maestro/05_VALIDACIONES_Y_CRITERIOS_DE_ACEPTACION.md`

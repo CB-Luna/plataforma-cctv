@@ -581,7 +581,7 @@ Existe una definicion defendible de listo para entrega y un paquete documental n
 
 | Checkpoint | Estado | Objetivo | Entregable esperado | Gate de salida |
 |---|---|---|---|---|
-| C7.1 | Pendiente | Dejar un entorno reproducible y sin contradicciones operativas | Scripts, puertos, URLs y comandos base alineados | Cualquier persona del equipo puede levantar y validar el flujo principal con instrucciones consistentes |
+| C7.1 | Completado | Dejar un entorno reproducible y sin contradicciones operativas | Scripts, puertos, URLs y comandos base alineados | Cualquier persona del equipo puede levantar y validar el flujo principal con instrucciones consistentes |
 | C7.2 | Pendiente | Ejecutar smoke y QA transversal del producto actual | Evidencia de pruebas sobre login, seleccion de empresa, portal tenant, CCTV, tickets, polizas/SLA y settings | No quedan regresiones bloqueantes abiertas en el alcance actual |
 | C7.3 | Pendiente | Endurecer bugs, permisos, contexto y estados criticos detectados en QA | Correcciones dentro del alcance real del producto actual | El sistema se comporta de forma estable sin inventar producto faltante |
 | C7.4 | Pendiente | Cerrar handoff, release criteria y documentacion operativa | Runbook, limitaciones conocidas, release notes y criterio defendible de entrega | La salida a entrega queda explicada con honestidad y trazabilidad |
@@ -614,6 +614,21 @@ Alinear la base operativa del repo para que desarrollo, build, pruebas y smokes 
 
 No quedan contradicciones entre docs, scripts y pruebas para levantar el producto actual.
 
+Completado el 2026-04-08.
+
+#### Resultado materializado
+
+- `cctv_web` ya usa `3011` como puerto host coherente para `dev`, `start` y Playwright.
+- Existe un smoke reproducible dedicado en `cctv_web/playwright.smoke.config.ts` y `cctv_web/e2e/phase-7-smoke.spec.ts`.
+- README, Docker host port y documentacion vigente ya apuntan a la misma base operativa.
+- Quedo explicitado que el smoke usa contrato mockeado sobre `next start`, mientras el backend live sigue siendo validacion aparte.
+- El arnes de smoke ya quedo listo para C7.2, pero ese checkpoint no se cierra en este turno por instruccion explicita del usuario.
+
+#### Limitaciones reconocidas
+
+- El smoke de C7.1 no prueba backend vivo.
+- El checklist manual historico del frontend sigue existiendo como referencia amplia, pero ya no es la fuente vigente de verdad para este checkpoint.
+
 ### Checkpoint C7.2. Smoke y QA transversal
 
 #### Objetivo
@@ -640,6 +655,20 @@ Comprobar que el producto actual funciona de punta a punta dentro de su alcance 
 #### Criterio de salida
 
 Existe evidencia defendible del flujo principal y no quedan regresiones bloqueantes sin clasificar.
+
+Pendiente.
+
+#### Estado actual
+
+- El arnes de smoke ya esta preparado en `cctv_web/e2e/phase-7-smoke.spec.ts`.
+- La configuracion dedicada ya existe en `cctv_web/playwright.smoke.config.ts`.
+- La documentacion base ya explica el alcance del smoke y sus limites en `11_ENTORNO_REPRODUCIBLE_Y_SMOKE_F7.md`.
+
+#### Condicion para cerrarlo
+
+- Ejecutar formalmente el smoke transversal y registrar hallazgos como bug, GAP backend o limitacion aceptada.
+- Confirmar login, seleccion de empresa, portal tenant, CCTV, tickets, polizas/SLA y settings dentro del alcance real vigente.
+- Documentar si aparece alguna regresion bloqueante antes de entrar a C7.3.
 
 ### Checkpoint C7.3. Hardening funcional
 
@@ -726,12 +755,10 @@ No queda ambiguedad sobre cual es la siguiente etapa real del producto ni sobre 
 
 La siguiente ejecucion correcta ya no es C6.4 ni el cierre completo de Fase 6.
 
-La siguiente ejecucion debe ser **Fase 7: calidad, hardening y handoff**, arrancando por **C7.1 Entorno reproducible**.
+La siguiente ejecucion debe ser **C7.2 Smoke y QA transversal**.
 
 El razonamiento es:
 
-- C6.1 ya cerro el onboarding tenant hasta donde permite el contrato actual.
-- C6.2 ya cerro el catalogo visible de servicios y paquetes dentro del shell existente.
-- C6.3 ya cerro la experiencia tenant dentro de una shell compartida endurecida.
-- C6.4 ya dejo auditado que `Control de Acceso` no existe como modulo real.
-- C6.5 ya congelo el nuevo rumbo y alinea backlog, riesgos y validaciones con esa realidad.
+- C7.1 ya dejo una base reproducible de puertos, scripts, README y arnes de smoke.
+- El smoke transversal ya esta preparado, pero todavia no debe presentarse como checkpoint cerrado.
+- Solo despues de ejecutar y clasificar formalmente ese smoke tiene sentido entrar a C7.3.

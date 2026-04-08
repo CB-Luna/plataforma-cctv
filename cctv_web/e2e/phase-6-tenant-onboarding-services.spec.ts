@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const COOKIE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3010";
+const COOKIE_URL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3011";
 
 const BASE_TENANT = {
   id: "tenant-1",

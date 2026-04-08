@@ -189,7 +189,7 @@
 
 ## Fase 7. Calidad, hardening y handoff
 
-- [ ] C7.1 Entorno reproducible completado.
+- [x] C7.1 Entorno reproducible completado.
 - [ ] C7.2 Smoke y QA transversal completado.
 - [ ] C7.3 Hardening funcional completado.
 - [ ] C7.4 Handoff y criterio de release completado.
@@ -197,10 +197,10 @@
 
 #### C7.1 Entorno reproducible
 
-- [ ] Los puertos y URLs en docs, scripts, pruebas y comandos locales son coherentes.
-- [ ] Existe secuencia reproducible para `dev`, `build`, `start` y Playwright.
-- [ ] Se explicita cuando una validacion usa mocks, `next start` o backend vivo.
-- [ ] Los datos demo, fixtures y limites del entorno quedan visibles.
+- [x] Los puertos y URLs en docs, scripts, pruebas y comandos locales son coherentes.
+- [x] Existe secuencia reproducible para `dev`, `build`, `start` y Playwright.
+- [x] Se explicita cuando una validacion usa mocks, `next start` o backend vivo.
+- [x] Los datos demo, fixtures y limites del entorno quedan visibles.
 
 #### C7.2 Smoke y QA transversal
 
@@ -264,7 +264,7 @@
 - Decision documentada cuando el alcance se reduce por GAP backend.
 - Afirmacion clara de que si quedo operativo y que no.
 
-## Evidencia ejecutada en C6.1, C6.2, C6.3, C6.4 y C6.5
+## Evidencia ejecutada
 
 - C6.1-C6.2:
   `npm test`: `55/55` OK
@@ -276,6 +276,12 @@
   `npx playwright test e2e/phase-6-tenant-onboarding-services.spec.ts e2e/phase-6-portal-tenant.spec.ts --project=chromium` con `E2E_BASE_URL=http://127.0.0.1:3062`: `6/6` OK usando mocks del contrato actual sobre `next start`
   auditoria de repo con `rg` sobre `cctv_web`, `cctv_mobile` y `cctv_server`
   evidencia formal consolidada en `09_AUDITORIA_CONTROL_DE_ACCESO.md` y `10_CIERRE_FASE_6.md`
+- C7.1:
+  `npm test`: `58/58` OK
+  `npm run build`: OK
+  `npm run test:smoke`: `5/5` OK sobre `next start` en `http://127.0.0.1:3011`, usado aqui como verificacion del arnes y de la coherencia del entorno
+  verificacion de `npm run dev` con arranque local en `3011`
+  evidencia formal consolidada en `11_ENTORNO_REPRODUCIBLE_Y_SMOKE_F7.md`
 - Limitacion reconocida: el smoke E2E de esta fase valida navegador real y contrato esperado, pero no golpea un backend vivo en este workspace.
 
 ## Conclusion
