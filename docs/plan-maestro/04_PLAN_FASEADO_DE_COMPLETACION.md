@@ -577,11 +577,156 @@ Cerrar calidad, validaciones, documentacion operativa y preparacion de entrega, 
 
 Existe una definicion defendible de listo para entrega y un paquete documental nuevo para la etapa siguiente del producto.
 
+### Checkpoints F7
+
+| Checkpoint | Estado | Objetivo | Entregable esperado | Gate de salida |
+|---|---|---|---|---|
+| C7.1 | Pendiente | Dejar un entorno reproducible y sin contradicciones operativas | Scripts, puertos, URLs y comandos base alineados | Cualquier persona del equipo puede levantar y validar el flujo principal con instrucciones consistentes |
+| C7.2 | Pendiente | Ejecutar smoke y QA transversal del producto actual | Evidencia de pruebas sobre login, seleccion de empresa, portal tenant, CCTV, tickets, polizas/SLA y settings | No quedan regresiones bloqueantes abiertas en el alcance actual |
+| C7.3 | Pendiente | Endurecer bugs, permisos, contexto y estados criticos detectados en QA | Correcciones dentro del alcance real del producto actual | El sistema se comporta de forma estable sin inventar producto faltante |
+| C7.4 | Pendiente | Cerrar handoff, release criteria y documentacion operativa | Runbook, limitaciones conocidas, release notes y criterio defendible de entrega | La salida a entrega queda explicada con honestidad y trazabilidad |
+| C7.5 | Pendiente | Generar el nuevo paquete documental de la etapa siguiente | `docs/plan-etapa-2/` o paquete equivalente de la siguiente etapa real | No se programa producto nuevo hasta dejar lista esa nueva base documental |
+
+### Checkpoint C7.1. Entorno reproducible
+
+#### Objetivo
+
+Alinear la base operativa del repo para que desarrollo, build, pruebas y smokes se ejecuten con puertos, URLs y comandos consistentes.
+
+#### Alcance
+
+- Revisar puertos y comandos en scripts, docs y pruebas.
+- Alinear `E2E_BASE_URL`, defaults locales y notas de uso.
+- Dejar claro cuando una validacion usa mocks, `next start` o backend vivo.
+
+#### Fuera de alcance
+
+- Reescribir arquitectura de devops.
+- Meter infraestructura nueva que no sea necesaria para reproducibilidad local.
+
+#### Entregables esperados
+
+- Matriz corta de comandos estandar de arranque y validacion.
+- Referencias coherentes a puertos y URLs.
+- Advertencias visibles sobre mocks, seeds y limites del entorno actual.
+
+#### Criterio de salida
+
+No quedan contradicciones entre docs, scripts y pruebas para levantar el producto actual.
+
+### Checkpoint C7.2. Smoke y QA transversal
+
+#### Objetivo
+
+Comprobar que el producto actual funciona de punta a punta dentro de su alcance real, con foco en regresiones de auth, multi-tenant, CCTV, operacion contractual y settings.
+
+#### Alcance
+
+- Ejecutar smoke de login, seleccion de empresa y persistencia de contexto.
+- Validar portal tenant y experiencia backoffice dentro de la shell vigente.
+- Validar modulos core ya cerrados: CCTV, tickets, polizas/SLA y configuracion.
+
+#### Fuera de alcance
+
+- Probar dominios que ya quedaron auditados como no construidos.
+- Declarar cobertura E2E completa si solo existe smoke parcial.
+
+#### Entregables esperados
+
+- Evidencia automatizada y/o manual de los flujos criticos.
+- Lista clara de fallas detectadas y severidad.
+- Decisiones de degradacion honesta cuando el backend limite el flujo.
+
+#### Criterio de salida
+
+Existe evidencia defendible del flujo principal y no quedan regresiones bloqueantes sin clasificar.
+
+### Checkpoint C7.3. Hardening funcional
+
+#### Objetivo
+
+Corregir hallazgos de calidad dentro del alcance actual del producto, sin usar hardening como excusa para tapar vacios de producto.
+
+#### Alcance
+
+- Bugs de permisos, contexto, navegacion, estados vacios y errores.
+- Inconsistencias entre UI, copy, docs y comportamiento real.
+- Ajustes de estabilidad de pruebas o flujos reproducibles.
+
+#### Fuera de alcance
+
+- Construir nuevos dominios de negocio.
+- Inventar capacidades backend no auditadas.
+
+#### Entregables esperados
+
+- Lista de fixes aplicados.
+- Validaciones repetidas sobre los hallazgos cerrados.
+- Registro de que se mantuvo la honestidad sobre GAPs abiertos.
+
+#### Criterio de salida
+
+Los defectos criticos o altos detectados en C7.2 quedan resueltos, degradados con honestidad o bloqueados formalmente.
+
+### Checkpoint C7.4. Handoff y criterio de release
+
+#### Objetivo
+
+Dejar una salida defendible para entrega interna, demo o handoff tecnico, con limitaciones abiertas visibles.
+
+#### Alcance
+
+- Consolidar release notes, runbook y limitaciones conocidas.
+- Alinear backlog residual, riesgos y bloqueos con el estado final post-hardening.
+- Definir explicitamente que significa "listo para entrega" en este repo.
+
+#### Fuera de alcance
+
+- Vender el sistema como enterprise completo si no lo es.
+- Ocultar gaps por falta de backend o producto no construido.
+
+#### Entregables esperados
+
+- Documento de cierre de F7.
+- Criterio de release y handoff.
+- Riesgos y limitaciones actualizados.
+
+#### Criterio de salida
+
+La entrega ya puede explicarse con rigor: que si esta listo, que sigue parcial y que pasa a la siguiente etapa.
+
+### Checkpoint C7.5. Paquete documental de la siguiente etapa
+
+#### Objetivo
+
+Generar la nueva base documental de la etapa siguiente antes de tocar mas producto, para que el roadmap posterior arranque desde evidencia y no desde supuestos.
+
+#### Alcance
+
+- Crear `docs/plan-etapa-2/` o nombre equivalente.
+- Auditar brecha entre lo implementado al cierre de F7 y la vision enterprise pendiente.
+- Proponer fases, backlog, riesgos y validaciones de la etapa siguiente.
+
+#### Fuera de alcance
+
+- Programar dominios nuevos en esta misma salida.
+- Reabrir F7 como si fuera etapa de producto.
+
+#### Entregables esperados
+
+- Nuevo paquete documental completo de etapa siguiente.
+- Primera fase recomendada de esa etapa.
+- Lista de decisiones de producto pendientes de validar.
+
+#### Criterio de salida
+
+No queda ambiguedad sobre cual es la siguiente etapa real del producto ni sobre que debe validarse antes de programarla.
+
 ## Siguiente paso recomendado
 
 La siguiente ejecucion correcta ya no es C6.4 ni el cierre completo de Fase 6.
 
-La siguiente ejecucion debe ser **Fase 7: calidad, hardening y handoff**.
+La siguiente ejecucion debe ser **Fase 7: calidad, hardening y handoff**, arrancando por **C7.1 Entorno reproducible**.
 
 El razonamiento es:
 

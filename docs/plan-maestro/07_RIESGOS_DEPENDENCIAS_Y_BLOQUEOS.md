@@ -144,9 +144,11 @@ pero seguir sin cerrar los requerimientos de producto que el negocio espera:
 
 ### Fase 7
 
-- Entorno reproducible con puertos, scripts y pruebas consistentes.
-- Criterio de release que acepte limitaciones abiertas visiblemente documentadas.
-- Paquete documental nuevo para la siguiente etapa real del producto.
+- C7.1 Entorno reproducible con puertos, scripts y pruebas consistentes.
+- C7.2 Smoke y QA transversal con evidencia sobre el flujo principal.
+- C7.3 Hardening funcional sin inventar producto faltante.
+- C7.4 Criterio de release y handoff con limitaciones abiertas visiblemente documentadas.
+- C7.5 Paquete documental nuevo para la siguiente etapa real del producto.
 
 ## Estrategia de mitigacion recomendada
 

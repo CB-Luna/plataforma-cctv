@@ -189,11 +189,47 @@
 
 ## Fase 7. Calidad, hardening y handoff
 
+- [ ] C7.1 Entorno reproducible completado.
+- [ ] C7.2 Smoke y QA transversal completado.
+- [ ] C7.3 Hardening funcional completado.
+- [ ] C7.4 Handoff y criterio de release completado.
+- [ ] C7.5 Paquete documental de la siguiente etapa completado.
+
+#### C7.1 Entorno reproducible
+
+- [ ] Los puertos y URLs en docs, scripts, pruebas y comandos locales son coherentes.
+- [ ] Existe secuencia reproducible para `dev`, `build`, `start` y Playwright.
+- [ ] Se explicita cuando una validacion usa mocks, `next start` o backend vivo.
+- [ ] Los datos demo, fixtures y limites del entorno quedan visibles.
+
+#### C7.2 Smoke y QA transversal
+
 - [ ] Existe smoke test reproducible del flujo principal.
-- [ ] Los puertos y URLs en docs, scripts y configuraciones son coherentes.
+- [ ] Se valida login, seleccion de empresa y persistencia de contexto.
+- [ ] Se valida experiencia backoffice y portal tenant dentro del alcance real.
+- [ ] Se valida CCTV, tickets, polizas/SLA y configuracion sin vender producto inexistente.
+- [ ] Cada hallazgo queda clasificado como bug, GAP backend o limitacion aceptada.
+
+#### C7.3 Hardening funcional
+
+- [ ] Los hallazgos criticos o altos detectados en C7.2 quedan corregidos o bloqueados formalmente.
+- [ ] Permisos, scopes, menu y contexto activo se mantienen coherentes tras los fixes.
+- [ ] Estados vacios, errores y navegacion principal quedan defendibles.
+- [ ] No se introducen features nuevas para disfrazar huecos de producto.
+
+#### C7.4 Handoff y criterio de release
+
 - [ ] Existe evidencia minima de build, pruebas y validacion funcional por fase.
 - [ ] La documentacion deja visibles limitaciones y GAPs aun abiertos.
+- [ ] Existe runbook o guia operativa de validacion/release.
+- [ ] Existe definicion defendible de "listo para entrega" para este repo.
+
+#### C7.5 Paquete documental de la siguiente etapa
+
 - [ ] Se genera un nuevo paquete documental para la etapa siguiente antes de continuar con nuevo producto.
+- [ ] La nueva auditoria distingue implementado, parcial, faltante y bloqueado.
+- [ ] Existe plan por fases de la etapa siguiente con backlog, riesgos y validaciones.
+- [ ] Quedan explicitadas las decisiones de producto que requieren aprobacion antes de programar.
 
 ## Matriz de validacion por modulo
 
