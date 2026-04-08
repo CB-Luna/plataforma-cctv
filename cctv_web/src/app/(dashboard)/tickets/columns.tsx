@@ -1,7 +1,14 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Eye, Pencil, UserPlus, RefreshCw, Trash2 } from "lucide-react";
+import { type ColumnDef } from "@tanstack/react-table";
+import {
+  Eye,
+  MoreHorizontal,
+  Pencil,
+  RefreshCw,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
 import type { Ticket } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
@@ -60,11 +67,14 @@ const statusVariants: Record<string, "default" | "secondary" | "destructive" | "
 const typeLabels: Record<string, string> = {
   corrective: "Correctivo",
   preventive: "Preventivo",
-  installation: "InstalaciÃ³n",
+  installation: "Instalacion",
   other: "Otro",
 };
 
-export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilities): ColumnDef<Ticket>[] {
+export function getColumns(
+  actions: ColumnActions,
+  capabilities: ColumnCapabilities,
+): ColumnDef<Ticket>[] {
   const columns: ColumnDef<Ticket>[] = [
     {
       accessorKey: "ticket_number",
@@ -91,8 +101,18 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
       cell: ({ row }) => {
         const priority = row.original.priority;
         return (
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${priorityColors[priority] ?? ""}`}>
-            {priority === "urgent" ? "Urgente" : priority === "high" ? "Alta" : priority === "medium" ? "Media" : "Baja"}
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              priorityColors[priority] ?? ""
+            }`}
+          >
+            {priority === "urgent"
+              ? "Urgente"
+              : priority === "high"
+                ? "Alta"
+                : priority === "medium"
+                  ? "Media"
+                  : "Baja"}
           </span>
         );
       },
@@ -109,7 +129,12 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
     {
       accessorKey: "client_name",
       header: "Cliente",
-      cell: ({ row }) => row.original.client_name ?? "â€”",
+      cell: ({ row }) => row.original.client_name ?? "—",
+    },
+    {
+      accessorKey: "site_name",
+      header: "Sitio",
+      cell: ({ row }) => row.original.site_name ?? "—",
     },
     {
       accessorKey: "assigned_to_name",
@@ -120,12 +145,12 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
       accessorKey: "sla_status",
       header: "SLA",
       cell: ({ row }) => {
-        const sla = row.original.sla_status;
-        if (!sla) return "â€”";
+        const status = row.original.sla_status;
+        if (!status) return "—";
 
         return (
           <Badge variant={row.original.breached_sla ? "destructive" : "default"}>
-            {sla}
+            {status}
           </Badge>
         );
       },
@@ -137,7 +162,12 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
     },
   ];
 
-  if (capabilities.canEdit || capabilities.canAssign || capabilities.canChangeStatus || capabilities.canDelete) {
+  if (
+    capabilities.canEdit ||
+    capabilities.canAssign ||
+    capabilities.canChangeStatus ||
+    capabilities.canDelete
+  ) {
     columns.push({
       id: "actions",
       cell: ({ row }) => {
@@ -174,7 +204,10 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
               {capabilities.canDelete && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => actions.onDelete(ticket)} className="text-destructive">
+                  <DropdownMenuItem
+                    onClick={() => actions.onDelete(ticket)}
+                    className="text-destructive"
+                  >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Eliminar
                   </DropdownMenuItem>

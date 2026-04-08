@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { listUsers } from "@/lib/api/users";
 
 interface AssignDialogProps {
   open: boolean;
@@ -29,29 +30,50 @@ interface AssignDialogProps {
 
 export function AssignDialog({ open, onOpenChange, onAssign, isLoading }: AssignDialogProps) {
   const [technicianId, setTechnicianId] = useState("");
+  const { data: users = [] } = useQuery({
+    queryKey: ["users", "ticket-assign"],
+    queryFn: listUsers,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const technicians = users.filter((user) => user.is_active);
+
+  useEffect(() => {
+    if (!open) setTechnicianId("");
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Asignar técnico</DialogTitle>
+          <DialogTitle>Asignar tecnico</DialogTitle>
         </DialogHeader>
         <div className="space-y-2">
-          <Label htmlFor="technician_id">ID del técnico</Label>
-          <Input
-            id="technician_id"
-            placeholder="UUID del técnico"
-            value={technicianId}
-            onChange={(e) => setTechnicianId(e.target.value)}
-          />
+          <Label>Tecnico</Label>
+          <Select value={technicianId || undefined} onValueChange={(value) => setTechnicianId(value ?? "")}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecciona un tecnico" />
+            </SelectTrigger>
+            <SelectContent>
+              {technicians.map((technician) => (
+                <SelectItem key={technician.id} value={technician.id}>
+                  {technician.first_name} {technician.last_name} · {technician.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {technicians.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              No hay usuarios activos disponibles para asignacion en este tenant.
+            </p>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button
-            disabled={!technicianId || isLoading}
-            onClick={() => onAssign(technicianId)}
-          >
-            {isLoading ? "Asignando…" : "Asignar"}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button disabled={!technicianId || isLoading} onClick={() => onAssign(technicianId)}>
+            {isLoading ? "Asignando..." : "Asignar"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -78,9 +100,22 @@ const allStatuses = [
   { value: "cancelled", label: "Cancelado" },
 ];
 
-export function StatusDialog({ open, onOpenChange, currentStatus, onChangeStatus, isLoading }: StatusDialogProps) {
+export function StatusDialog({
+  open,
+  onOpenChange,
+  currentStatus,
+  onChangeStatus,
+  isLoading,
+}: StatusDialogProps) {
   const [status, setStatus] = useState(currentStatus ?? "open");
   const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setStatus(currentStatus ?? "open");
+      setReason("");
+    }
+  }, [currentStatus, open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,35 +126,37 @@ export function StatusDialog({ open, onOpenChange, currentStatus, onChangeStatus
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Nuevo estado</Label>
-            <Select value={status} onValueChange={(v) => { if (v) setStatus(v); }}>
+            <Select value={status} onValueChange={(value) => setStatus(value ?? "open")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {allStatuses
-                  .filter((s) => s.value !== currentStatus)
-                  .map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
+                  .filter((item) => item.value !== currentStatus)
+                  .map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
                     </SelectItem>
                   ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="reason">Razón (opcional)</Label>
+            <Label htmlFor="reason">Razon (opcional)</Label>
             <Textarea
               id="reason"
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(event) => setReason(event.target.value)}
               rows={2}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button disabled={isLoading} onClick={() => onChangeStatus(status, reason || undefined)}>
-            {isLoading ? "Cambiando…" : "Cambiar"}
+            {isLoading ? "Cambiando..." : "Cambiar"}
           </Button>
         </DialogFooter>
       </DialogContent>

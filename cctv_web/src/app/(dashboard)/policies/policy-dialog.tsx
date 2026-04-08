@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +23,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { listClients } from "@/lib/api/clients";
+import { listSites } from "@/lib/api/sites";
+import { useSiteStore } from "@/stores/site-store";
+import { matchSiteToClient } from "@/lib/site-context";
 import type { Policy } from "@/types/api";
 
 const policySchema = z.object({
-  policy_number: z.string().min(1, "Número de póliza requerido"),
+  policy_number: z.string().min(1, "Numero de poliza requerido"),
   client_id: z.string().min(1, "Cliente requerido"),
   site_id: z.string().optional(),
   status: z.enum(["active", "expired", "suspended", "cancelled"]),
@@ -50,7 +55,14 @@ interface PolicyDialogProps {
   isLoading?: boolean;
 }
 
-export function PolicyDialog({ open, onOpenChange, onSubmit, policy, isLoading }: PolicyDialogProps) {
+export function PolicyDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  policy,
+  isLoading,
+}: PolicyDialogProps) {
+  const currentSite = useSiteStore((s) => s.currentSite);
   const form = useForm<PolicyFormValues>({
     resolver: zodResolver(policySchema),
     defaultValues: {
@@ -70,6 +82,18 @@ export function PolicyDialog({ open, onOpenChange, onSubmit, policy, isLoading }
     },
   });
 
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients", "policy-form"],
+    queryFn: () => listClients(200, 0),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: sites = [] } = useQuery({
+    queryKey: ["sites", "policy-form"],
+    queryFn: listSites,
+    staleTime: 5 * 60 * 1000,
+  });
+
   useEffect(() => {
     if (policy) {
       form.reset({
@@ -87,43 +111,95 @@ export function PolicyDialog({ open, onOpenChange, onSubmit, policy, isLoading }
         contract_url: policy.contract_url ?? "",
         notes: policy.notes ?? "",
       });
-    } else {
-      form.reset({
-        policy_number: "",
-        client_id: "",
-        site_id: "",
-        status: "active",
-        start_date: "",
-        end_date: "",
-        monthly_payment: 0,
-        payment_day: undefined,
-        vendor: "",
-        contract_type: "",
-        annual_value: undefined,
-        contract_url: "",
-        notes: "",
-      });
+      return;
     }
-  }, [policy, form]);
+
+    form.reset({
+      policy_number: "",
+      client_id: "",
+      site_id: currentSite?.id ?? "",
+      status: "active",
+      start_date: "",
+      end_date: "",
+      monthly_payment: 0,
+      payment_day: undefined,
+      vendor: "",
+      contract_type: "",
+      annual_value: undefined,
+      contract_url: "",
+      notes: "",
+    });
+  }, [currentSite?.id, form, policy]);
+
+  const selectedClientId = form.watch("client_id");
+  const selectedClient = clients.find((client) => client.id === selectedClientId);
+  const matchingSites = selectedClient
+    ? sites.filter((site) => matchSiteToClient(site, selectedClient))
+    : sites;
+  const siteOptions = matchingSites.length > 0 ? matchingSites : sites;
+
+  useEffect(() => {
+    if (!open || policy || !currentSite) return;
+
+    if (!form.getValues("site_id")) {
+      form.setValue("site_id", currentSite.id);
+    }
+
+    if (!form.getValues("client_id")) {
+      const inferredClient = clients.find((client) => matchSiteToClient(currentSite, client));
+      if (inferredClient) {
+        form.setValue("client_id", inferredClient.id);
+      }
+    }
+  }, [clients, currentSite, form, open, policy]);
+
+  useEffect(() => {
+    const selectedSiteId = form.getValues("site_id");
+    if (!selectedSiteId) return;
+    if (siteOptions.some((site) => site.id === selectedSiteId)) return;
+
+    form.setValue("site_id", "");
+  }, [form, siteOptions]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{policy ? "Editar Póliza" : "Nueva Póliza"}</DialogTitle>
+          <DialogTitle>{policy ? "Editar poliza" : "Nueva poliza"}</DialogTitle>
         </DialogHeader>
+
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Número de póliza *</Label>
+              <Label>Numero de poliza *</Label>
               <Input {...form.register("policy_number")} />
               {form.formState.errors.policy_number && (
-                <p className="text-sm text-destructive">{form.formState.errors.policy_number.message}</p>
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.policy_number.message}
+                </p>
               )}
             </div>
+
             <div className="space-y-2">
-              <Label>Cliente ID *</Label>
-              <Input {...form.register("client_id")} placeholder="UUID del cliente" />
+              <Label>Cliente *</Label>
+              <Select
+                value={selectedClientId || undefined}
+                onValueChange={(value) => {
+                  form.setValue("client_id", value ?? "", { shouldValidate: true });
+                  form.setValue("site_id", "");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.company_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {form.formState.errors.client_id && (
                 <p className="text-sm text-destructive">{form.formState.errors.client_id.message}</p>
               )}
@@ -132,14 +208,37 @@ export function PolicyDialog({ open, onOpenChange, onSubmit, policy, isLoading }
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Sitio ID</Label>
-              <Input {...form.register("site_id")} placeholder="UUID del sitio (opcional)" />
+              <Label>Sitio / sucursal</Label>
+              <Select
+                value={form.watch("site_id") || "__none__"}
+                onValueChange={(value) =>
+                  form.setValue("site_id", value && value !== "__none__" ? value : "")
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Cobertura a nivel cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Cobertura a nivel cliente</SelectItem>
+                  {siteOptions.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedClient && matchingSites.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  El cruce cliente-sitio usa coincidencia por nombre comercial mientras la API de sitios no exponga `client_id`.
+                </p>
+              )}
             </div>
+
             <div className="space-y-2">
               <Label>Estado</Label>
               <Select
                 value={form.watch("status")}
-                onValueChange={(v) => form.setValue("status", v as PolicyFormValues["status"])}
+                onValueChange={(value) => form.setValue("status", value as PolicyFormValues["status"])}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -162,6 +261,7 @@ export function PolicyDialog({ open, onOpenChange, onSubmit, policy, isLoading }
                 <p className="text-sm text-destructive">{form.formState.errors.start_date.message}</p>
               )}
             </div>
+
             <div className="space-y-2">
               <Label>Fecha fin *</Label>
               <Input type="date" {...form.register("end_date")} />
@@ -176,13 +276,17 @@ export function PolicyDialog({ open, onOpenChange, onSubmit, policy, isLoading }
               <Label>Pago mensual *</Label>
               <Input type="number" step="0.01" {...form.register("monthly_payment", { valueAsNumber: true })} />
               {form.formState.errors.monthly_payment && (
-                <p className="text-sm text-destructive">{form.formState.errors.monthly_payment.message}</p>
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.monthly_payment.message}
+                </p>
               )}
             </div>
+
             <div className="space-y-2">
-              <Label>Día de pago</Label>
+              <Label>Dia de pago</Label>
               <Input type="number" min={1} max={31} {...form.register("payment_day", { valueAsNumber: true })} />
             </div>
+
             <div className="space-y-2">
               <Label>Valor anual</Label>
               <Input type="number" step="0.01" {...form.register("annual_value", { valueAsNumber: true })} />
@@ -194,6 +298,7 @@ export function PolicyDialog({ open, onOpenChange, onSubmit, policy, isLoading }
               <Label>Proveedor</Label>
               <Input {...form.register("vendor")} />
             </div>
+
             <div className="space-y-2">
               <Label>Tipo de contrato</Label>
               <Input {...form.register("contract_type")} />

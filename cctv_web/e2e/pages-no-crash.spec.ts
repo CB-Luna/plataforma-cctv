@@ -7,8 +7,8 @@ const TEST_PASSWORD = "Password123!";
 
 async function loginFull(page: Page) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(TEST_EMAIL);
-  await page.getByLabel("Contraseña").fill(TEST_PASSWORD);
+  await page.locator("#email").fill(TEST_EMAIL);
+  await page.locator("#password").fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Ingresar" }).click();
   await page.waitForURL(/\/(select-company|dashboard)/, { timeout: 15_000 });
   if (page.url().includes("/select-company")) {
@@ -67,9 +67,9 @@ test.describe("Inventory page - no infinite errors", () => {
     await expect(page.getByText("Dashboard de Inventario")).toBeVisible({ timeout: 10_000 });
     // The page renders with either data (stats cards) or warning banner — both are acceptable
     const main = page.getByRole("main");
-    const hasWarning = await main.getByText("No se pudo cargar").isVisible().catch(() => false);
-    const hasNvrCard = await main.getByText("Servidores NVR").isVisible().catch(() => false);
-    const hasCamCard = await main.getByText("Cámaras").first().isVisible().catch(() => false);
+    const hasWarning = await main.getByText(/No se pudo cargar/i).isVisible().catch(() => false);
+    const hasNvrCard = await main.getByText(/Servidores NVR/i).isVisible().catch(() => false);
+    const hasCamCard = await main.getByText(/Camaras|Cámaras/i).first().isVisible().catch(() => false);
     expect(hasWarning || hasNvrCard || hasCamCard).toBeTruthy();
   });
 

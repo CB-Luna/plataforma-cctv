@@ -2,9 +2,22 @@
 
 import { Fragment } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, LogOut, Menu, PanelLeftClose, PanelLeft, Sun, Moon, Monitor, Bell, ChevronRight, Search } from "lucide-react";
+import {
+  Bell,
+  Building2,
+  ChevronRight,
+  LogOut,
+  Menu,
+  Monitor,
+  Moon,
+  PanelLeft,
+  PanelLeftClose,
+  Search,
+  Sun,
+} from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTenantStore } from "@/stores/tenant-store";
+import { useSiteStore } from "@/stores/site-store";
 import { useSidebarStore } from "@/stores/sidebar-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,25 +37,25 @@ import { SiteSelector } from "./site-selector";
 const breadcrumbMap: Record<string, string> = {
   dashboard: "Dashboard",
   tickets: "Tickets",
-  policies: "PÃ³lizas",
+  policies: "Polizas",
   sla: "SLA",
-  cameras: "CÃ¡maras",
+  cameras: "Camaras",
   nvrs: "NVRs",
   inventory: "Inventario",
   "floor-plans": "Planos",
   map: "Mapa",
-  tenants: "Tenants",
+  tenants: "Empresas",
   clients: "Clientes",
-  settings: "ConfiguraciÃ³n",
+  settings: "Configuracion",
   users: "Usuarios",
   roles: "Roles",
   storage: "Almacenamiento",
   intelligence: "Inteligencia",
-  topology: "TopologÃ­a",
-  imports: "ImportaciÃ³n",
-  "mass-import": "ImportaciÃ³n Masiva",
-  capex: "CAPEX / GarantÃ­as",
-  "camera-models": "Fichas TÃ©cnicas",
+  topology: "Topologia",
+  imports: "Importacion",
+  "mass-import": "Importacion Masiva",
+  capex: "CAPEX / Garantias",
+  "camera-models": "Fichas Tecnicas",
 };
 
 export function Header() {
@@ -50,6 +63,7 @@ export function Header() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const clearCompany = useTenantStore((s) => s.clearCompany);
   const currentCompany = useTenantStore((s) => s.currentCompany);
+  const currentSite = useSiteStore((s) => s.currentSite);
   const toggleCollapsed = useSidebarStore((s) => s.toggleCollapsed);
   const collapsed = useSidebarStore((s) => s.collapsed);
   const setMobileOpen = useSidebarStore((s) => s.setMobileOpen);
@@ -62,7 +76,7 @@ export function Header() {
     try {
       await logout();
     } catch {
-      // ignore
+      // Ignore remote logout errors and clear local session anyway.
     }
 
     clearCompany();
@@ -104,9 +118,15 @@ export function Header() {
         <nav className="hidden items-center gap-1.5 text-sm md:flex">
           <span className="text-muted-foreground">Panel</span>
           {breadcrumbs.map((crumb, index) => (
-            <Fragment key={crumb + index}>
+            <Fragment key={`${crumb}-${index}`}>
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-              <span className={index === breadcrumbs.length - 1 ? "font-medium text-foreground" : "text-muted-foreground"}>
+              <span
+                className={
+                  index === breadcrumbs.length - 1
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground"
+                }
+              >
                 {crumb}
               </span>
             </Fragment>
@@ -120,7 +140,9 @@ export function Header() {
         <button className="hidden items-center gap-3 rounded-xl border border-gray-200 bg-gray-50/80 px-3.5 py-1.5 text-sm text-muted-foreground shadow-sm transition-all hover:bg-white hover:shadow-md lg:flex dark:border-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-800">
           <Search className="h-3.5 w-3.5" />
           <span className="text-gray-400">Buscar...</span>
-          <kbd className="pointer-events-none rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-gray-400 dark:border-gray-700 dark:bg-gray-800">âŒ˜K</kbd>
+          <kbd className="pointer-events-none rounded-md border border-gray-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-gray-400 dark:border-gray-700 dark:bg-gray-800">
+            Cmd+K
+          </kbd>
         </button>
 
         <SiteSelector />
@@ -135,9 +157,14 @@ export function Header() {
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{currentCompany.name}</p>
-              <p className="truncate text-xs text-muted-foreground">Contexto activo · {currentCompany.slug}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {currentSite
+                  ? `Tenant activo · ${currentCompany.slug} · Sitio: ${currentSite.name}`
+                  : `Tenant activo · ${currentCompany.slug}`}
+              </p>
             </div>
             <Badge variant="outline">Tenant</Badge>
+            {currentSite && <Badge variant="secondary">Sitio</Badge>}
           </div>
         )}
 
@@ -192,12 +219,12 @@ export function Header() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push("/settings")}>
               <Building2 className="mr-2 h-4 w-4" />
-              ConfiguraciÃ³n
+              Configuracion
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
-              Cerrar sesiÃ³n
+              Cerrar sesion
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

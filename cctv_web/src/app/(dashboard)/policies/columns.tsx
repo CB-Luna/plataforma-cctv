@@ -1,6 +1,7 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
+import { Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { Policy } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Eye, Pencil, Trash2 } from "lucide-react";
 
 interface ColumnActions {
   onView: (policy: Policy) => void;
@@ -36,7 +36,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Policy>[] {
   return [
     {
       accessorKey: "policy_number",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="# Póliza" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="# Poliza" />,
       cell: ({ row }) => (
         <span className="font-mono font-medium">{row.original.policy_number}</span>
       ),
@@ -45,6 +45,11 @@ export function getColumns(actions: ColumnActions): ColumnDef<Policy>[] {
       accessorKey: "client_name",
       header: "Cliente",
       cell: ({ row }) => row.original.client_name ?? "—",
+    },
+    {
+      accessorKey: "site_name",
+      header: "Sitio",
+      cell: ({ row }) => row.original.site_name ?? "Cobertura cliente",
     },
     {
       accessorKey: "vendor",
@@ -86,7 +91,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Policy>[] {
         const policy = row.original;
         return (
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 p-0 rounded-md hover:bg-accent">
+            <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
               <MoreHorizontal className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
