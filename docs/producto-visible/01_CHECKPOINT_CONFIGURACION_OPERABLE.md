@@ -30,6 +30,18 @@ Hacer que `Configuracion` deje de sentirse como una coleccion de tabs tecnicas y
   - plantillas reutilizables,
   - y preview del portal con la paleta elegida.
 
+## Caso real validado en esta iteracion
+
+Caso `Bimbo`, sobre `http://localhost:3011` y backend actual:
+
+- se selecciono `Bimbo` en `Configuracion > Empresas`,
+- se le definio dominio y paleta,
+- se le asigno paquete `enterprise`,
+- se habilitaron explicitamente `CCTV`, `Control de Acceso`, `Redes`, `Storage` e `IA`,
+- se bootstrapeo `admin.bimbo@demo.com`,
+- el readiness paso a `Lista para iniciar sesion`,
+- y ese mismo usuario pudo entrar al portal real viendo `Control de Acceso` y `Redes` en el menu.
+
 ## Limites honestos
 
 - El backend sigue sin CRUD completo de usuarios internos.

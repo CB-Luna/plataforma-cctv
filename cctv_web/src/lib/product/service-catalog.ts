@@ -39,7 +39,12 @@ export interface TenantOnboardingSnapshot {
   status: TenantOnboardingStatus;
   adminEmail?: string;
   adminName?: string;
+  adminUserId?: string;
+  tenantId?: string;
+  roleId?: string;
   roleName?: string;
+  verificationSource?: "bootstrap" | "manual" | "unknown";
+  verifiedAt?: string;
   notes?: string;
   updatedAt?: string;
 }
@@ -49,6 +54,16 @@ export interface TenantProductProfile {
   enabledServices: ProductServiceCode[];
   source: ProductProfileSource;
   onboarding: TenantOnboardingSnapshot;
+}
+
+export interface TenantReadinessMeta {
+  status: TenantOnboardingStatus;
+  label: string;
+  tone: "default" | "secondary" | "destructive";
+  description: string;
+  evidenceLabel: string;
+  isReady: boolean;
+  issues: string[];
 }
 
 export const PRODUCT_SERVICE_DEFINITIONS: Record<ProductServiceCode, ProductServiceDefinition> = {
@@ -250,7 +265,17 @@ export function parseTenantOnboarding(
         : "tenant_created_only",
     adminEmail: readString(onboarding.admin_email),
     adminName: readString(onboarding.admin_name),
+    adminUserId: readString(onboarding.admin_user_id),
+    tenantId: readString(onboarding.tenant_id),
+    roleId: readString(onboarding.role_id),
     roleName: readString(onboarding.role_name),
+    verificationSource:
+      readString(onboarding.verification_source) === "bootstrap" ||
+      readString(onboarding.verification_source) === "manual" ||
+      readString(onboarding.verification_source) === "unknown"
+        ? (readString(onboarding.verification_source) as "bootstrap" | "manual" | "unknown")
+        : undefined,
+    verifiedAt: readString(onboarding.verified_at),
     notes: readString(onboarding.notes),
     updatedAt: readString(onboarding.updated_at),
   };
@@ -290,7 +315,12 @@ export function buildTenantSettings(params: {
       status: params.onboarding.status,
       admin_email: params.onboarding.adminEmail,
       admin_name: params.onboarding.adminName,
+      admin_user_id: params.onboarding.adminUserId,
+      tenant_id: params.onboarding.tenantId,
+      role_id: params.onboarding.roleId,
       role_name: params.onboarding.roleName,
+      verification_source: params.onboarding.verificationSource,
+      verified_at: params.onboarding.verifiedAt,
       notes: params.onboarding.notes,
       updated_at: params.onboarding.updatedAt,
     };
@@ -351,6 +381,92 @@ export function getOnboardingStatusMeta(status: TenantOnboardingStatus): {
       return { label: "Tenant sin admin listo", tone: "destructive" };
     default:
       return { label: "Tenant creado", tone: "secondary" };
+  }
+}
+
+export function getTenantReadinessMeta(params: {
+  companyId?: string | null;
+  productProfile: TenantProductProfile;
+}): TenantReadinessMeta {
+  const { companyId, productProfile } = params;
+  const { onboarding } = productProfile;
+  const issues: string[] = [];
+  const hasExplicitServices = productProfile.source === "explicit";
+  const hasVerifiedAdmin =
+    Boolean(onboarding.adminUserId && onboarding.adminEmail) &&
+    Boolean(onboarding.roleId && onboarding.roleName) &&
+    Boolean(onboarding.tenantId && companyId && onboarding.tenantId === companyId);
+
+  if (!hasExplicitServices) {
+    issues.push("Los modulos visibles aun salen del perfil heredado; falta persistir la asignacion explicita del tenant.");
+  }
+
+  if (!onboarding.adminEmail) {
+    issues.push("No existe admin inicial configurado para este tenant.");
+  }
+
+  if (onboarding.status === "ready" && !hasVerifiedAdmin) {
+    issues.push("El snapshot dice listo, pero no hay evidencia persistida suficiente del usuario y del rol asociado al tenant.");
+  }
+
+  switch (onboarding.status) {
+    case "ready":
+      if (hasVerifiedAdmin) {
+        return {
+          status: "ready",
+          label: "Lista para iniciar sesion",
+          tone: "default",
+          description: "Existe evidencia persistida del admin inicial, su tenant y el rol esperado.",
+          evidenceLabel:
+            onboarding.verificationSource === "bootstrap"
+              ? "Bootstrap verificado"
+              : onboarding.verificationSource === "manual"
+                ? "Verificacion manual"
+                : "Evidencia persistida",
+          isReady: true,
+          issues,
+        };
+      }
+
+      return {
+        status: "admin_created_pending_role",
+        label: "Admin creado pendiente de rol",
+        tone: "secondary",
+        description: "No se marca lista porque falta evidencia persistida suficiente para garantizar el login del tenant.",
+        evidenceLabel: "Evidencia incompleta",
+        isReady: false,
+        issues,
+      };
+    case "admin_created_pending_role":
+      return {
+        status: "admin_created_pending_role",
+        label: "Admin creado pendiente de rol",
+        tone: "secondary",
+        description: "El usuario inicial existe, pero no hay garantia completa de rol o de asociacion final al tenant.",
+        evidenceLabel: onboarding.adminUserId ? "Usuario creado" : "Sin verificacion final",
+        isReady: false,
+        issues,
+      };
+    case "admin_creation_failed":
+      return {
+        status: "admin_creation_failed",
+        label: "Error en bootstrap",
+        tone: "destructive",
+        description: "El tenant existe, pero el admin inicial no quedo listo para entrar al sistema.",
+        evidenceLabel: "Bootstrap fallido",
+        isReady: false,
+        issues,
+      };
+    default:
+      return {
+        status: "tenant_created_only",
+        label: "Empresa creada sin admin",
+        tone: "secondary",
+        description: "La empresa existe, pero aun no tiene un admin inicial verificado para iniciar sesion.",
+        evidenceLabel: "Sin bootstrap",
+        isReady: false,
+        issues,
+      };
   }
 }
 

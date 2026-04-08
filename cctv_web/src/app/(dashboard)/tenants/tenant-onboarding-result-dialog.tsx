@@ -15,13 +15,23 @@ import { ServiceBadges } from "@/components/product/service-badges";
 import { getOnboardingStatusMeta, type AssignableServiceCode, type CommercialPlanCode } from "@/lib/product/service-catalog";
 
 export interface TenantOnboardingResult {
+  tenantId: string;
   tenantName: string;
   tenantSlug: string;
   packageProfile: CommercialPlanCode;
   enabledServices: AssignableServiceCode[];
+  adminName?: string;
   adminEmail?: string;
+  adminUserId?: string;
+  roleId?: string;
   roleName?: string;
+  tenantBindingId?: string;
+  verificationSource?: "bootstrap" | "manual" | "unknown";
+  verifiedAt?: string;
   status: "ready" | "tenant_created_only" | "admin_created_pending_role" | "admin_creation_failed";
+  readinessLabel?: string;
+  readinessTone?: "default" | "secondary" | "destructive";
+  evidenceLabel?: string;
   warnings: string[];
 }
 
@@ -36,7 +46,12 @@ export function TenantOnboardingResultDialog({
 }) {
   if (!result) return null;
 
-  const onboardingMeta = getOnboardingStatusMeta(result.status);
+  const onboardingMeta = result.readinessLabel
+    ? {
+        label: result.readinessLabel,
+        tone: result.readinessTone ?? "secondary",
+      }
+    : getOnboardingStatusMeta(result.status);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -79,6 +94,7 @@ export function TenantOnboardingResultDialog({
               lines={[
                 result.adminEmail ?? "No se creo admin inicial",
                 result.roleName ?? "Sin rol confirmado",
+                result.evidenceLabel ?? "Sin evidencia persistida",
               ]}
             />
             <ResultCard
@@ -107,7 +123,12 @@ export function TenantOnboardingResultDialog({
               <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Admin inicial</h3>
               <div className="mt-2 space-y-2 text-sm text-slate-600 dark:text-slate-300">
                 <p>Email: {result.adminEmail ?? "No se creo admin inicial"}</p>
+                <p>Nombre: {result.adminName ?? "Sin nombre confirmado"}</p>
                 <p>Rol asignado: {result.roleName ?? "Sin rol confirmado"}</p>
+                <p>Evidencia: {result.evidenceLabel ?? "Sin evidencia persistida"}</p>
+                <p>Tenant asociado: {result.tenantBindingId ?? "Sin asociacion confirmada"}</p>
+                <p>Usuario ID: {result.adminUserId ?? "Sin usuario confirmado"}</p>
+                <p>Verificado: {result.verifiedAt ? new Date(result.verifiedAt).toLocaleString("es-MX") : "Sin marca de verificacion"}</p>
               </div>
             </section>
           </div>

@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getOnboardingStatusMeta, parseTenantProductProfile } from "@/lib/product/service-catalog";
+import { getTenantReadinessMeta, parseTenantProductProfile } from "@/lib/product/service-catalog";
 
 interface TenantColumnActions {
   onEdit: (tenant: Tenant) => void;
@@ -85,10 +85,13 @@ export function getTenantColumns(
     },
     {
       id: "onboarding",
-      header: "Onboarding",
+      header: "Readiness",
       cell: ({ row }) => {
         const profile = parseTenantProductProfile(row.original);
-        const statusMeta = getOnboardingStatusMeta(profile.onboarding.status);
+        const statusMeta = getTenantReadinessMeta({
+          companyId: row.original.id,
+          productProfile: profile,
+        });
 
         return (
           <div className="space-y-1">
@@ -98,6 +101,7 @@ export function getTenantColumns(
             ) : (
               <p className="text-xs text-muted-foreground">Sin admin bootstrap</p>
             )}
+            <p className="text-[11px] text-muted-foreground">{statusMeta.evidenceLabel}</p>
           </div>
         );
       },

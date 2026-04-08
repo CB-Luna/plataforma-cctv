@@ -16,6 +16,12 @@
 
 Una mejora no se considera cerrada solo por tocar codigo o corregir documentos. Tiene que producir una diferencia visible de producto.
 
+## Regla de evidencia
+
+- `Evidencia mockeada`: sirve para explorar UI o para previsualizar un objetivo visual. No prueba que el flujo real quedo resuelto.
+- `Evidencia UI real`: captura una pantalla real del repo corriendo en `http://localhost:3011`.
+- `Flujo real con backend actual`: ademas de la UI real, confirma que el backend vigente sostuvo el caso extremo sin inventar endpoints.
+
 ## Alcance de esta mini-etapa
 
 - `Configuracion` como tablero de producto visible.

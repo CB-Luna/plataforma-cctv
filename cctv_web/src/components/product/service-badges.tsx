@@ -33,7 +33,7 @@ export function ServiceBadges({
             {compact
               ? service.status === "operational"
                 ? service.shortLabel
-                : `${service.shortLabel} · ${statusMeta.label}`
+                : `${service.shortLabel} - ${statusMeta.label}`
               : `${service.label} - ${statusMeta.label}`}
           </Badge>
         );

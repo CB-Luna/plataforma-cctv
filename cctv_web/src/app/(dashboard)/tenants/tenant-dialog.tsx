@@ -187,11 +187,11 @@ export function TenantDialog({
       enabledServices: enabledServices as AssignableServiceCode[],
       onboarding: createInitialAdmin
         ? {
-            status: "ready" as const,
+            status: "admin_created_pending_role" as const,
             adminEmail: previewAdminEmail?.trim() || undefined,
             adminName: [previewAdminFirstName, previewAdminLastName].filter(Boolean).join(" ").trim() || undefined,
             roleName: "tenant_admin",
-            notes: "Preview visual del onboarding listo.",
+            notes: "Preview visual: falta ejecutar el bootstrap real del admin inicial antes de marcar el tenant como listo.",
             updatedAt: new Date().toISOString(),
           }
         : {
@@ -379,22 +379,45 @@ export function TenantDialog({
               </label>
 
               {createInitialAdmin ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Nombre admin *" error={errors.admin_first_name?.message}>
-                    <Input {...register("admin_first_name")} />
-                  </Field>
-                  <Field label="Apellido admin *" error={errors.admin_last_name?.message}>
-                    <Input {...register("admin_last_name")} />
-                  </Field>
-                  <Field label="Email admin *" error={errors.admin_email?.message}>
-                    <Input type="email" {...register("admin_email")} />
-                  </Field>
-                  <Field label="Contrasena inicial *" error={errors.admin_password?.message}>
-                    <Input type="password" {...register("admin_password")} />
-                  </Field>
-                  <Field label="Telefono" error={errors.admin_phone?.message}>
-                    <Input {...register("admin_phone")} />
-                  </Field>
+                <div className="space-y-4 rounded-2xl border border-emerald-300/80 bg-white/90 p-4 shadow-sm dark:border-emerald-900/50 dark:bg-slate-950/60">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Admin inicial del tenant</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">
+                        Este bloque define la cuenta base con la que la empresa podra entrar al sistema.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <span className="rounded-full bg-slate-900 px-2.5 py-1 font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
+                        Rol esperado: tenant_admin
+                      </span>
+                      <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 font-medium text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+                        Pendiente de verificacion real
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Nombre admin *" error={errors.admin_first_name?.message}>
+                      <Input {...register("admin_first_name")} />
+                    </Field>
+                    <Field label="Apellido admin *" error={errors.admin_last_name?.message}>
+                      <Input {...register("admin_last_name")} />
+                    </Field>
+                    <Field label="Email admin *" error={errors.admin_email?.message}>
+                      <Input type="email" {...register("admin_email")} />
+                    </Field>
+                    <Field label="Contrasena inicial *" error={errors.admin_password?.message}>
+                      <Input type="password" {...register("admin_password")} />
+                    </Field>
+                    <Field label="Telefono" error={errors.admin_phone?.message}>
+                      <Input {...register("admin_phone")} />
+                    </Field>
+                  </div>
+
+                  <div className="rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/70 p-3 text-sm text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-100">
+                    La empresa no se considerara <strong>lista para iniciar sesion</strong> hasta que el bootstrap real cree al usuario y deje evidencia persistida de tenant, usuario y rol.
+                  </div>
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100">

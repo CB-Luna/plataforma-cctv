@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   PRODUCT_SERVICE_DEFINITIONS,
-  getOnboardingStatusMeta,
+  getTenantReadinessMeta,
   getServiceStatusMeta,
   isServiceRuntimeVisible,
   parseTenantProductProfile,
 } from "@/lib/product/service-catalog";
+import { getVisibleRuntimeMenu } from "@/lib/product/runtime-navigation";
 
 type TenantLikeEntity = Company | Tenant | null | undefined;
 
@@ -47,10 +48,18 @@ export function TenantPortalPreview({
   }
 
   const tenantProfile = parseTenantProductProfile(tenant);
-  const onboardingMeta = getOnboardingStatusMeta(tenantProfile.onboarding.status);
+  const readiness = getTenantReadinessMeta({
+    companyId: tenant.id,
+    productProfile: tenantProfile,
+  });
   const runtimeServices = tenantProfile.enabledServices.filter((serviceCode) =>
     isServiceRuntimeVisible(serviceCode, { hasRoleContext: true }),
   );
+  const runtimeMenuSections = getVisibleRuntimeMenu({
+    enabledServices: tenantProfile.enabledServices,
+    hasRoleContext: true,
+    ignorePermissions: true,
+  });
   const previewEmail = loginEmail ?? tenantProfile.onboarding.adminEmail ?? "Definir admin inicial";
   const previewRole = roleLabel ?? tenantProfile.onboarding.roleName ?? "tenant_admin";
 
@@ -64,7 +73,7 @@ export function TenantPortalPreview({
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">Plan: {tenantProfile.packageProfile}</Badge>
-            <Badge variant={onboardingMeta.tone}>{onboardingMeta.label}</Badge>
+            <Badge variant={readiness.tone}>{readiness.label}</Badge>
             <Badge variant="secondary">{runtimeServices.length} dominios visibles</Badge>
           </div>
         </div>
@@ -108,25 +117,28 @@ export function TenantPortalPreview({
                   Menu visible
                 </p>
                 <nav className="space-y-2">
-                  {runtimeServices.map((serviceCode) => {
-                    const service = PRODUCT_SERVICE_DEFINITIONS[serviceCode];
-                    const serviceMeta = getServiceStatusMeta(service.status);
+                  {runtimeMenuSections.map((section) => {
+                    const serviceMeta = section.service
+                      ? getServiceStatusMeta(PRODUCT_SERVICE_DEFINITIONS[section.service].status)
+                      : null;
 
                     return (
-                      <div key={service.code} className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                      <div key={section.id} className="rounded-2xl border border-white/10 bg-white/5 p-3">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium">{service.label}</p>
-                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
-                            {serviceMeta.label}
-                          </span>
+                          <p className="text-sm font-medium">{section.label}</p>
+                          {serviceMeta ? (
+                            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
+                              {serviceMeta.label}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="mt-2 flex flex-wrap gap-1.5">
-                          {service.modules.slice(0, compact ? 2 : 4).map((moduleName) => (
+                          {section.items.slice(0, compact ? 3 : 5).map((item) => (
                             <span
-                              key={`${service.code}-${moduleName}`}
+                              key={`${section.id}-${item.id}`}
                               className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-white/70"
                             >
-                              {moduleName}
+                              {item.label}
                             </span>
                           ))}
                         </div>
@@ -164,6 +176,7 @@ export function TenantPortalPreview({
                   <p>Slug: <span className="font-medium text-slate-900 dark:text-slate-100">{tenant.slug}</span></p>
                   <p>Max. usuarios: <span className="font-medium text-slate-900 dark:text-slate-100">{tenant.max_users ?? "N/D"}</span></p>
                   <p>Max. clientes: <span className="font-medium text-slate-900 dark:text-slate-100">{tenant.max_clients ?? "N/D"}</span></p>
+                  <p>Servicios: <span className="font-medium text-slate-900 dark:text-slate-100">{tenantProfile.enabledServices.length}</span></p>
                 </div>
               </PreviewInfoCard>
 
@@ -175,7 +188,8 @@ export function TenantPortalPreview({
                 <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
                   <p>Email: <span className="font-medium text-slate-900 dark:text-slate-100">{previewEmail}</span></p>
                   <p>Rol: <span className="font-medium text-slate-900 dark:text-slate-100">{previewRole}</span></p>
-                  <p>Estado: <span className="font-medium text-slate-900 dark:text-slate-100">{onboardingMeta.label}</span></p>
+                  <p>Estado: <span className="font-medium text-slate-900 dark:text-slate-100">{readiness.label}</span></p>
+                  <p>Evidencia: <span className="font-medium text-slate-900 dark:text-slate-100">{readiness.evidenceLabel}</span></p>
                 </div>
               </PreviewInfoCard>
             </div>
@@ -230,6 +244,9 @@ export function TenantPortalPreview({
                   </div>
                 </li>
               </ol>
+              <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white/80 p-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
+                Este preview reutiliza la misma estructura de dominios del sidebar runtime. La visibilidad fina por permisos puede variar segun el rol interno que termine operando la empresa.
+              </div>
             </PreviewInfoCard>
           </div>
         </div>

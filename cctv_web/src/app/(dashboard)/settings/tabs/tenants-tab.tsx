@@ -2,9 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, BadgeCheck, Building2, CheckCircle, Palette, Plus, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Building2,
+  CheckCircle,
+  KeyRound,
+  LayoutPanelLeft,
+  LogIn,
+  Palette,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { Company, Tenant } from "@/types/api";
+import { ServiceBadges } from "@/components/product/service-badges";
 import { TenantPortalPreview } from "@/components/settings/tenant-portal-preview";
 import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
@@ -29,12 +42,18 @@ import {
 import { assignRole } from "@/lib/api/users";
 import {
   buildTenantSettings,
+  COMMERCIAL_PLAN_PRESETS,
   getOnboardingStatusMeta,
+  getServiceStatusMeta,
+  getTenantReadinessMeta,
   parseTenantProductProfile,
+  PRODUCT_SERVICE_DEFINITIONS,
+  RUNTIME_VISIBLE_SERVICE_CODES,
   type AssignableServiceCode,
   type CommercialPlanCode,
   type TenantOnboardingSnapshot,
 } from "@/lib/product/service-catalog";
+import { getVisibleRuntimeMenu } from "@/lib/product/runtime-navigation";
 import { useTenantStore } from "@/stores/tenant-store";
 import { getTenantColumns } from "../../tenants/columns";
 import { TenantDialog, type TenantFormValues } from "../../tenants/tenant-dialog";
@@ -78,6 +97,7 @@ export function TenantsTab() {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
       queryClient.invalidateQueries({ queryKey: ["tenants", "stats"] });
       setDialogOpen(false);
+      setSelectedTenantId(tenant.id);
       setOnboardingResult(result);
       setOnboardingDialogOpen(true);
       const onboardingMeta = getOnboardingStatusMeta(result.status);
@@ -98,6 +118,7 @@ export function TenantsTab() {
       syncActiveCompany(currentCompany, tenant, setCompany);
       setDialogOpen(false);
       setEditingTenant(null);
+      setSelectedTenantId(tenant.id);
       if (result) {
         setOnboardingResult(result);
         setOnboardingDialogOpen(true);
@@ -161,7 +182,25 @@ export function TenantsTab() {
     [selectedTenantId, tenants],
   );
   const selectedProfile = parseTenantProductProfile(selectedTenant);
-  const selectedOnboardingMeta = getOnboardingStatusMeta(selectedProfile.onboarding.status);
+  const selectedReadiness = getTenantReadinessMeta({
+    companyId: selectedTenant?.id,
+    productProfile: selectedProfile,
+  });
+  const selectedPackagePreset = COMMERCIAL_PLAN_PRESETS[selectedProfile.packageProfile];
+  const selectedRuntimeMenu = getVisibleRuntimeMenu({
+    enabledServices: selectedProfile.enabledServices,
+    hasRoleContext: true,
+    ignorePermissions: true,
+  });
+  const selectedRuntimeLinks = selectedRuntimeMenu.reduce((total, section) => total + section.items.length, 0);
+  const selectedRuntimeServices = selectedProfile.enabledServices.filter((serviceCode) =>
+    RUNTIME_VISIBLE_SERVICE_CODES.includes(serviceCode),
+  );
+  const selectedNextStepCta = selectedReadiness.isReady
+    ? "Validar login tenant en /login"
+    : selectedProfile.onboarding.adminEmail
+      ? "Corregir bootstrap del admin"
+      : "Completar admin inicial";
 
   useEffect(() => {
     if (!tenants.length) return;
@@ -246,7 +285,10 @@ export function TenantsTab() {
           <CardContent className="space-y-3">
             {tenants.map((tenant) => {
               const tenantProfile = parseTenantProductProfile(tenant);
-              const tenantOnboardingMeta = getOnboardingStatusMeta(tenantProfile.onboarding.status);
+              const tenantReadiness = getTenantReadinessMeta({
+                companyId: tenant.id,
+                productProfile: tenantProfile,
+              });
               const isSelected = tenant.id === selectedTenant?.id;
 
               return (
@@ -279,13 +321,14 @@ export function TenantsTab() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate font-semibold text-slate-900 dark:text-slate-100">{tenant.name}</p>
-                        <Badge variant={tenantOnboardingMeta.tone}>{tenantOnboardingMeta.label}</Badge>
+                        <Badge variant={tenantReadiness.tone}>{tenantReadiness.label}</Badge>
                       </div>
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{tenant.slug}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Badge variant="outline">Plan {tenantProfile.packageProfile}</Badge>
                         <Badge variant="secondary">{tenantProfile.enabledServices.length} servicios</Badge>
                       </div>
+                      <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">{tenantReadiness.evidenceLabel}</p>
                     </div>
                   </div>
                 </button>
@@ -295,19 +338,22 @@ export function TenantsTab() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="overflow-hidden border-slate-200 dark:border-slate-800">
-            <CardHeader className="bg-gradient-to-r from-slate-50 to-blue-50/70 dark:from-slate-900 dark:to-blue-950/20">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div>
+          <Card className="overflow-hidden border-slate-200 shadow-sm dark:border-slate-800">
+            <CardHeader className="bg-gradient-to-r from-slate-50 via-white to-blue-50/80 dark:from-slate-900 dark:via-slate-950 dark:to-blue-950/20">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="bg-slate-900 text-white hover:bg-slate-900">Checkpoint visible</Badge>
+                    <Badge className="bg-slate-900 text-white hover:bg-slate-900">Workspace visible</Badge>
                     <Badge variant="outline">Empresa operable</Badge>
                     {selectedTenant ? <Badge variant="secondary">{selectedTenant.name}</Badge> : null}
+                    <Badge variant={selectedReadiness.tone}>{selectedReadiness.label}</Badge>
                   </div>
-                  <CardTitle className="mt-3 text-xl">Configuracion visible de tenant operable</CardTitle>
-                  <CardDescription className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                    Esta vista responde de forma directa a la pregunta de producto: que se le asigno a la empresa, con que admin inicial entrara, que branding tendra y que menu vera cuando inicie sesion.
-                  </CardDescription>
+                  <div>
+                    <CardTitle className="text-xl">Consola de onboarding visible de empresa</CardTitle>
+                    <CardDescription className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
+                      Esta vista ya no trata a la empresa como una fila. La empresa seleccionada se prepara aqui con branding, paquete, modulos habilitados, admin inicial, evidencia de login y siguiente paso operativo.
+                    </CardDescription>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {canEditTenant && selectedTenant ? (
@@ -318,59 +364,304 @@ export function TenantsTab() {
                         setDialogOpen(true);
                       }}
                     >
-                      Editar configuracion
+                      Editar empresa
                     </Button>
                   ) : null}
                   {canUploadBranding && selectedTenant ? (
                     <Button
+                      variant="outline"
                       onClick={() => {
                         setBrandingTenant(selectedTenant);
                         setBrandingDialogOpen(true);
                       }}
                     >
                       <Palette className="mr-2 h-4 w-4" />
-                      Logo y branding
+                      Branding
+                    </Button>
+                  ) : null}
+                  {selectedTenant ? (
+                    <Button
+                      onClick={() => window.open("/login", "_blank", "noopener,noreferrer")}
+                    >
+                      <LogIn className="mr-2 h-4 w-4" />
+                      {selectedNextStepCta}
                     </Button>
                   ) : null}
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="grid gap-4 p-5 lg:grid-cols-3">
-              <HighlightCard
-                icon={Sparkles}
-                title="Paquete y modulos"
-                description="Definicion visible del producto contratado por esta empresa."
-                lines={[
-                  `Plan comercial: ${selectedProfile.packageProfile}`,
-                  `Servicios habilitados: ${selectedProfile.enabledServices.length}`,
-                  `Modulos runtime: ${selectedProfile.enabledServices.filter((serviceCode) => ["cctv", "access_control", "networking"].includes(serviceCode)).length}`,
-                ]}
-                badges={selectedProfile.enabledServices.map((serviceCode) => serviceCode.replace("_", " "))}
-              />
-              <HighlightCard
-                icon={ShieldCheck}
-                title="Admin inicial"
-                description="Usuario con el que la empresa queda lista para iniciar sesion."
-                lines={[
-                  `Email: ${selectedProfile.onboarding.adminEmail ?? "pendiente de definir"}`,
-                  `Rol: ${selectedProfile.onboarding.roleName ?? "tenant_admin pendiente"}`,
-                  `Estado: ${selectedOnboardingMeta.label}`,
-                ]}
-                badges={[selectedOnboardingMeta.label]}
-              />
-              <HighlightCard
-                icon={BadgeCheck}
-                title="Resultado visible"
-                description="Lo que debe sentir la empresa al entrar al producto."
-                lines={[
-                  "Logo y colores propios",
-                  "Sidebar segun modulos habilitados",
-                  "Roles internos solo del tenant activo",
-                ]}
-                badges={["Portal tenant", "Menu por empresa"]}
-              />
+            <CardContent className="space-y-6 p-5">
+              <div className="grid gap-4 xl:grid-cols-[1.1fr,0.9fr]">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/40">
+                  <div className="flex items-start gap-4">
+                    {selectedTenant?.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={selectedTenant.logo_url}
+                        alt={selectedTenant.name}
+                        className="h-20 w-20 rounded-3xl border border-slate-200 object-cover shadow-sm dark:border-slate-700"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-20 w-20 items-center justify-center rounded-3xl text-2xl font-bold text-white shadow-sm"
+                        style={{ backgroundColor: selectedTenant?.primary_color ?? "#1976D2" }}
+                      >
+                        {selectedTenant?.name.slice(0, 1).toUpperCase() ?? "E"}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate text-xl font-semibold text-slate-900 dark:text-slate-100">
+                          {selectedTenant?.name ?? "Empresa sin seleccionar"}
+                        </h3>
+                        <Badge variant={selectedTenant?.is_active ? "default" : "secondary"}>
+                          {selectedTenant?.is_active ? "Activa" : "Inactiva"}
+                        </Badge>
+                        {currentCompany?.id === selectedTenant?.id ? (
+                          <Badge variant="outline">Tenant activo actual</Badge>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                        {selectedTenant?.domain || "Sin dominio corporativo definido"}
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Badge variant="outline">{selectedTenant?.slug ?? "sin-slug"}</Badge>
+                        <Badge variant="secondary">{selectedPackagePreset.label}</Badge>
+                        <Badge variant="secondary">{selectedRuntimeLinks} items visibles en sidebar</Badge>
+                        <Badge variant="outline">
+                          {selectedProfile.source === "explicit" ? "Asignacion explicita" : "Visibilidad legacy heredada"}
+                        </Badge>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {[selectedTenant?.primary_color, selectedTenant?.secondary_color, selectedTenant?.tertiary_color]
+                          .filter(Boolean)
+                          .map((color, index) => (
+                            <div
+                              key={`${selectedTenant?.id ?? "tenant"}-hero-color-${index}`}
+                              className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                            >
+                              <span className="h-3 w-3 rounded-full border" style={{ backgroundColor: color }} />
+                              {color}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
+                        <KeyRound className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">Admin inicial</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Bootstrap real del tenant</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                      <p>Nombre: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedProfile.onboarding.adminName ?? "Pendiente"}</span></p>
+                      <p>Email: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedProfile.onboarding.adminEmail ?? "Pendiente"}</span></p>
+                      <p>Rol esperado: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedProfile.onboarding.roleName ?? "tenant_admin pendiente"}</span></p>
+                      <p>Estado bootstrap: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedReadiness.label}</span></p>
+                      <p>Evidencia: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedReadiness.evidenceLabel}</span></p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200">
+                        <BadgeCheck className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">Readiness de login</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Estado brutalmente honesto</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      <Badge variant={selectedReadiness.tone}>{selectedReadiness.label}</Badge>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">{selectedReadiness.description}</p>
+                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                        <p className="font-medium text-slate-900 dark:text-slate-100">Siguiente CTA</p>
+                        <p className="mt-1">{selectedNextStepCta}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-3">
+                <HighlightCard
+                  icon={Sparkles}
+                  title="Paquete y modulos"
+                  description="No es adorno comercial: aqui se ve exactamente que esta habilitado."
+                  lines={[
+                    `Paquete activo: ${selectedPackagePreset.label}`,
+                    `Servicios asignados: ${selectedProfile.enabledServices.length}`,
+                    `Dominios runtime visibles: ${selectedRuntimeServices.length}`,
+                  ]}
+                  badges={[
+                    selectedPackagePreset.label,
+                    ...selectedProfile.enabledServices.map((serviceCode) => PRODUCT_SERVICE_DEFINITIONS[serviceCode].label),
+                  ]}
+                />
+                <HighlightCard
+                  icon={Palette}
+                  title="Branding basico"
+                  description="La empresa ya muestra identidad visual propia dentro del producto."
+                  lines={[
+                    `Dominio: ${selectedTenant?.domain ?? "sin dominio"}`,
+                    `Logo: ${selectedTenant?.logo_url ? "cargado" : "pendiente"}`,
+                    `Tema base: ${selectedTenant?.primary_color ? "colores definidos" : "colores por defecto"}`,
+                  ]}
+                  badges={[
+                    selectedTenant?.primary_color ?? "Sin primario",
+                    selectedTenant?.secondary_color ?? "Sin secundario",
+                    selectedTenant?.tertiary_color ?? "Sin terciario",
+                  ]}
+                />
+                <HighlightCard
+                  icon={LayoutPanelLeft}
+                  title="Preview del menu real"
+                  description="Este preview responde al runtime verdadero del sidebar, no a una maqueta separada."
+                  lines={[
+                    `${selectedRuntimeMenu.length} secciones visibles en sidebar`,
+                    `${selectedRuntimeLinks} entradas reales para esta empresa`,
+                    selectedProfile.source === "explicit"
+                      ? "Los modulos quedaron guardados explicitamente en settings del tenant."
+                      : "La empresa sigue heredando visibilidad legacy; hace falta guardar la asignacion explicita.",
+                  ]}
+                  badges={selectedRuntimeMenu.map((section) => `${section.label} (${section.items.length})`)}
+                />
+              </div>
+
+              {selectedReadiness.issues.length ? (
+                <div className="rounded-3xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100">
+                  <p className="font-semibold">Bloqueos o degradaciones activas</p>
+                  <ul className="mt-3 list-disc space-y-1 pl-5">
+                    {selectedReadiness.issues.map((issue) => (
+                      <li key={issue}>{issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
+
+          <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
+            <Card className="border-slate-200 dark:border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-base">Paquetes, servicios y modulos visibles</CardTitle>
+                <CardDescription>
+                  La empresa seleccionada muestra exactamente que paquete tiene, que servicios estan habilitados y en que estado se encuentra cada modulo.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedPackagePreset.label}</p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{selectedPackagePreset.description}</p>
+                  <div className="mt-3">
+                    <ServiceBadges services={selectedProfile.enabledServices} />
+                  </div>
+                </div>
+
+                <div className="grid gap-3">
+                  {selectedProfile.enabledServices.map((serviceCode) => {
+                    const service = PRODUCT_SERVICE_DEFINITIONS[serviceCode];
+                    const statusMeta = getServiceStatusMeta(service.status);
+                    const runtimeSection = selectedRuntimeMenu.find((section) => section.service === service.code);
+
+                    return (
+                      <div
+                        key={`${selectedTenant?.id ?? "tenant"}-${service.code}`}
+                        className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40"
+                      >
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-slate-900 dark:text-slate-100">{service.label}</p>
+                              <Badge variant={statusMeta.tone}>{statusMeta.label}</Badge>
+                              {selectedPackagePreset.suggestedServices.includes(serviceCode as AssignableServiceCode) ? (
+                                <Badge variant="outline">Incluido por {selectedPackagePreset.label}</Badge>
+                              ) : (
+                                <Badge variant="secondary">Agregado manualmente</Badge>
+                              )}
+                            </div>
+                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{service.description}</p>
+                          </div>
+                          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                            {runtimeSection ? `${runtimeSection.items.length} entradas reales en sidebar` : "Sin seccion lateral propia"}
+                          </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {service.modules.map((moduleName) => (
+                            <Badge key={`${service.code}-${moduleName}`} variant="secondary">
+                              {moduleName}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 dark:border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-base">Runtime y siguiente paso</CardTitle>
+                <CardDescription>
+                  Esta columna enlaza la empresa operable con el menu real y con el siguiente checkpoint hacia sucursales e infraestructura.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">Menu que vera la empresa</p>
+                  <div className="mt-3 space-y-3">
+                    {selectedRuntimeMenu.map((section) => (
+                      <div
+                        key={`${selectedTenant?.id ?? "tenant"}-${section.id}`}
+                        className="rounded-2xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-950/40"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium text-slate-900 dark:text-slate-100">{section.label}</p>
+                          <Badge variant="outline">{section.items.length} items</Badge>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {section.items.map((item) => (
+                            <Badge key={`${section.id}-${item.id}`} variant="secondary">
+                              {item.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">Transicion al siguiente checkpoint</p>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                    Una vez que esta empresa quede realmente lista para iniciar sesion, el siguiente paso visible sera llevarla a <strong>Clientes / Sucursales</strong> para luego entrar a <strong>Acceder a infraestructura</strong>.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open("/login", "_blank", "noopener,noreferrer")}
+                    >
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Probar login real
+                    </Button>
+                    <Button variant="outline" disabled>
+                      <ArrowRight className="mr-2 h-4 w-4" />
+                      Sucursales e infraestructura (siguiente)
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
             <TenantPortalPreview
@@ -383,48 +674,36 @@ export function TenantsTab() {
               <CardHeader>
                 <CardTitle className="text-base">Flujo exacto y verificable</CardTitle>
                 <CardDescription>
-                  Secuencia visible que conecta backoffice global con portal tenant para esta empresa.
+                  Secuencia visible que conecta el alta de empresa con el portal tenant real.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ProductStep
                   step="1"
                   title="Alta y branding"
-                  description={`La empresa ${selectedTenant?.name ?? "seleccionada"} se crea en esta misma seccion y aqui mismo se le puede cargar logo, cupos y colores.`}
+                  description={`La empresa ${selectedTenant?.name ?? "seleccionada"} se crea aqui mismo, con identidad visual, cupos y dominio visibles.`}
                 />
                 <ProductStep
                   step="2"
-                  title="Servicios y modulos"
-                  description="La asignacion real del runtime depende del paquete comercial y de los servicios habilitados visibles para ese tenant."
+                  title="Paquete y servicios habilitados"
+                  description={`Hoy la empresa tiene ${selectedProfile.enabledServices.length} servicios visibles y ${selectedRuntimeLinks} entradas reales de menu.`}
                 />
                 <ProductStep
                   step="3"
-                  title="Bootstrap del admin inicial"
-                  description={`El snapshot actual registra como admin inicial a ${selectedProfile.onboarding.adminEmail ?? "un usuario aun pendiente"} y su estado de onboarding.`}
+                  title="Admin inicial"
+                  description={`El bootstrap actual apunta a ${selectedProfile.onboarding.adminEmail ?? "un admin aun pendiente"} con evidencia ${selectedReadiness.evidenceLabel.toLowerCase()}.`}
                 />
                 <ProductStep
                   step="4"
-                  title="Login del tenant"
-                  description="Ese usuario entra por /login y, si pertenece a multiples empresas, selecciona explicitamente la empresa antes de caer en su portal."
+                  title="Readiness de login"
+                  description={selectedReadiness.description}
                 />
                 <ProductStep
                   step="5"
-                  title="Portal y roles internos"
-                  description="Al entrar, la empresa ya ve logo, colores, sidebar y modulos segun su configuracion; sus roles internos se administran en las tabs tenant."
+                  title="Siguiente paso del producto"
+                  description="Despues de este checkpoint, la empresa pasara a Clientes / Sucursales para entrar a infraestructura por sitio activo."
                   last
                 />
-                {selectedTenant ? (
-                  <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
-                    <p className="font-semibold text-slate-900 dark:text-slate-100">Empresa seleccionada</p>
-                    <p className="mt-2">
-                      {selectedTenant.name} ya queda narrada como producto visible, no como fila decorativa de tabla.
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge variant="outline">{selectedTenant.slug}</Badge>
-                      <Badge variant="secondary">{selectedOnboardingMeta.label}</Badge>
-                    </div>
-                  </div>
-                ) : null}
               </CardContent>
             </Card>
           </div>
@@ -602,16 +881,7 @@ async function createTenantOperationally(data: TenantFormValues): Promise<{
 
   return {
     tenant: updatedTenant,
-    result: {
-      tenantName: updatedTenant.name,
-      tenantSlug: updatedTenant.slug,
-      packageProfile,
-      enabledServices,
-      adminEmail: onboardingSnapshot.adminEmail,
-      roleName: onboardingSnapshot.roleName,
-      status: onboardingSnapshot.status,
-      warnings,
-    },
+    result: buildTenantOnboardingResult(updatedTenant, data, onboardingSnapshot, warnings),
   };
 }
 
@@ -637,16 +907,9 @@ async function updateTenantOperationally(
   if (tenantProfile.onboarding.status === "ready") {
     return {
       tenant: baseTenant,
-      result: {
-        tenantName: baseTenant.name,
-        tenantSlug: baseTenant.slug,
-        packageProfile: data.subscription_plan as CommercialPlanCode,
-        enabledServices: data.enabled_services as AssignableServiceCode[],
-        adminEmail: tenantProfile.onboarding.adminEmail,
-        roleName: tenantProfile.onboarding.roleName,
-        status: tenantProfile.onboarding.status,
-        warnings: ["El tenant ya tenia onboarding listo. No se ejecuto un bootstrap adicional de admin."],
-      },
+      result: buildTenantOnboardingResult(baseTenant, data, tenantProfile.onboarding, [
+        "El tenant ya tenia onboarding listo. No se ejecuto un bootstrap adicional de admin.",
+      ]),
     };
   }
 
@@ -667,16 +930,7 @@ async function updateTenantOperationally(
 
   return {
     tenant: updatedTenant,
-    result: {
-      tenantName: updatedTenant.name,
-      tenantSlug: updatedTenant.slug,
-      packageProfile: data.subscription_plan as CommercialPlanCode,
-      enabledServices: data.enabled_services as AssignableServiceCode[],
-      adminEmail: snapshot.adminEmail,
-      roleName: snapshot.roleName,
-      status: snapshot.status,
-      warnings,
-    },
+    result: buildTenantOnboardingResult(updatedTenant, data, snapshot, warnings),
   };
 }
 
@@ -698,6 +952,11 @@ async function bootstrapTenantAdmin(
       last_name: data.admin_last_name?.trim() ?? "",
       phone: data.admin_phone?.trim() || undefined,
     });
+    const createdUserTenantId = createdUser.tenant_id?.trim() || undefined;
+
+    if (createdUserTenantId && createdUserTenantId !== tenantId) {
+      warnings.push("El backend devolvio un tenant_id distinto al esperado para el admin inicial. No se marcara el tenant como listo.");
+    }
 
     try {
       const roles = await listRoles();
@@ -710,7 +969,11 @@ async function bootstrapTenantAdmin(
             status: "admin_created_pending_role",
             adminEmail: createdUser.email,
             adminName: `${createdUser.first_name} ${createdUser.last_name}`.trim(),
+            adminUserId: createdUser.id,
+            tenantId: createdUserTenantId,
             notes: "El usuario inicial se creo, pero no se encontro el rol tenant_admin en el contexto actual.",
+            verificationSource: "bootstrap",
+            verifiedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
           warnings,
@@ -723,7 +986,12 @@ async function bootstrapTenantAdmin(
           status: "ready",
           adminEmail: createdUser.email,
           adminName: `${createdUser.first_name} ${createdUser.last_name}`.trim(),
+          adminUserId: createdUser.id,
+          tenantId: createdUserTenantId,
+          roleId: tenantAdminRole.id,
           roleName: tenantAdminRole.name,
+          verificationSource: "bootstrap",
+          verifiedAt: new Date().toISOString(),
           notes: "Tenant listo para iniciar sesion con admin inicial y servicios habilitados.",
           updatedAt: new Date().toISOString(),
         },
@@ -736,6 +1004,10 @@ async function bootstrapTenantAdmin(
           status: "admin_created_pending_role",
           adminEmail: createdUser.email,
           adminName: `${createdUser.first_name} ${createdUser.last_name}`.trim(),
+          adminUserId: createdUser.id,
+          tenantId: createdUserTenantId,
+          verificationSource: "bootstrap",
+          verifiedAt: new Date().toISOString(),
           notes: "El usuario inicial se creo, pero la asignacion de rol quedo pendiente.",
           updatedAt: new Date().toISOString(),
         },
@@ -744,16 +1016,18 @@ async function bootstrapTenantAdmin(
     }
   } catch (error) {
     warnings.push(await getApiErrorMessage(error, "El tenant se creo, pero no se pudo registrar el admin inicial."));
-    return {
-      snapshot: {
-        status: "admin_creation_failed",
-        adminEmail: data.admin_email?.trim() || undefined,
-        adminName: [data.admin_first_name, data.admin_last_name].filter(Boolean).join(" ").trim() || undefined,
-        notes: "El tenant se creo, pero el admin inicial no pudo registrarse.",
-        updatedAt: new Date().toISOString(),
-      },
-      warnings,
-    };
+      return {
+        snapshot: {
+          status: "admin_creation_failed",
+          adminEmail: data.admin_email?.trim() || undefined,
+          adminName: [data.admin_first_name, data.admin_last_name].filter(Boolean).join(" ").trim() || undefined,
+          tenantId,
+          verificationSource: "bootstrap",
+          notes: "El tenant se creo, pero el admin inicial no pudo registrarse.",
+          updatedAt: new Date().toISOString(),
+        },
+        warnings,
+      };
   }
 }
 
@@ -765,8 +1039,52 @@ function buildPendingOnboardingSnapshot(
     status: "tenant_created_only",
     adminEmail: data.admin_email?.trim() || undefined,
     adminName: [data.admin_first_name, data.admin_last_name].filter(Boolean).join(" ").trim() || undefined,
+    roleName: data.create_initial_admin ? "tenant_admin" : undefined,
     notes,
     updatedAt: new Date().toISOString(),
+  };
+}
+
+function buildTenantOnboardingResult(
+  tenant: Tenant,
+  data: TenantFormValues,
+  onboarding: TenantOnboardingSnapshot,
+  warnings: string[],
+): TenantOnboardingResult {
+  const productProfile = parseTenantProductProfile({
+    ...tenant,
+    subscription_plan: data.subscription_plan,
+    settings: buildTenantSettings({
+      existingSettings: tenant.settings,
+      packageProfile: data.subscription_plan as CommercialPlanCode,
+      enabledServices: data.enabled_services as AssignableServiceCode[],
+      onboarding,
+    }),
+  });
+  const readiness = getTenantReadinessMeta({
+    companyId: tenant.id,
+    productProfile,
+  });
+
+  return {
+    tenantId: tenant.id,
+    tenantName: tenant.name,
+    tenantSlug: tenant.slug,
+    packageProfile: data.subscription_plan as CommercialPlanCode,
+    enabledServices: data.enabled_services as AssignableServiceCode[],
+    adminName: onboarding.adminName,
+    adminEmail: onboarding.adminEmail,
+    adminUserId: onboarding.adminUserId,
+    roleId: onboarding.roleId,
+    roleName: onboarding.roleName,
+    tenantBindingId: onboarding.tenantId,
+    verificationSource: onboarding.verificationSource,
+    verifiedAt: onboarding.verifiedAt,
+    status: onboarding.status,
+    readinessLabel: readiness.label,
+    readinessTone: readiness.tone,
+    evidenceLabel: readiness.evidenceLabel,
+    warnings: [...new Set([...warnings, ...readiness.issues])],
   };
 }
 

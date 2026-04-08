@@ -14,242 +14,11 @@ import {
   parseTenantProductProfile,
   type ProductServiceCode,
 } from "@/lib/product/service-catalog";
+import { getVisibleRuntimeMenu, type RuntimeMenuLinkItem } from "@/lib/product/runtime-navigation";
 import { renderIcon } from "@/lib/icon-map";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { cn } from "@/lib/utils";
-
-interface MenuLinkItem {
-  id: string;
-  label: string;
-  icon: string;
-  route: string;
-  permissions?: string[];
-  service?: ProductServiceCode;
-}
-
-interface MenuSection {
-  id: string;
-  label: string;
-  service?: ProductServiceCode;
-  items: MenuLinkItem[];
-}
-
-const MENU_SECTIONS: MenuSection[] = [
-  {
-    id: "cctv",
-    label: "CCTV",
-    items: [
-      {
-        id: "nav-inventory",
-        label: "Inventario",
-        icon: "inventory_2",
-        route: "/inventory",
-        permissions: getRouteAccessRule("/inventory")?.anyOf,
-        service: "cctv",
-      },
-      {
-        id: "nav-cameras",
-        label: "Camaras",
-        icon: "videocam",
-        route: "/cameras",
-        permissions: getRouteAccessRule("/cameras")?.anyOf,
-        service: "cctv",
-      },
-      {
-        id: "nav-camera-models",
-        label: "Fichas tecnicas",
-        icon: "camera",
-        route: "/camera-models",
-        permissions: getRouteAccessRule("/camera-models")?.anyOf,
-        service: "cctv",
-      },
-      {
-        id: "nav-nvrs",
-        label: "Servidores NVR",
-        icon: "storage",
-        route: "/nvrs",
-        permissions: getRouteAccessRule("/nvrs")?.anyOf,
-        service: "cctv",
-      },
-      {
-        id: "nav-floor-plans",
-        label: "Planos",
-        icon: "map",
-        route: "/floor-plans",
-        permissions: getRouteAccessRule("/floor-plans")?.anyOf,
-        service: "cctv",
-      },
-      {
-        id: "nav-map",
-        label: "Mapa",
-        icon: "location_on",
-        route: "/map",
-        permissions: getRouteAccessRule("/map")?.anyOf,
-        service: "cctv",
-      },
-      {
-        id: "nav-imports",
-        label: "Importacion",
-        icon: "description",
-        route: "/imports",
-        permissions: getRouteAccessRule("/imports")?.anyOf,
-        service: "cctv",
-      },
-    ],
-  },
-  {
-    id: "ops",
-    label: "Operaciones",
-    items: [
-      {
-        id: "nav-tickets",
-        label: "Tickets",
-        icon: "assignment",
-        route: "/tickets",
-        permissions: getRouteAccessRule("/tickets")?.anyOf,
-      },
-      {
-        id: "nav-clients",
-        label: "Clientes",
-        icon: "business",
-        route: "/clients",
-        permissions: getRouteAccessRule("/clients")?.anyOf,
-      },
-      {
-        id: "nav-policies",
-        label: "Polizas y SLA",
-        icon: "description",
-        route: "/policies",
-        permissions: getRouteAccessRule("/policies")?.anyOf,
-      },
-      {
-        id: "nav-sla",
-        label: "Niveles SLA",
-        icon: "assessment",
-        route: "/sla",
-        permissions: getRouteAccessRule("/sla")?.anyOf,
-      },
-      {
-        id: "nav-capex",
-        label: "CAPEX / Garantias",
-        icon: "verified_user",
-        route: "/capex",
-        permissions: getRouteAccessRule("/capex")?.anyOf,
-      },
-    ],
-  },
-  {
-    id: "access-control",
-    label: "Control de Acceso",
-    service: "access_control",
-    items: [
-      {
-        id: "nav-access-control-overview",
-        label: "Resumen",
-        icon: "dashboard",
-        route: "/access-control",
-        permissions: getRouteAccessRule("/access-control")?.anyOf,
-        service: "access_control",
-      },
-      {
-        id: "nav-access-control-inventory",
-        label: "Inventario",
-        icon: "inventory_2",
-        route: "/access-control/inventory",
-        permissions: getRouteAccessRule("/access-control/inventory")?.anyOf,
-        service: "access_control",
-      },
-      {
-        id: "nav-access-control-tech-sheets",
-        label: "Fichas tecnicas",
-        icon: "description",
-        route: "/access-control/technical-sheets",
-        permissions: getRouteAccessRule("/access-control/technical-sheets")?.anyOf,
-        service: "access_control",
-      },
-      {
-        id: "nav-access-control-maintenance",
-        label: "Mantenimiento",
-        icon: "build",
-        route: "/access-control/maintenance",
-        permissions: getRouteAccessRule("/access-control/maintenance")?.anyOf,
-        service: "access_control",
-      },
-      {
-        id: "nav-access-control-incidents",
-        label: "Incidentes",
-        icon: "warning",
-        route: "/access-control/incidents",
-        permissions: getRouteAccessRule("/access-control/incidents")?.anyOf,
-        service: "access_control",
-      },
-      {
-        id: "nav-access-control-reports",
-        label: "Reportes",
-        icon: "assessment",
-        route: "/access-control/reports",
-        permissions: getRouteAccessRule("/access-control/reports")?.anyOf,
-        service: "access_control",
-      },
-    ],
-  },
-  {
-    id: "networking",
-    label: "Redes",
-    service: "networking",
-    items: [
-      {
-        id: "nav-networking-overview",
-        label: "Resumen",
-        icon: "dashboard",
-        route: "/networking",
-        permissions: getRouteAccessRule("/networking")?.anyOf,
-        service: "networking",
-      },
-      {
-        id: "nav-networking-inventory",
-        label: "Inventario",
-        icon: "inventory_2",
-        route: "/networking/inventory",
-        permissions: getRouteAccessRule("/networking/inventory")?.anyOf,
-        service: "networking",
-      },
-      {
-        id: "nav-networking-tech-sheets",
-        label: "Fichas tecnicas",
-        icon: "description",
-        route: "/networking/technical-sheets",
-        permissions: getRouteAccessRule("/networking/technical-sheets")?.anyOf,
-        service: "networking",
-      },
-      {
-        id: "nav-networking-maintenance",
-        label: "Mantenimiento",
-        icon: "build",
-        route: "/networking/maintenance",
-        permissions: getRouteAccessRule("/networking/maintenance")?.anyOf,
-        service: "networking",
-      },
-      {
-        id: "nav-networking-incidents",
-        label: "Incidentes",
-        icon: "warning",
-        route: "/networking/incidents",
-        permissions: getRouteAccessRule("/networking/incidents")?.anyOf,
-        service: "networking",
-      },
-      {
-        id: "nav-networking-reports",
-        label: "Reportes",
-        icon: "assessment",
-        route: "/networking/reports",
-        permissions: getRouteAccessRule("/networking/reports")?.anyOf,
-        service: "networking",
-      },
-    ],
-  },
-];
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -284,27 +53,10 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
     tenantProfile.enabledServices,
     roles.length > 0,
   );
-  const sections = MENU_SECTIONS.map((section) => ({
-    ...section,
-    items: filterVisibleLinks(
-      section.items,
-      hasAnyPermission,
-      tenantProfile.enabledServices,
-      roles.length > 0,
-    ),
-  })).filter((section) => {
-    if (!section.items.length) {
-      return false;
-    }
-
-    if (!section.service) {
-      return true;
-    }
-
-    return (
-      tenantProfile.enabledServices.includes(section.service) &&
-      isServiceRuntimeVisible(section.service, { hasRoleContext: roles.length > 0 })
-    );
+  const sections = getVisibleRuntimeMenu({
+    enabledServices: tenantProfile.enabledServices,
+    hasRoleContext: roles.length > 0,
+    hasAnyPermission,
   });
   const secondaryLinks = filterVisibleLinks(
     [
@@ -437,11 +189,11 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
 }
 
 function filterVisibleLinks(
-  items: MenuLinkItem[],
+  items: RuntimeMenuLinkItem[],
   hasAnyPermission: (...permissions: string[]) => boolean,
   enabledServices: ProductServiceCode[],
   hasRoleContext: boolean,
-): MenuLinkItem[] {
+): RuntimeMenuLinkItem[] {
   return items.filter((item) => {
     if (item.permissions && !hasAnyPermission(...item.permissions)) {
       return false;
@@ -513,7 +265,7 @@ function MenuLink({
   collapsed = false,
   onNavigate,
 }: {
-  item: MenuLinkItem;
+  item: RuntimeMenuLinkItem;
   pathname: string;
   collapsed?: boolean;
   onNavigate?: () => void;
