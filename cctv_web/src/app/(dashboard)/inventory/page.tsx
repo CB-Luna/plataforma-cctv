@@ -1,297 +1,444 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  ArrowRight,
-  Building2,
-  Camera,
-  FileUp,
-  HardDrive,
-  Map,
-  MapPin,
-  Server,
-} from "lucide-react";
+import { Building2, Camera, Plus, RefreshCw, Server, Trash2, Upload } from "lucide-react";
+import type { Camera as CameraType, NvrServer, SiteListItem, Tenant } from "@/types/api";
 import { listCameras } from "@/lib/api/cameras";
-import { getInventoryDashboardStats, getInventorySummary } from "@/lib/api/inventory";
 import { listNvrs } from "@/lib/api/nvrs";
-import { useSiteStore } from "@/stores/site-store";
+import { listSites } from "@/lib/api/sites";
+import { listTenants } from "@/lib/api/tenants";
 import { useTenantStore } from "@/stores/tenant-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
-import { SiteContextBanner } from "@/components/context/site-context-banner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { StatsCard } from "@/components/ui/stats-card";
-import { filterByActiveSite } from "@/lib/site-context";
+import {
+  clearLocalInventory,
+  getLocalInventory,
+  type LocalCamera,
+  type LocalNvr,
+} from "@/lib/inventory/local-store";
+import { QuickInventoryImportDialog } from "./quick-import-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function InventoryDashboardPage() {
-  const currentSite = useSiteStore((s) => s.currentSite);
-  const clearSite = useSiteStore((s) => s.clearSite);
+// ---------- helpers ---------------------------------------------------------
+
+function statusBadge(status: string | undefined, isActive: boolean) {
+  const s = status ?? (isActive ? "active" : "inactive");
+  return (
+    <Badge variant={s === "active" ? "default" : "secondary"} className="text-xs">
+      {s === "active" ? "Activo" : s === "inactive" ? "Inactivo" : s}
+    </Badge>
+  );
+}
+
+function localBadge(isLocal: boolean) {
+  if (!isLocal) return null;
+  return (
+    <Badge variant="outline" className="ml-1 border-amber-400 text-xs text-amber-600">
+      importado
+    </Badge>
+  );
+}
+
+// ---------- sub-tablas -------------------------------------------------------
+
+function CamerasTable({ cameras }: { cameras: (CameraType | LocalCamera)[] }) {
+  if (cameras.length === 0) {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        Sin camaras en este contexto. Usa el boton <strong>Importar Excel</strong> para agregar datos.
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Modelo</TableHead>
+            <TableHead>IP</TableHead>
+            <TableHead>Resolucion</TableHead>
+            <TableHead>Area / Zona</TableHead>
+            <TableHead>Estado</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {cameras.map((cam) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const isLocal = (cam as any).source === "local";
+            return (
+              <TableRow key={cam.id}>
+                <TableCell>
+                  <div className="font-medium">
+                    {cam.name}
+                    {localBadge(isLocal)}
+                  </div>
+                  {cam.code && <div className="text-xs text-muted-foreground">{cam.code}</div>}
+                </TableCell>
+                <TableCell>
+                  {cam.camera_type ? (
+                    <Badge variant="outline" className="text-xs">
+                      {cam.camera_type}
+                    </Badge>
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
+                <TableCell>{cam.camera_model_name ?? "—"}</TableCell>
+                <TableCell>
+                  <code className="text-xs">{cam.ip_address ?? "—"}</code>
+                </TableCell>
+                <TableCell>{cam.resolution ?? (cam.megapixels ? `${cam.megapixels}MP` : "—")}</TableCell>
+                <TableCell>
+                  <div className="text-sm">{cam.area ?? "—"}</div>
+                  {cam.zone && <div className="text-xs text-muted-foreground">{cam.zone}</div>}
+                </TableCell>
+                <TableCell>{statusBadge(cam.status, cam.is_active)}</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function NvrsTable({ nvrs }: { nvrs: (NvrServer | LocalNvr)[] }) {
+  if (nvrs.length === 0) {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        Sin servidores NVR en este contexto. Usa el boton <strong>Importar Excel</strong> para agregar datos.
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Modelo</TableHead>
+            <TableHead>IP</TableHead>
+            <TableHead>Canales</TableHead>
+            <TableHead>Storage</TableHead>
+            <TableHead>Dias Grab.</TableHead>
+            <TableHead>Estado</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {nvrs.map((nvr) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const isLocal = (nvr as any).source === "local";
+            return (
+              <TableRow key={nvr.id}>
+                <TableCell>
+                  <div className="font-medium">
+                    {nvr.name}
+                    {localBadge(isLocal)}
+                  </div>
+                  {nvr.code && <div className="text-xs text-muted-foreground">{nvr.code}</div>}
+                </TableCell>
+                <TableCell>{nvr.model ?? "—"}</TableCell>
+                <TableCell>
+                  <code className="text-xs">{nvr.ip_address ?? "—"}</code>
+                </TableCell>
+                <TableCell>{nvr.camera_channels ?? "—"}</TableCell>
+                <TableCell>{nvr.total_storage_tb != null ? `${nvr.total_storage_tb} TB` : "—"}</TableCell>
+                <TableCell>{nvr.recording_days ?? "—"}</TableCell>
+                <TableCell>{statusBadge(nvr.status, nvr.is_active)}</TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+// ---------- pagina -----------------------------------------------------------
+
+export default function InventoryPage() {
   const currentCompany = useTenantStore((s) => s.currentCompany);
   const { permissions, roles } = usePermissions();
   const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";
 
-  const { data: summary, isError: summaryError } = useQuery({
-    queryKey: ["inventory", "summary"],
-    queryFn: getInventorySummary,
-    enabled: !isPlatformAdmin,
+  // Para Admin del Sistema: empresa seleccionada localmente
+  const [localTenantId, setLocalTenantId] = useState<string>("");
+  const [localSiteId, setLocalSiteId] = useState<string>("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const effectiveTenantId = isPlatformAdmin ? localTenantId : (currentCompany?.id ?? "");
+  const effectiveSiteId = localSiteId;
+
+  // Tenants para Admin del Sistema
+  const { data: tenants = [] } = useQuery<Tenant[]>({
+    queryKey: ["tenants-for-inventory"],
+    queryFn: () => listTenants(200),
+    enabled: isPlatformAdmin,
     retry: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: stats, isError: statsError } = useQuery({
-    queryKey: ["inventory", "dashboard-stats"],
-    queryFn: getInventoryDashboardStats,
-    enabled: !isPlatformAdmin,
+  // Sitios
+  const { data: sites = [], isLoading: sitesLoading } = useQuery<SiteListItem[]>({
+    queryKey: ["sites-for-inventory", effectiveTenantId],
+    queryFn: listSites,
+    enabled: isPlatformAdmin ? !!effectiveTenantId : true,
     retry: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
-  const { data: siteScopedCameras = [] } = useQuery({
-    queryKey: ["inventory", "site-cameras", currentSite?.id],
+  // Camaras
+  const { data: apiCameras = [], isLoading: camsLoading } = useQuery<CameraType[]>({
+    queryKey: ["inventory-cameras", effectiveSiteId, refreshKey],
     queryFn: () => listCameras({ limit: 500 }),
-    enabled: !!currentSite,
-    staleTime: 5 * 60 * 1000,
+    enabled: isPlatformAdmin ? !!effectiveTenantId : true,
+    retry: false,
+    staleTime: 2 * 60 * 1000,
   });
 
-  const { data: siteScopedNvrs = [] } = useQuery({
-    queryKey: ["inventory", "site-nvrs", currentSite?.id],
+  // NVRs
+  const { data: apiNvrs = [], isLoading: nvrsLoading } = useQuery<NvrServer[]>({
+    queryKey: ["inventory-nvrs", effectiveSiteId, refreshKey],
     queryFn: listNvrs,
-    enabled: !!currentSite,
-    staleTime: 5 * 60 * 1000,
+    enabled: isPlatformAdmin ? !!effectiveTenantId : true,
+    retry: false,
+    staleTime: 2 * 60 * 1000,
   });
 
-  const scopedInventory = useMemo(() => {
-    if (!currentSite) return null;
+  // Datos locales desde localStorage
+  const localData = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _r = refreshKey;
+    return getLocalInventory(effectiveTenantId || null, effectiveSiteId || null);
+  }, [effectiveTenantId, effectiveSiteId, refreshKey]);
 
-    const cameras = filterByActiveSite(siteScopedCameras, currentSite.id);
-    const nvrs = filterByActiveSite(siteScopedNvrs, currentSite.id);
-    const activeCameras = cameras.filter(
-      (camera) => (camera.status ?? (camera.is_active ? "active" : "inactive")) === "active",
-    ).length;
-    const activeNvrs = nvrs.filter(
-      (nvr) => (nvr.status ?? (nvr.is_active ? "active" : "inactive")) === "active",
-    ).length;
-    const recordingDays = nvrs
-      .map((nvr) => nvr.recording_days)
-      .filter((value): value is number => typeof value === "number");
-    const totalStorageTb = nvrs.reduce((acc, nvr) => acc + (nvr.total_storage_tb ?? 0), 0);
+  // Filtrar por sitio
+  const filteredCameras = useMemo(() => {
+    if (!effectiveSiteId) return apiCameras;
+    return apiCameras.filter((c) => !c.site_id || c.site_id === effectiveSiteId);
+  }, [apiCameras, effectiveSiteId]);
 
-    return {
-      stats: {
-        totalNvrs: nvrs.length,
-        activeNvrs,
-        totalCameras: cameras.length,
-        activeCameras,
-        totalStorageTb,
-      },
-      summary: {
-        total_nvr_servers: nvrs.length,
-        active_nvr_servers: activeNvrs,
-        total_cameras: cameras.length,
-        active_cameras: activeCameras,
-        total_storage_tb: totalStorageTb,
-        average_recording_days:
-          recordingDays.length > 0
-            ? Number((recordingDays.reduce((acc, value) => acc + value, 0) / recordingDays.length).toFixed(1))
-            : 0,
-        total_clients: currentSite.client_name ? 1 : 0,
-        total_sites: 1,
-      },
-    };
-  }, [currentSite, siteScopedCameras, siteScopedNvrs]);
+  const filteredNvrs = useMemo(() => {
+    if (!effectiveSiteId) return apiNvrs;
+    return apiNvrs.filter((n) => !n.site_id || n.site_id === effectiveSiteId);
+  }, [apiNvrs, effectiveSiteId]);
 
-  const displayedStats = scopedInventory?.stats ?? stats;
-  const displayedSummary = scopedInventory?.summary ?? summary;
+  // Merge API + localStorage
+  const allCameras = useMemo(
+    () => [...filteredCameras, ...(localData?.cameras ?? [])],
+    [filteredCameras, localData],
+  );
+  const allNvrs = useMemo(
+    () => [...filteredNvrs, ...(localData?.nvrs ?? [])],
+    [filteredNvrs, localData],
+  );
+
+  // Etiqueta legible de contexto
+  const siteLabel = useMemo(() => {
+    const siteName = sites.find((s) => s.id === effectiveSiteId)?.name ?? "";
+    const tenantName = isPlatformAdmin
+      ? (tenants.find((t) => t.id === effectiveTenantId)?.name ?? "")
+      : (currentCompany?.name ?? "");
+    if (siteName) return `${tenantName} — ${siteName}`.trim();
+    return tenantName.trim() || "Inventario local";
+  }, [sites, effectiveSiteId, effectiveTenantId, tenants, isPlatformAdmin, currentCompany]);
+
+  const isLoading = camsLoading || nvrsLoading;
+  const hasLocalData = localData && (localData.cameras.length > 0 || localData.nvrs.length > 0);
+
+  const handleImported = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleClearLocal = useCallback(() => {
+    clearLocalInventory(effectiveTenantId || null, effectiveSiteId || null);
+    setRefreshKey((k) => k + 1);
+  }, [effectiveTenantId, effectiveSiteId]);
 
   return (
-    <div className="space-y-6">
-      {isPlatformAdmin ? (
-        <EmptyState
-          icon={Building2}
-          title="Inventario disponible por empresa"
-          description="Este modulo opera en el contexto de una empresa especifica. Selecciona una empresa desde el panel de administracion para ver su inventario CCTV."
-        />
-      ) : (
-      <>
-      <SiteContextBanner
-        site={currentSite}
-        description="Los KPI visibles se recalculan con los activos del sitio activo. Limpia el contexto para volver al agregado global del tenant."
-        onClear={clearSite}
-      />
-
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Dashboard de Inventario</h2>
-        <p className="text-muted-foreground">Resumen ejecutivo del inventario CCTV.</p>
+    <div className="space-y-5">
+      {/* Encabezado */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Inventario CCTV</h1>
+          <p className="text-sm text-muted-foreground">
+            Equipos registrados por sucursal. Los datos importados desde Excel se guardan localmente.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setRefreshKey((k) => k + 1)} disabled={isLoading}>
+            <RefreshCw className={`mr-1.5 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            Actualizar
+          </Button>
+          <Button size="sm" onClick={() => setImportOpen(true)}>
+            <Upload className="mr-1.5 h-4 w-4" />
+            Importar Excel
+          </Button>
+        </div>
       </div>
 
-      {!currentSite && (summaryError || statsError) && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardContent className="flex items-center gap-3 py-4">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
-            <div>
-              <p className="text-sm font-medium text-amber-800">No se pudo cargar el resumen del inventario</p>
-              <p className="text-xs text-amber-600">
-                El servidor devolvio un error. Los datos se mostraran cuando el servicio este disponible.
-              </p>
+      {/* Selectores de contexto */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex flex-wrap items-end gap-3">
+            {isPlatformAdmin && (
+              <div className="min-w-52">
+                <p className="mb-1.5 text-xs font-medium text-muted-foreground">Empresa</p>
+                <Select
+                  value={localTenantId}
+                  onValueChange={(v) => { setLocalTenantId(v ?? ""); setLocalSiteId(""); }}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecciona empresa..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tenants.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="min-w-52">
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">Sucursal</p>
+              <Select
+                value={localSiteId}
+                onValueChange={(v) => setLocalSiteId(v ?? "")}
+                disabled={isPlatformAdmin && !localTenantId}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue
+                    placeholder={
+                      sitesLoading ? "Cargando..." :
+                      isPlatformAdmin && !localTenantId ? "Selecciona empresa primero" :
+                      "Todas las sucursales"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas las sucursales</SelectItem>
+                  {sites.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                      {s.client_name && (
+                        <span className="ml-1 text-xs text-muted-foreground">— {s.client_name}</span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Servidores NVR"
-          value={displayedStats?.totalNvrs ?? displayedSummary?.total_nvr_servers ?? 0}
-          subtitle={`${displayedStats?.activeNvrs ?? displayedSummary?.active_nvr_servers ?? 0} activos`}
-          icon={Server}
-          color="blue"
-        />
-        <StatsCard
-          title="Camaras"
-          value={displayedStats?.totalCameras ?? displayedSummary?.total_cameras ?? 0}
-          subtitle={`${displayedStats?.activeCameras ?? displayedSummary?.active_cameras ?? 0} activas`}
-          icon={Camera}
-          color="teal"
-        />
-        <StatsCard
-          title="Almacenamiento"
-          value={`${displayedStats?.totalStorageTb ?? displayedSummary?.total_storage_tb ?? 0} TB`}
-          subtitle={
-            displayedSummary?.average_recording_days != null
-              ? `~${displayedSummary.average_recording_days} dias grabacion`
-              : undefined
-          }
-          icon={HardDrive}
-          color="purple"
-        />
-        <StatsCard
-          title="Sucursales"
-          value={displayedSummary?.total_sites ?? 0}
-          subtitle={`${displayedSummary?.total_clients ?? 0} clientes`}
-          icon={MapPin}
-          color="amber"
-        />
-      </div>
+            {hasLocalData && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="ml-auto text-xs text-destructive hover:text-destructive"
+                onClick={handleClearLocal}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                Limpiar importados
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            href: "/cameras",
-            label: "Camaras",
-            desc: "Listado completo, busqueda y exportacion",
-            icon: Camera,
-            color: "text-sky-500",
-          },
-          {
-            href: "/nvrs",
-            label: "Servidores NVR",
-            desc: "Administrar servidores de grabacion",
-            icon: Server,
-            color: "text-blue-500",
-          },
-          {
-            href: "/floor-plans",
-            label: "Planos de planta",
-            desc: "Editor visual de ubicacion de camaras",
-            icon: Map,
-            color: "text-emerald-500",
-          },
-          {
-            href: "/imports",
-            label: "Importacion",
-            desc: "Carga masiva desde Excel / CSV",
-            icon: FileUp,
-            color: "text-amber-500",
-          },
-        ].map((nav) => (
-          <Link key={nav.href} href={nav.href}>
-            <Card className="group cursor-pointer transition-shadow hover:shadow-md">
-              <CardContent className="flex items-center gap-3 py-4">
-                <nav.icon className={`h-8 w-8 shrink-0 ${nav.color}`} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{nav.label}</p>
-                  <p className="truncate text-xs text-muted-foreground">{nav.desc}</p>
-                </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-
-      {displayedSummary && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Infraestructura</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">NVR activos / total</span>
-                <span className="font-medium">
-                  {displayedSummary.active_nvr_servers} / {displayedSummary.total_nvr_servers}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Camaras activas / total</span>
-                <span className="font-medium">
-                  {displayedSummary.active_cameras} / {displayedSummary.total_cameras}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Almacenamiento total</span>
-                <span className="font-medium">{displayedSummary.total_storage_tb} TB</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Dias promedio grabacion</span>
-                <span className="font-medium">{displayedSummary.average_recording_days} dias</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Cobertura</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Clientes</span>
-                <span className="font-medium">{displayedSummary.total_clients}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Sucursales cubiertas</span>
-                <span className="font-medium">{displayedSummary.total_sites}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Ratio camaras/sucursal</span>
-                <span className="font-medium">
-                  {displayedSummary.total_sites > 0
-                    ? (displayedSummary.total_cameras / displayedSummary.total_sites).toFixed(1)
-                    : "—"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Ratio NVR/sucursal</span>
-                <span className="font-medium">
-                  {displayedSummary.total_sites > 0
-                    ? (displayedSummary.total_nvr_servers / displayedSummary.total_sites).toFixed(1)
-                    : "—"}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Estado vacio para Admin del Sistema sin empresa seleccionada */}
+      {isPlatformAdmin && !localTenantId && (
+        <div className="rounded-lg border border-dashed py-16 text-center">
+          <Building2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm font-medium text-muted-foreground">
+            Selecciona una empresa para ver su inventario CCTV
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            O importa un Excel directamente — los datos quedaran guardados
+          </p>
+          <Button size="sm" variant="outline" className="mt-4" onClick={() => setImportOpen(true)}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Importar Excel de todas formas
+          </Button>
         </div>
       )}
-      </>
+
+      {/* Tabla de inventario */}
+      {(!isPlatformAdmin || localTenantId) && (
+        <Tabs defaultValue="cameras">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <TabsList>
+              <TabsTrigger value="cameras">
+                <Camera className="mr-1.5 h-4 w-4" />
+                Camaras
+                <Badge variant="secondary" className="ml-2 rounded-full px-1.5 py-0 text-xs">
+                  {allCameras.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="nvrs">
+                <Server className="mr-1.5 h-4 w-4" />
+                Servidores NVR
+                <Badge variant="secondary" className="ml-2 rounded-full px-1.5 py-0 text-xs">
+                  {allNvrs.length}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+            {siteLabel && (
+              <span className="text-xs text-muted-foreground">
+                Contexto: <span className="font-medium">{siteLabel}</span>
+              </span>
+            )}
+          </div>
+
+          <TabsContent value="cameras" className="mt-4">
+            {isLoading ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">Cargando inventario...</div>
+            ) : (
+              <CamerasTable cameras={allCameras} />
+            )}
+          </TabsContent>
+
+          <TabsContent value="nvrs" className="mt-4">
+            {isLoading ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">Cargando inventario...</div>
+            ) : (
+              <NvrsTable nvrs={allNvrs} />
+            )}
+          </TabsContent>
+        </Tabs>
       )}
+
+      {/* Dialogo de importacion rapida */}
+      <QuickInventoryImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        tenantId={effectiveTenantId || null}
+        siteId={effectiveSiteId || null}
+        siteLabel={siteLabel}
+        onImported={handleImported}
+      />
     </div>
   );
 }

@@ -17,12 +17,12 @@ import { getColumns } from "./columns";
 import { BatchDetailDialog } from "./batch-detail-dialog";
 import { ImportDialog, type ImportSubmissionPayload } from "./import-dialog";
 import { DataTable } from "@/components/data-table";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTenantStore } from "@/stores/tenant-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function ImportsPage() {
   const queryClient = useQueryClient();
@@ -36,13 +36,13 @@ export default function ImportsPage() {
   const { data: batches, isLoading } = useQuery({
     queryKey: ["import-batches"],
     queryFn: () => listImportBatches(),
-    enabled: !isPlatformAdmin,
+    retry: false,
   });
 
   const { data: stats } = useQuery({
     queryKey: ["import-stats"],
     queryFn: () => getImportStats(),
-    enabled: !isPlatformAdmin,
+    retry: false,
   });
 
   const createMutation = useMutation({
@@ -113,13 +113,13 @@ export default function ImportsPage() {
 
   return (
     <div className="space-y-6">
-      {isPlatformAdmin ? (
-        <EmptyState
-          icon={Building2}
-          title="Importaciones disponibles por empresa"
-          description="Este modulo opera en el contexto de una empresa especifica. Selecciona una empresa desde el panel de administracion para gestionar sus importaciones."
-        />
-      ) : (
+      {isPlatformAdmin && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+          <p className="text-sm text-blue-700">
+            Estas viendo importaciones en modo plataforma. Los lotes listados corresponden al contexto de servidor activo.
+          </p>
+        </div>
+      )}
       <>
       <div className="flex items-center justify-between">
         <div>
@@ -205,7 +205,6 @@ export default function ImportsPage() {
         batch={detailBatch}
       />
       </>
-      )}
     </div>
   );
 }
