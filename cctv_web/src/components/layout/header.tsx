@@ -170,7 +170,15 @@ export function Header() {
 
         <SiteSelector />
 
-        {currentCompany ? (
+        {experience.mode === "hybrid_backoffice" ? (
+          <div className="hidden items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 sm:flex dark:border-sky-800 dark:bg-sky-950/40">
+            <div className="flex h-5 w-5 items-center justify-center rounded bg-sky-600 text-white dark:bg-sky-500">
+              <Monitor className="h-3 w-3" />
+            </div>
+            <span className="text-xs font-medium text-sky-700 dark:text-sky-300">Plataforma</span>
+            <Badge variant="outline" className="border-sky-300 text-[10px] px-1.5 py-0 text-sky-600 dark:border-sky-700 dark:text-sky-400">{experience.roleLabel}</Badge>
+          </div>
+        ) : currentCompany && experience.mode === "tenant_portal" ? (
           <div className="hidden items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 shadow-sm sm:flex dark:border-gray-700 dark:bg-gray-900">
             <div
               className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
@@ -182,13 +190,11 @@ export function Header() {
               <p className="truncate text-sm font-medium">{currentCompany.name}</p>
               <p className="truncate text-xs text-muted-foreground">
                 {currentSite
-                  ? `${experience.shellBadgeLabel} - ${currentCompany.slug} - Sitio: ${currentSite.name}`
-                  : `${experience.shellBadgeLabel} - ${currentCompany.slug}`}
+                  ? `Portal tenant - ${currentCompany.slug} - Sitio: ${currentSite.name}`
+                  : `Portal tenant - ${currentCompany.slug}`}
               </p>
             </div>
             <Badge variant="outline">{experience.roleLabel}</Badge>
-            <Badge variant="secondary">{experience.shellBadgeLabel}</Badge>
-            {currentSite ? <Badge variant="secondary">Sitio</Badge> : null}
           </div>
         ) : null}
 

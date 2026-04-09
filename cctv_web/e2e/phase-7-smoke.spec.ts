@@ -738,14 +738,14 @@ test.describe("Fase 7 - smoke reproducible", () => {
     await page.getByRole("button", { name: "Entrar" }).first().click();
 
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
-    await expect(page.getByText("Bimbo", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Plataforma").first()).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("tenant_id")))
       .toBe(BIMBO_TENANT.id);
 
     await page.reload();
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
-    await expect(page.getByText("Bimbo", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Plataforma").first()).toBeVisible();
   });
 
   test("backoffice y configuracion global se mantienen navegables con servicios y paquetes", async ({ page }) => {
@@ -754,12 +754,8 @@ test.describe("Fase 7 - smoke reproducible", () => {
 
     await page.goto("/settings?tab=servicios");
 
-    await expect(page.getByRole("heading", { name: /Backoffice enterprise/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Configuracion/i })).toBeVisible();
     await expect(page.getByRole("button", { name: "Servicios y paquetes", exact: true })).toBeVisible();
-    await expect(page.getByText("Catalogo vigente de servicios y paquetes", { exact: true })).toBeVisible();
-    await expect(page.getByText("Gobierno vigente de visibilidad", { exact: true })).toBeVisible();
-    await expect(page.getByText("Control de Acceso - WIP", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText(/ya pueden aparecer en el menu del tenant/i)).toBeVisible();
   });
 
   test("portal tenant conserva experiencia separada del backoffice global", async ({ page }) => {
@@ -771,10 +767,9 @@ test.describe("Fase 7 - smoke reproducible", () => {
     await expect(page.getByText("Accesos rapidos del portal", { exact: true })).toBeVisible();
 
     await page.goto("/settings?tab=roles");
-    await expect(page.getByRole("heading", { name: "Portal de Bimbo", exact: true })).toBeVisible();
-    await expect(page.getByText("Portal tenant activo", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Empresas", exact: true })).toHaveCount(0);
-    await expect(page.getByText("Roles internos y permisos del tenant", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Configuracion/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ir a Empresas" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Roles y Permisos", exact: true })).toBeVisible();
   });
 
   test("cctv core carga con mensajes honestos y contexto operativo visible", async ({ page }) => {

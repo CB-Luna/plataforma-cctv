@@ -5,7 +5,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, HardDrive, Plus, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import type { StorageConfiguration } from "@/types/api";
-import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/data-table";
@@ -113,19 +112,6 @@ export function StorageTab() {
 
   return (
     <div className="space-y-6">
-      <ScopeCallout
-        badge="Tenant activo"
-        accent="tenant"
-        title="Storage operativo del tenant"
-        description="Los providers base existen a nivel plataforma, pero esta tab controla las configuraciones y archivos que usa el tenant activo para su operacion."
-        footer={
-          <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
-            <Badge variant="outline">{providers.length} providers catalogados</Badge>
-            <Badge variant="outline">{configs.length} configuraciones del tenant</Badge>
-          </div>
-        }
-      />
-
       <div className="flex items-center justify-end">
         {canCreateConfig ? (
           <Button

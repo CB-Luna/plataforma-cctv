@@ -7,25 +7,18 @@ import {
   Building2,
   HardDrive,
   LayoutTemplate,
-  LogIn,
   Package2,
-  Palette,
   Settings2,
   Shield,
-  ShieldCheck,
-  Sparkles,
   Users,
 } from "lucide-react";
 import { AccessDeniedState } from "@/components/auth/access-denied-state";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TabLayout, type TabItem } from "@/components/ui/tab-layout";
+import type { TabItem } from "@/components/ui/tab-layout";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { useTenantStore } from "@/stores/tenant-store";
 import {
-  PRODUCT_SERVICE_DEFINITIONS,
   isSettingsTabEnabledForServices,
   parseTenantProductProfile,
 } from "@/lib/product/service-catalog";
@@ -49,6 +42,43 @@ interface SettingsTabDefinition extends TabItem {
 
 const tabs: SettingsTabDefinition[] = [
   {
+    key: "usuarios",
+    label: "Usuarios",
+    icon: Users,
+    color: "indigo",
+    component: <UsersTab />,
+    scope: "tenant",
+    summary: "Usuarios operativos y roles internos del tenant activo.",
+    access: ["users.read", "users:read:own", "users:read:all"],
+  },
+  {
+    key: "roles",
+    label: "Roles y Permisos",
+    icon: Shield,
+    color: "purple",
+    component: <RolesTab />,
+    scope: "tenant",
+    summary: "Roles internos del tenant activo.",
+    access: ["roles.read", "roles:read:own", "roles:read:all", "permissions:read:all"],
+  },
+  {
+    key: "tema",
+    label: "Temas",
+    icon: Settings2,
+    color: "teal",
+    component: <GeneralTab />,
+    scope: "tenant",
+    summary: "Identidad visual y datos base del tenant activo.",
+    access: [
+      "settings.read",
+      "configuration.read",
+      "configuration:read:own",
+      "configuration:read:all",
+      "themes:read:own",
+      "themes:read:all",
+    ],
+  },
+  {
     key: "empresas",
     label: "Empresas",
     icon: Building2,
@@ -65,7 +95,7 @@ const tabs: SettingsTabDefinition[] = [
     color: "amber",
     component: <ServicesPackagesTab />,
     scope: "platform",
-    summary: "Catalogo vigente de planes, servicios habilitados y criterio real de visibilidad por tenant.",
+    summary: "Catalogo vigente de planes y servicios habilitados por empresa.",
     access: ["tenants.read", "tenants:read:all"],
   },
   {
@@ -75,54 +105,17 @@ const tabs: SettingsTabDefinition[] = [
     color: "pink",
     component: <MenuTemplatesTab />,
     scope: "platform",
-    summary: "Backoffice real de templates, asignacion por tenant y composicion base.",
+    summary: "Templates de navegacion y asignacion por tenant.",
     access: ["menu:read:all", "menu.read"],
   },
   {
-    key: "usuarios",
-    label: "Usuarios",
-    icon: Users,
-    color: "indigo",
-    component: <UsersTab />,
-    scope: "tenant",
-    summary: "Usuarios operativos y roles internos del tenant activo.",
-    access: ["users.read", "users:read:own", "users:read:all"],
-  },
-  {
-    key: "roles",
-    label: "Roles y permisos",
-    icon: Shield,
-    color: "purple",
-    component: <RolesTab />,
-    scope: "tenant",
-    summary: "Roles internos del tenant activo; la gestion global explicita sigue siendo GAP.",
-    access: ["roles.read", "roles:read:own", "roles:read:all", "permissions:read:all"],
-  },
-  {
-    key: "tema",
-    label: "Tema",
-    icon: Settings2,
-    color: "teal",
-    component: <GeneralTab />,
-    scope: "tenant",
-    summary: "Identidad visual y datos base del tenant activo.",
-    access: [
-      "settings.read",
-      "configuration.read",
-      "configuration:read:own",
-      "configuration:read:all",
-      "themes:read:own",
-      "themes:read:all",
-    ],
-  },
-  {
     key: "ia",
-    label: "IA",
+    label: "IA del sistema",
     icon: Brain,
     color: "amber",
     component: <IntelligenceTab />,
     scope: "tenant",
-    summary: "Modelos, prompts y consumo de inteligencia para el tenant activo.",
+    summary: "Modelos, prompts y consumo de inteligencia.",
     access: ["ai_models.read", "ai_models:read:own", "ai_models:read:all"],
   },
   {
@@ -132,35 +125,20 @@ const tabs: SettingsTabDefinition[] = [
     color: "gray",
     component: <StorageTab />,
     scope: "tenant",
-    summary: "Configuraciones de almacenamiento y archivos del tenant activo.",
+    summary: "Configuraciones de almacenamiento y archivos.",
     access: ["storage.read", "storage:read:own", "storage:read:all"],
   },
 ];
 
-const scopeMeta: Record<
-  SettingsScope,
-  {
-    badge: string;
-    title: string;
-    description: string;
-    cardClass: string;
-    badgeClass: string;
-  }
-> = {
-  platform: {
-    badge: "Plataforma",
-    title: "Backoffice global",
-    description: "Administra empresas operadoras, branding corporativo y plantillas de menu compartidas.",
-    cardClass: "border-blue-200 bg-blue-50/80 dark:border-blue-900/70 dark:bg-blue-950/20",
-    badgeClass: "bg-blue-600 text-white hover:bg-blue-600",
-  },
-  tenant: {
-    badge: "Tenant activo",
-    title: "Portal de empresa",
-    description: "Opera usuarios, roles internos, tema, IA y storage del tenant seleccionado.",
-    cardClass: "border-emerald-200 bg-emerald-50/80 dark:border-emerald-900/70 dark:bg-emerald-950/20",
-    badgeClass: "bg-emerald-600 text-white hover:bg-emerald-600",
-  },
+// ── Colores para los tabs ──────────────────────────────────────────────
+const tabColorMap: Record<string, { activeBg: string; activeText: string; activeBorder: string; iconBg: string }> = {
+  blue:   { activeBg: "bg-blue-50 dark:bg-blue-950/30",     activeText: "text-blue-600 dark:text-blue-400",     activeBorder: "border-blue-500",   iconBg: "bg-blue-100 dark:bg-blue-900/40" },
+  purple: { activeBg: "bg-purple-50 dark:bg-purple-950/30", activeText: "text-purple-600 dark:text-purple-400", activeBorder: "border-purple-500", iconBg: "bg-purple-100 dark:bg-purple-900/40" },
+  amber:  { activeBg: "bg-amber-50 dark:bg-amber-950/30",   activeText: "text-amber-600 dark:text-amber-400",   activeBorder: "border-amber-500",  iconBg: "bg-amber-100 dark:bg-amber-900/40" },
+  teal:   { activeBg: "bg-teal-50 dark:bg-teal-950/30",     activeText: "text-teal-600 dark:text-teal-400",     activeBorder: "border-teal-500",   iconBg: "bg-teal-100 dark:bg-teal-900/40" },
+  pink:   { activeBg: "bg-pink-50 dark:bg-pink-950/30",     activeText: "text-pink-600 dark:text-pink-400",     activeBorder: "border-pink-500",   iconBg: "bg-pink-100 dark:bg-pink-900/40" },
+  gray:   { activeBg: "bg-gray-50 dark:bg-gray-800",        activeText: "text-gray-600 dark:text-gray-400",     activeBorder: "border-gray-500",   iconBg: "bg-gray-200 dark:bg-gray-700" },
+  indigo: { activeBg: "bg-indigo-50 dark:bg-indigo-950/30", activeText: "text-indigo-600 dark:text-indigo-400", activeBorder: "border-indigo-500", iconBg: "bg-indigo-100 dark:bg-indigo-900/40" },
 };
 
 export default function SettingsPage() {
@@ -173,7 +151,6 @@ export default function SettingsPage() {
     () => parseTenantProductProfile(currentCompany).enabledServices,
     [currentCompany],
   );
-  const tenantProductProfile = useMemo(() => parseTenantProductProfile(currentCompany), [currentCompany]);
   const experience = useMemo(
     () =>
       getWorkspaceExperience({
@@ -183,6 +160,8 @@ export default function SettingsPage() {
       }),
     [currentCompany, permissions, roles],
   );
+
+  // Todas las tabs visibles segun permisos y servicios, sin filtrado por scope
   const visibleTabs = useMemo(
     () =>
       tabs.filter(
@@ -190,15 +169,10 @@ export default function SettingsPage() {
       ),
     [canAny, enabledServices],
   );
+
   const requestedTab = searchParams.get("tab");
   const activeTabItem = visibleTabs.find((tab) => tab.key === requestedTab) ?? visibleTabs[0];
   const activeTab = activeTabItem?.key;
-  const activeScope = activeTabItem?.scope ?? "tenant";
-  const scopeTabs = visibleTabs.filter((tab) => tab.scope === activeScope);
-  const platformTabs = visibleTabs.filter((tab) => tab.scope === "platform");
-  const tenantTabs = visibleTabs.filter((tab) => tab.scope === "tenant");
-  const activeScopeMeta = scopeMeta[activeScope];
-  const hasScopeSwitch = platformTabs.length > 0 && tenantTabs.length > 0;
 
   useEffect(() => {
     if (!visibleTabs.length || !activeTab) return;
@@ -217,234 +191,80 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">Fase 6</Badge>
-            <Badge className={activeScopeMeta.badgeClass}>{activeScopeMeta.badge}</Badge>
-            {currentCompany ? <Badge variant="secondary">{currentCompany.name}</Badge> : null}
-            <Badge variant="outline">Plan: {tenantProductProfile.packageProfile}</Badge>
-            <Badge variant="outline">Rol: {experience.roleLabel}</Badge>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {experience.mode === "tenant_portal" ? experience.shellTitle : "Backoffice enterprise y producto"}
-            </h1>
-            <p className="mt-1 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-              {experience.mode === "tenant_portal"
-                ? "Este espacio ya prioriza usuarios, roles internos, branding y capacidades operativas de la empresa activa."
-                : "`/settings` separa plataforma global del portal tenant y ahora tambien expone el catalogo vigente de servicios y paquetes que gobierna visibilidad real."}
-            </p>
-          </div>
-        </div>
-
-        {hasScopeSwitch ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[540px]">
-          <ScopeCard
-            scope="platform"
-            activeScope={activeScope}
-            title={scopeMeta.platform.title}
-            description={scopeMeta.platform.description}
-            tabCount={platformTabs.length}
-            tenantName={currentCompany?.name}
-            onClick={() => goToScopeTab(platformTabs[0], router)}
-          />
-          <ScopeCard
-            scope="tenant"
-            activeScope={activeScope}
-            title={scopeMeta.tenant.title}
-            description={scopeMeta.tenant.description}
-            tabCount={tenantTabs.length}
-            tenantName={currentCompany?.name}
-            onClick={() => goToScopeTab(tenantTabs[0], router)}
-          />
-        </div>
-        ) : (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-slate-700 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-slate-200 xl:min-w-[420px]">
-            <p className="font-semibold">Portal tenant activo</p>
-            <p className="mt-1">
-              La configuracion visible ya esta filtrada al ownership de empresa. No se muestran controles globales de plataforma en este contexto.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className={cn("rounded-2xl border p-4", activeScopeMeta.cardClass)}>
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              Contexto visible
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
-              {activeScopeMeta.title}
-            </h2>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              {activeTabItem?.summary}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge className={activeScopeMeta.badgeClass}>{activeScopeMeta.badge}</Badge>
-            <Badge variant="outline">{scopeTabs.length} tabs visibles</Badge>
-            {activeScope === "tenant" && currentCompany ? (
-              <Badge variant="secondary">Tenant: {currentCompany.slug}</Badge>
-            ) : null}
-            {currentCompany ? (
-              <Badge variant="outline">{tenantProductProfile.enabledServices.length} servicios visibles</Badge>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-4">
-        <SettingsJourneyCard
-          icon={Building2}
-          title="1. Empresa operable"
-          description="Da de alta la empresa, define branding, cupos y estado de onboarding desde una sola vista."
-          footer={`Admin inicial: ${tenantProductProfile.onboarding.adminEmail ?? "pendiente"}`}
-          badges={[
-            "Alta de tenant",
-            "Branding",
-            tenantProductProfile.onboarding.status === "ready" ? "Lista para login" : "Onboarding parcial",
-          ]}
-          actionLabel="Ir a Empresas"
-          onAction={() => router.replace("/settings?tab=empresas", { scroll: false })}
-        />
-        <SettingsJourneyCard
-          icon={Package2}
-          title="2. Paquetes y modulos"
-          description="Muestra claramente que incluye cada plan y que dominios quedaran visibles para cada empresa."
-          footer={`${tenantProductProfile.enabledServices.length} servicios configurados para ${currentCompany?.name ?? "el tenant activo"}`}
-          badges={tenantProductProfile.enabledServices.map((serviceCode) => PRODUCT_SERVICE_DEFINITIONS[serviceCode].label)}
-          actionLabel="Ir a Servicios"
-          onAction={() => router.replace("/settings?tab=servicios", { scroll: false })}
-        />
-        <SettingsJourneyCard
-          icon={LogIn}
-          title="3. Portal tenant"
-          description="Deja visible que ve la empresa al entrar: identidad, menu, modulos habilitados y ownership del tenant."
-          footer={experience.mode === "tenant_portal" ? "Ya estas viendo el portal tenant" : `Portal listo para ${currentCompany?.name ?? "tenant activo"}`}
-          badges={[experience.shellBadgeLabel, `Plan ${tenantProductProfile.packageProfile}`]}
-          actionLabel="Ir a Tema / Portal"
-          onAction={() => router.replace("/settings?tab=tema", { scroll: false })}
-        />
-        <SettingsJourneyCard
-          icon={ShieldCheck}
-          title="4. Roles internos"
-          description="Diferencia con claridad los roles de plataforma y los roles que solo viven dentro de cada empresa."
-          footer={`${roles.length} roles cargados en este contexto`}
-          badges={[experience.roleLabel, activeScopeMeta.badge]}
-          actionLabel="Ir a Roles"
-          onAction={() => router.replace("/settings?tab=roles", { scroll: false })}
-        />
-      </div>
-
-      <TabLayout
-        tabs={scopeTabs}
-        activeTab={activeTab}
-        onTabChange={(nextTab) => router.replace(`/settings?tab=${nextTab}`, { scroll: false })}
-      />
-    </div>
-  );
-}
-
-function goToScopeTab(tab: SettingsTabDefinition | undefined, router: ReturnType<typeof useRouter>) {
-  if (!tab) return;
-  router.replace(`/settings?tab=${tab.key}`, { scroll: false });
-}
-
-function ScopeCard({
-  scope,
-  activeScope,
-  title,
-  description,
-  tabCount,
-  tenantName,
-  onClick,
-}: {
-  scope: SettingsScope;
-  activeScope: SettingsScope;
-  title: string;
-  description: string;
-  tabCount: number;
-  tenantName?: string;
-  onClick: () => void;
-}) {
-  const meta = scopeMeta[scope];
-  const isActive = scope === activeScope;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={tabCount === 0}
-      className={cn(
-        "rounded-2xl border p-4 text-left transition-all",
-        meta.cardClass,
-        isActive ? "ring-2 ring-offset-2 dark:ring-offset-slate-950" : "opacity-90 hover:opacity-100",
-        scope === "platform" ? "ring-blue-500" : "ring-emerald-500",
-        tabCount === 0 ? "cursor-not-allowed opacity-50" : "",
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge className={meta.badgeClass}>{meta.badge}</Badge>
-        <Badge variant="outline">{tabCount} tabs</Badge>
-      </div>
-      <h3 className="mt-3 text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{description}</p>
-      {scope === "tenant" && tenantName ? (
-        <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-          Contexto actual: {tenantName}
+      {/* ── Header compacto ─────────────────────────────────────────── */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+          Configuracion
+        </h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          Gestion de usuarios, roles, permisos y sistema
         </p>
-      ) : null}
-    </button>
-  );
-}
+      </div>
 
-function SettingsJourneyCard({
-  icon: Icon,
-  title,
-  description,
-  footer,
-  badges,
-  actionLabel,
-  onAction,
-}: {
-  icon: typeof Sparkles;
-  title: string;
-  description: string;
-  footer: string;
-  badges: string[];
-  actionLabel: string;
-  onAction: () => void;
-}) {
-  return (
-    <Card className="border-slate-200 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
-      <CardHeader className="gap-3 pb-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-900">
-            <Icon className="h-5 w-5 text-slate-700 dark:text-slate-200" />
-          </div>
-          <div>
-            <CardTitle className="text-base">{title}</CardTitle>
-            <CardDescription className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              {description}
-            </CardDescription>
+      {/* ── Barra de tabs unificada ─────────────────────────────────── */}
+      <div>
+        {/* Movil: select */}
+        <div className="md:hidden">
+          <div className="relative">
+            {activeTabItem && (
+              <div className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 items-center">
+                <activeTabItem.icon className="h-4 w-4 text-gray-500" />
+              </div>
+            )}
+            <select
+              value={activeTab ?? ""}
+              onChange={(e) => router.replace(`/settings?tab=${e.target.value}`, { scroll: false })}
+              className="w-full appearance-none rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm font-medium text-gray-700 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+            >
+              {visibleTabs.map((tab) => (
+                <option key={tab.key} value={tab.key}>{tab.label}</option>
+              ))}
+            </select>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          {badges.filter(Boolean).slice(0, 4).map((badge) => (
-            <Badge key={`${title}-${badge}`} variant="secondary">
-              {badge}
-            </Badge>
-          ))}
+
+        {/* Desktop: tabs inline */}
+        <div className="hidden md:block">
+          <div className="rounded-xl border border-gray-200 bg-white/80 p-1.5 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/80">
+            <div className="flex flex-wrap gap-1">
+              {visibleTabs.map((tab) => {
+                const isActive = tab.key === activeTab;
+                const colors = tabColorMap[tab.color] ?? tabColorMap.blue;
+                const Icon = tab.icon;
+
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => router.replace(`/settings?tab=${tab.key}`, { scroll: false })}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg border-b-[3px] px-4 py-2.5 text-sm font-medium transition-all",
+                      isActive
+                        ? `${colors.activeBg} ${colors.activeBorder} ${colors.activeText}`
+                        : "border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-700/50 dark:hover:text-gray-300",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-lg",
+                        isActive
+                          ? `${colors.iconBg} ${colors.activeText}`
+                          : "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
-        <p className="text-sm text-slate-600 dark:text-slate-300">{footer}</p>
-        <Button variant="outline" className="w-full" onClick={onAction}>
-          {actionLabel}
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* ── Contenido del tab activo ────────────────────────────────── */}
+      <div>{activeTabItem?.component}</div>
+    </div>
   );
 }

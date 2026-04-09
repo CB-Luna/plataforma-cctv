@@ -73,11 +73,13 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
     roles.length > 0,
   );
 
+
+
   return (
     <div className="flex h-full flex-col">
       <SidebarBranding
         collapsed={collapsed}
-        companyName={currentCompany?.name}
+        companyName={experience.mode === "tenant_portal" ? currentCompany?.name : undefined}
         experienceBadge={experience.shellBadgeLabel}
       />
 
@@ -104,9 +106,6 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
               <p className="truncate text-[11px] text-slate-300">{experience.roleLabel}</p>
             </div>
           </div>
-          <p className="mt-3 text-xs text-slate-300">
-            Este shell ya prioriza la operacion de tu empresa y sus modulos habilitados.
-          </p>
           {visibleRuntimeServices.length ? (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {visibleRuntimeServices.map((serviceCode) => (

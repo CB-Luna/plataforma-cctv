@@ -1,18 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TenantPortalHero } from "@/components/portal/tenant-portal-hero";
+import { PlatformDashboardHero } from "@/components/portal/platform-dashboard-hero";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard } from "@/components/ui/stats-card";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
-import {
-  getDashboardSummary,
-  getDashboardTicketStats,
-  getTicketsTrend,
-  getPolicyStats,
-} from "@/lib/api/dashboard";
+import { getDashboardSummary, getDashboardTicketStats, getTicketsTrend, getPolicyStats } from "@/lib/api/dashboard";
+import { getTenantStats } from "@/lib/api/tenants";
 import { getCameraStats } from "@/lib/api/cameras";
 import { getNvrStats } from "@/lib/api/nvrs";
 import { parseTenantProductProfile } from "@/lib/product/service-catalog";
@@ -24,6 +21,7 @@ import {
   Server,
   ShieldCheck,
   AlertTriangle,
+  ChevronDown,
   DollarSign,
   TrendingUp,
   CheckCircle2,
@@ -31,6 +29,8 @@ import {
   XCircle,
   HardDrive,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   BarChart,
   Bar,
@@ -48,6 +48,7 @@ import {
 } from "recharts";
 
 export default function DashboardPage() {
+  const [showTenantOps, setShowTenantOps] = useState(false);
   const { canAny, permissions, roles } = usePermissions();
   const currentCompany = useTenantStore((state) => state.currentCompany);
   const currentSite = useSiteStore((state) => state.currentSite);
@@ -60,6 +61,12 @@ export default function DashboardPage() {
   const { data: summary } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: getDashboardSummary,
+  });
+
+  const { data: tenantStats } = useQuery({
+    queryKey: ["tenant-stats"],
+    queryFn: getTenantStats,
+    enabled: experience.mode === "hybrid_backoffice",
   });
 
   const { data: ticketStats } = useQuery({
@@ -248,26 +255,52 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <TenantPortalHero
-        experience={experience}
-        companyName={currentCompany?.name}
-        companySlug={currentCompany?.slug}
-        roleLabel={experience.roleLabel}
-        plan={tenantProfile.packageProfile}
-        services={tenantProfile.enabledServices}
-        currentSiteName={currentSite?.name}
-        actions={portalActions}
-      />
+      {experience.mode === "hybrid_backoffice" ? (
+        <PlatformDashboardHero
+          tenantStats={tenantStats}
+          roleLabel={experience.roleLabel}
+        />
+      ) : (
+        <TenantPortalHero
+          experience={experience}
+          companyName={currentCompany?.name}
+          companySlug={currentCompany?.slug}
+          roleLabel={experience.roleLabel}
+          plan={tenantProfile.packageProfile}
+          services={tenantProfile.enabledServices}
+          currentSiteName={currentSite?.name}
+          actions={portalActions}
+        />
+      )}
 
-      {/* Operational header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">Operación CCTV</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Panel de control e indicadores de operación</p>
+      {/* Toggle de seccion operativa — en backoffice, colapsada por defecto */}
+      {experience.mode === "hybrid_backoffice" ? (
+        <Button
+          variant="outline"
+          className="w-full justify-between gap-2 border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+          onClick={() => setShowTenantOps((prev) => !prev)}
+          data-testid="toggle-tenant-ops"
+        >
+          <span>Operacion del tenant: {currentCompany?.name ?? "—"}</span>
+          <ChevronDown className={cn("h-4 w-4 transition-transform", showTenantOps && "rotate-180")} />
+        </Button>
+      ) : (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+              Operación CCTV
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Panel de control e indicadores de operación
+            </p>
+          </div>
+          <span className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium tabular-nums text-gray-600 dark:bg-gray-800 dark:text-gray-300">{dateStr}</span>
         </div>
-        <span className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium tabular-nums text-gray-600 dark:bg-gray-800 dark:text-gray-300">{dateStr}</span>
-      </div>
+      )}
 
+      {/* Contenido operativo: siempre visible en portal, colapsable en backoffice */}
+      {(experience.mode !== "hybrid_backoffice" || showTenantOps) && (
+      <>
       {/* Enterprise Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
@@ -512,6 +545,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 }

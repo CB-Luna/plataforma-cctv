@@ -3,26 +3,19 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowRight, KeyRound, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import type { UserAdmin } from "@/types/api";
-import { TenantPortalPreview } from "@/components/settings/tenant-portal-preview";
-import { ScopeCallout } from "@/components/settings/scope-callout";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePermissions } from "@/hooks/use-permissions";
 import { listRoles } from "@/lib/api/roles";
 import { assignRole, changePassword, deactivateUser, listUsers, removeRole, updateUser } from "@/lib/api/users";
-import { getOnboardingStatusMeta, parseTenantProductProfile } from "@/lib/product/service-catalog";
-import { useTenantStore } from "@/stores/tenant-store";
 import { getColumns } from "../../users/columns";
 import { PasswordDialog, RolesDialog, UserDialog, type UserFormValues } from "../../users/user-dialogs";
 
 export function UsersTab() {
   const queryClient = useQueryClient();
   const { canAny } = usePermissions();
-  const currentCompany = useTenantStore((state) => state.currentCompany);
   const [editUser, setEditUser] = useState<UserAdmin | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [pwUser, setPwUser] = useState<UserAdmin | null>(null);
@@ -34,8 +27,6 @@ export function UsersTab() {
   const canChangePassword = canEditUser;
   const canManageRoles = canAny("roles.assign", "roles.update", "roles:update:own", "roles:update:all");
   const canDeactivateUser = canAny("users.delete", "users:delete:own", "users:delete:all");
-  const tenantProfile = parseTenantProductProfile(currentCompany);
-  const onboardingMeta = getOnboardingStatusMeta(tenantProfile.onboarding.status);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
@@ -124,79 +115,7 @@ export function UsersTab() {
   );
 
   return (
-    <div className="space-y-6">
-      <ScopeCallout
-        badge="Tenant activo"
-        accent="tenant"
-        title={`Usuarios internos de ${currentCompany?.name ?? "la empresa operadora"}`}
-        description="Esta consola administra personas del tenant activo y sus roles internos. La identidad global de plataforma y el cambio de empresa no se resuelven aqui."
-        footer={
-          <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
-            <Badge variant="outline">{users.length} usuarios</Badge>
-            <Badge variant="outline">{roles.length} roles cargados</Badge>
-            <Badge variant="secondary">Roles globales explicitos: GAP separado</Badge>
-            {currentCompany ? <Badge variant="outline">Tenant: {currentCompany.slug}</Badge> : null}
-          </div>
-        }
-      />
-
-      <div className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
-        <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="text-base">Admin inicial y acceso interno</CardTitle>
-            <CardDescription>
-              Aqui se vuelve visible con que usuario entra la empresa y como se separa ese ownership del backoffice global.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-950">
-                  <KeyRound className="h-4 w-4 text-slate-700 dark:text-slate-200" />
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-900 dark:text-slate-100">Admin bootstrap del tenant</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Cuenta inicial para operar esta empresa</p>
-                </div>
-              </div>
-              <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                <p>Email: <span className="font-medium text-slate-900 dark:text-slate-100">{tenantProfile.onboarding.adminEmail ?? "pendiente"}</span></p>
-                <p>Rol: <span className="font-medium text-slate-900 dark:text-slate-100">{tenantProfile.onboarding.roleName ?? "tenant_admin pendiente"}</span></p>
-                <p>Estado: <span className="font-medium text-slate-900 dark:text-slate-100">{onboardingMeta.label}</span></p>
-              </div>
-              <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white/80 p-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-400">
-                La contrasena se define en el bootstrap inicial. Las altas administrativas generales de usuarios siguen limitadas por el contrato actual del backend.
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-              <p className="font-semibold text-slate-900 dark:text-slate-100">Lo que ya puede hacer esta empresa</p>
-              <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                <li className="flex gap-2">
-                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                  <span>Entrar con su propio admin inicial y operar bajo su branding.</span>
-                </li>
-                <li className="flex gap-2">
-                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                  <span>Editar usuarios existentes, cambiar contrasenas y asignar roles internos del tenant.</span>
-                </li>
-                <li className="flex gap-2">
-                  <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                  <span>Ver un portal distinto al backoffice global, con menu segun sus modulos habilitados.</span>
-                </li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-
-        <TenantPortalPreview
-          tenant={currentCompany}
-          title="Preview del portal de la empresa"
-          description="Esto ayuda a validar que el usuario interno no esta viendo el backoffice global sino el portal del tenant activo."
-          compact
-        />
-      </div>
-
+    <div className="space-y-4">
       <DataTable
         columns={columns}
         data={users}

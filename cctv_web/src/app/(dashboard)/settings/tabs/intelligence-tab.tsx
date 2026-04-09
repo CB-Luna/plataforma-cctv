@@ -5,7 +5,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, Brain, DollarSign, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import type { ModelConfig } from "@/types/api";
-import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -151,20 +150,6 @@ export function IntelligenceTab() {
 
   return (
     <div className="space-y-6">
-      <ScopeCallout
-        badge="Tenant activo"
-        accent="tenant"
-        title="IA operativa por tenant"
-        description="Los modelos, limites de consumo y reindexacion se ejecutan en el contexto del tenant activo. Las plantillas listadas aqui salen del backend real y pueden incluir catalogo compartido."
-        footer={
-          <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
-            <Badge variant="outline">{models.length} modelos configurados</Badge>
-            <Badge variant="outline">{templates.length} plantillas disponibles</Badge>
-            <Badge variant="secondary">Uso mostrado segun tenant activo</Badge>
-          </div>
-        }
-      />
-
       <div className="flex items-center justify-end gap-2">
         <Button
           variant="outline"

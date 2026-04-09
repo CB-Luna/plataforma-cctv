@@ -21,6 +21,35 @@ export interface RuntimeMenuSection {
   items: RuntimeMenuLinkItem[];
 }
 
+// --- Seccion de navegacion de plataforma global ---
+export const PLATFORM_MENU_SECTION: RuntimeMenuSection = {
+  id: "platform",
+  label: "Plataforma",
+  items: [
+    {
+      id: "nav-tenants",
+      label: "Empresas",
+      icon: "business",
+      route: "/settings?tab=empresas",
+      permissions: ["tenants.read", "tenants:read:all"],
+    },
+    {
+      id: "nav-services",
+      label: "Servicios y paquetes",
+      icon: "inventory_2",
+      route: "/settings?tab=servicios",
+      permissions: ["tenants.read", "tenants:read:all"],
+    },
+    {
+      id: "nav-menu-templates",
+      label: "Plantillas de menu",
+      icon: "description",
+      route: "/settings?tab=menu",
+      permissions: ["menu:read:all", "menu.read"],
+    },
+  ],
+};
+
 export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
   {
     id: "cctv",

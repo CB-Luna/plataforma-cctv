@@ -1,145 +1,204 @@
 ---
-description: "Use when working on any part of the sistema-camaras-mono monorepo: cctv_server (Go backend), cctv_web (Next.js frontend), or cctv_mobile (Flutter app). Covers monorepo conventions, port assignments, API contract rules, frontend stack patterns, and Flutter Clean Architecture rules."
+description: "Usar al trabajar en cualquier parte del monorepo sistema-camaras-mono. Define reglas del backend inmutable, frontend Next.js, criterio de validacion real vs mock, y direccion actual del producto visible."
 ---
-# Sistema Camaras — Instrucciones del Monorepo
+# Sistema Camaras - Instrucciones del Monorepo
 
 ## Lenguaje
 
-Responde siempre en **español**. Comentarios en código también en español.
-
----
+Responde siempre en **espanol**. Los comentarios en codigo tambien deben estar en **espanol**.
 
 ## Estructura del monorepo
 
-```
+```text
 sistema-camaras-mono/
-├── cctv_server/   — Backend Go 1.24 (Gin, sqlc, pgx, MinIO)
-├── cctv_web/      — Frontend Next.js (React 19, Tailwind 4, shadcn/ui)
-├── cctv_mobile/   — App Flutter (BLoC, Clean Architecture)
-├── docker/        — Configuración de contenedores auxiliares
-├── scripts/       — Scripts PowerShell (.ps1) y shell
-└── docs/          — Documentación unificada
+|-- cctv_server/   - Backend Go 1.24
+|-- cctv_web/      - Frontend Next.js
+|-- cctv_mobile/   - App Flutter
+|-- docker/        - Contenedores auxiliares
+|-- scripts/       - Scripts PowerShell y shell
+`-- docs/          - Documentacion unificada
 ```
 
-Puertos del monorepo (no cambiar):
+## Puertos
 
-| Servicio    | Puerto |
-|-------------|--------|
-| Backend API | 8088   |
-| Frontend    | 3010   |
-| PostgreSQL  | 5438   |
-| pgAdmin     | 5058   |
-| MinIO       | 9010   |
+Puertos historicos del repositorio:
 
----
+| Servicio | Puerto |
+| --- | --- |
+| Backend API | `8088` |
+| Frontend historico | `3010` |
+| PostgreSQL | `5438` |
+| pgAdmin | `5058` |
+| MinIO | `9010` |
 
-## `cctv_server` — Backend Go (SOLO LECTURA)
+### Frontend actual
 
-- **NUNCA modificar** el backend Go. Se trata como contrato de API fijo.
-- El módulo Go es `github.com/symtickets/cctv_server`.
-- Las migraciones y queries SQL viven **exclusivamente** en `cctv_server/internal/database/`. No crear una carpeta `database/` en la raíz.
-- Si un endpoint no existe, documéntalo como GAP en lugar de modificar el backend.
+El frontend actual de `cctv_web/` corre con:
 
-### Gaps de API conocidos (no implementar en frontend como si existieran)
+- `npm run dev` en `http://localhost:3011`
+- `npm run start` en `http://localhost:3011`
+
+No asumir `3010` como referencia confiable. Antes de validar UI visible, revisar `cctv_web/package.json` y confirmar la URL real del runtime.
+
+## `cctv_server` - Backend Go
+
+- **NUNCA modificar** `cctv_server/`.
+- Tratar el backend como contrato fijo.
+- Si un endpoint no existe, marcarlo como GAP.
+- No inventar endpoints ni soluciones de backend.
+
+### GAPs conocidos relevantes
 
 | GAP | Endpoint faltante | Consecuencia |
-|-----|-------------------|--------------|
-| GAP-01 | `POST/PUT/DELETE /sites` | No hay CRUD de sitios; solo listar |
-| GAP-04 | `POST /auth/refresh` | Sin refresh token silencioso; redirigir a login al expirar |
-| GAP-05 | `POST /auth/switch-company` | Cambiar empresa = clearAuth + re-login |
-| GAP-06 | `CRUD /preventive-maintenance/*` | Tabla en BD pero sin endpoints |
-| GAP-07 | `GET /audit/logs` | Sin historial de auditoría |
-| GAP-03 | Sites sin lat/lng expuesto | Mapa geográfico bloqueado; react-leaflet no instalado |
+| --- | --- | --- |
+| GAP-01 | `POST/PUT/DELETE /sites` | No existe CRUD completo de sitios |
+| GAP-03 | Sites sin lat/lng expuesto de forma cerrada | Mapa y sucursales quedan parciales |
+| GAP-04 | `POST /auth/refresh` | No hay refresh silencioso |
+| GAP-05 | `POST /auth/switch-company` | Cambio de empresa real no existe; requiere clearAuth + re-login |
+| GAP-06 | `CRUD /preventive-maintenance/*` | Dominio no operativo aun |
+| GAP-07 | `GET /audit/logs` | Auditoria no disponible |
 
----
-
-## `cctv_web` — Frontend Next.js
+## `cctv_web` - Frontend Next.js
 
 ### Stack
 
-- **Framework**: Next.js con App Router (carpeta `src/app/`)
-- **HTTP**: `ky` — nunca usar `fetch` directo ni `axios`
-- **Estado servidor**: TanStack Query v5 (React Query)
-- **Estado cliente**: Zustand — stores en `src/stores/`
-- **Formularios**: React Hook Form + Zod
-- **UI**: shadcn/ui sobre Tailwind 4 — no instalar librerías de UI alternativas
-- **Tablas**: TanStack Table, usando el componente `DataTable` existente en `src/components/data-table/`
-- **Exportar**: `ExportButton` existente en `src/components/shared/` (xlsx + jspdf-autotable)
-- **Planos**: react-konva (componentes en `src/components/floor-plan-editor/`)
-- **Topología**: React Flow (ya instalado)
+- Next.js App Router
+- `ky` para HTTP
+- TanStack Query para estado servidor
+- Zustand para estado cliente
+- React Hook Form + Zod para formularios
+- shadcn/ui + Tailwind 4 para UI
+- Vitest para unit tests
+- Playwright para E2E
 
-### Stores Zustand disponibles
+### Reglas de frontend
 
-| Archivo | Propósito |
-|---------|-----------|
-| `auth-store.ts` | JWT, usuario, clearAuth |
-| `tenant-store.ts` | Empresa activa (multi-tenant) |
-| `site-store.ts` | Sucursal activa |
-| `sidebar-store.ts` | Estado del sidebar |
-| `theme-store.ts` | light / dark / system |
+- Todos los wrappers HTTP van en `src/lib/api/`.
+- El cliente base es `src/lib/api/client.ts`.
+- Nunca usar `fetch` directo ni `axios`.
+- No hacer llamadas HTTP en componentes si ya existe wrapper.
+- Reutilizar componentes compartidos antes de crear variantes nuevas.
 
-### Capa de API
+## `cctv_mobile` - Flutter
 
-- Todos los wrappers de API van en `src/lib/api/<recurso>.ts`.
-- El cliente HTTP base está en `src/lib/api/client.ts` — siempre usarlo, nunca crear instancias de `ky` sueltas.
-- Nunca hacer llamadas HTTP directamente en componentes o stores.
+Arquitectura obligatoria por feature:
 
-### Convenciones de rutas (App Router)
-
-- Rutas de la app en `src/app/(dashboard)/` (layout compartido) o `src/app/login/`, `src/app/select-company/`.
-- Los archivos de página se llaman `page.tsx`.
-
-### Tests
-
-- Unit tests con **Vitest** en `src/__tests__/`.
-- E2E con **Playwright** en `e2e/`.
-- No usar Jest.
-
----
-
-## `cctv_mobile` — App Flutter
-
-### Arquitectura
-
-Clean Architecture por feature, sin excepciones:
-
-```
+```text
 lib/
-├── core/          — DI, red, router, tema, utils, constantes (transversal)
-└── features/
-    └── <feature>/
-        ├── data/         — DataSources, modelos, implementaciones de repositorios
-        ├── domain/       — Entities, repositorios (abstract), UseCases
-        └── presentation/ — BLoC/Cubit, páginas, widgets
+|-- core/
+`-- features/
+    `-- <feature>/
+        |-- data/
+        |-- domain/
+        `-- presentation/
 ```
 
-### Features existentes
+Reglas:
 
-- `auth/` — Login
-- `home/` — Pantalla principal
-- `tickets/` — Gestión de tickets
+- BLoC para estado
+- DI centralizada en `core/di/`
+- red centralizada en `core/network/`
 
-Al agregar una feature nueva, respetar la misma estructura `data/domain/presentation/`.
+## Estado actual del producto visible
 
-### Patrones
+El repo tiene avances reales en:
 
-- Gestión de estado con **BLoC** (no Provider, no Riverpod, no setState para lógica de negocio).
-- Inyección de dependencias centralizada en `core/di/`.
-- Capa de red centralizada en `core/network/`.
-- Nunca importar directamente `http` o `dio` sustituto fuera de `core/network/`.
+- empresas y onboarding
+- branding base por tenant
+- servicios o modulos habilitados
+- bootstrap de admin inicial
+- runtime por tenant
 
----
+Pero todavia **no debe considerarse resuelto** el producto visible.
+
+### Problema dominante actual
+
+La UI sigue mezclando demasiado:
+
+- backoffice global
+- workspace de empresa
+- preview tenant
+- portal tenant real
+
+### Regla nueva de producto visible
+
+No aceptar una shell hibrida ambigua como estado por defecto.
+
+La interfaz debe dejar clarisimo:
+
+1. cuando el usuario esta en plataforma global
+2. cuando esta preparando una empresa
+3. cuando esta viendo un preview
+4. cuando esta dentro del portal tenant real
+
+## Documentacion obligatoria antes de tocar UX visible
+
+Toda IA que vaya a tocar `Dashboard`, `Configuracion`, `Empresas`, `Header`, `Sidebar` o `Portal tenant` debe revisar primero:
+
+- `docs/producto-visible/03_ARQUITECTURA_VISUAL_GLOBAL_VS_TENANT.md`
+- `docs/producto-visible/04_DASHBOARD_GLOBAL_OBJETIVO.md`
+- `docs/producto-visible/05_CONFIGURACION_GLOBAL_OBJETIVO.md`
+- `docs/producto-visible/06_PORTAL_TENANT_OBJETIVO.md`
+- `docs/producto-visible/07_PROPUESTA_DE_REESTRUCTURA_DE_MENUS_Y_SHELLS.md`
+- `docs/producto-visible/08_PLAN_DE_EJECUCION_PRODUCTO_VISIBLE.md`
+- `.github/instructions/visible-product-handoff.md`
+
+## Regla de validacion
+
+Toda futura entrega debe distinguir entre:
+
+1. evidencia mockeada
+2. evidencia de UI real
+3. flujo real con backend actual
+
+### Regla de aceptacion
+
+No presentar evidencia mockeada como si confirmara producto real resuelto.
+
+Un checkpoint de producto visible solo se considera valido si:
+
+- el cambio se percibe en la instancia real correcta
+- la UI visible cambia de forma clara
+- el ownership queda mas limpio
+- y el backend actual realmente soporta lo que se afirma
+
+## Direccion correcta de implementacion visible
+
+Orden recomendado:
+
+1. limpieza visual global
+2. limpieza de `Configuracion` por ownership
+3. `Dashboard global` real
+4. `Portal tenant` real
+5. `Empresas o Clientes -> Sucursales -> Acceder a infraestructura`
 
 ## Scripts y levantamiento
 
-En Windows usar los scripts PowerShell de `scripts/`:
-
 ```powershell
-.\scripts\up.ps1            # Levantar todos los servicios
-.\scripts\down.ps1          # Bajar servicios
-.\scripts\dev-web.ps1       # Solo frontend en modo dev
-.\scripts\dev-backend.ps1   # Solo backend en modo dev
-.\scripts\check-services.ps1 # Verificar estado de servicios
+.\scripts\up.ps1
+.\scripts\down.ps1
+
+cd cctv_web
+npm install
+npm run dev
+npm run build
+npm test
+npm run test:e2e
 ```
 
-También disponible `docker compose up -d` desde la raíz.
+## Regla final
+
+Si una futura IA encuentra una discrepancia entre:
+
+- codigo interno
+- docs antiguas
+- specs mockeados
+- y runtime real
+
+debe priorizar:
+
+1. runtime real
+2. contrato backend real
+3. docs recientes de `docs/producto-visible/`
+
+Nunca cerrar una fase visible solo porque existe codigo o documentacion.

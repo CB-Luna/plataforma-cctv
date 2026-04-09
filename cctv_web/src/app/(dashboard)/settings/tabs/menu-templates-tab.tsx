@@ -19,7 +19,6 @@ import {
   updateMenuTemplate,
 } from "@/lib/api/menu";
 import { getMenu } from "@/lib/api/settings";
-import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -184,20 +183,6 @@ export function MenuTemplatesTab() {
 
   return (
     <div className="space-y-6">
-      <ScopeCallout
-        badge="Plataforma"
-        accent="platform"
-        title="Plantillas globales de navegacion"
-        description="Esta consola ya opera sobre el backend real de plantillas, tenants e items. La sidebar fija de la web actual se mantiene por compatibilidad mientras el runtime dinamico se cierra en una fase posterior."
-        footer={
-          <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
-            <Badge variant="outline">{templates.length} plantillas detectadas</Badge>
-            <Badge variant="outline">{tenants.length} tenants disponibles</Badge>
-            <Badge variant="outline">{menuItems.length} items administrables</Badge>
-          </div>
-        }
-      />
-
       <div className="grid gap-6 2xl:grid-cols-[360px,1fr]">
         <Card className="h-fit">
           <CardHeader className="pb-4">

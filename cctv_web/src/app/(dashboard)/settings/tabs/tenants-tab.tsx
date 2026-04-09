@@ -3,23 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowRight,
-  BadgeCheck,
   Building2,
   CheckCircle,
   KeyRound,
-  LayoutPanelLeft,
-  LogIn,
   Palette,
   Plus,
-  ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Company, Tenant } from "@/types/api";
 import { ServiceBadges } from "@/components/product/service-badges";
-import { TenantPortalPreview } from "@/components/settings/tenant-portal-preview";
-import { ScopeCallout } from "@/components/settings/scope-callout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,16 +36,12 @@ import {
   buildTenantSettings,
   COMMERCIAL_PLAN_PRESETS,
   getOnboardingStatusMeta,
-  getServiceStatusMeta,
   getTenantReadinessMeta,
   parseTenantProductProfile,
-  PRODUCT_SERVICE_DEFINITIONS,
-  RUNTIME_VISIBLE_SERVICE_CODES,
   type AssignableServiceCode,
   type CommercialPlanCode,
   type TenantOnboardingSnapshot,
 } from "@/lib/product/service-catalog";
-import { getVisibleRuntimeMenu } from "@/lib/product/runtime-navigation";
 import { useTenantStore } from "@/stores/tenant-store";
 import { getTenantColumns } from "../../tenants/columns";
 import { TenantDialog, type TenantFormValues } from "../../tenants/tenant-dialog";
@@ -187,20 +175,6 @@ export function TenantsTab() {
     productProfile: selectedProfile,
   });
   const selectedPackagePreset = COMMERCIAL_PLAN_PRESETS[selectedProfile.packageProfile];
-  const selectedRuntimeMenu = getVisibleRuntimeMenu({
-    enabledServices: selectedProfile.enabledServices,
-    hasRoleContext: true,
-    ignorePermissions: true,
-  });
-  const selectedRuntimeLinks = selectedRuntimeMenu.reduce((total, section) => total + section.items.length, 0);
-  const selectedRuntimeServices = selectedProfile.enabledServices.filter((serviceCode) =>
-    RUNTIME_VISIBLE_SERVICE_CODES.includes(serviceCode),
-  );
-  const selectedNextStepCta = selectedReadiness.isReady
-    ? "Validar login tenant en /login"
-    : selectedProfile.onboarding.adminEmail
-      ? "Corregir bootstrap del admin"
-      : "Completar admin inicial";
 
   useEffect(() => {
     if (!tenants.length) return;
@@ -227,25 +201,11 @@ export function TenantsTab() {
 
   return (
     <div className="space-y-6">
-      <ScopeCallout
-        badge="Plataforma"
-        accent="platform"
-        title="Empresas operadoras, onboarding y branding"
-        description="Aqui se administra el plano global multi-tenant: altas, cupos, branding corporativo, servicios habilitados y el bootstrap del admin inicial cuando se quiere dejar al tenant operable desde el alta."
-        footer={
-          <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300">
-            <Badge variant="outline">{tenants.length} empresas detectadas</Badge>
-            {currentCompany ? <Badge variant="secondary">Tenant activo actual: {currentCompany.name}</Badge> : null}
-            <Badge variant="outline">C6.1 + C6.2 activos</Badge>
-          </div>
-        }
-      />
-
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Empresas del sistema</h3>
+          <h3 className="text-lg font-semibold">Empresas</h3>
           <p className="text-sm text-muted-foreground">
-            Gestion global de organizaciones operadoras, sus servicios reales y su estado de onboarding.
+            Gestion de organizaciones, servicios habilitados y estado de onboarding.
           </p>
         </div>
         {canCreateTenant ? (
@@ -337,22 +297,37 @@ export function TenantsTab() {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          <Card className="overflow-hidden border-slate-200 shadow-sm dark:border-slate-800">
-            <CardHeader className="bg-gradient-to-r from-slate-50 via-white to-blue-50/80 dark:from-slate-900 dark:via-slate-950 dark:to-blue-950/20">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="bg-slate-900 text-white hover:bg-slate-900">Workspace visible</Badge>
-                    <Badge variant="outline">Empresa operable</Badge>
-                    {selectedTenant ? <Badge variant="secondary">{selectedTenant.name}</Badge> : null}
-                    <Badge variant={selectedReadiness.tone}>{selectedReadiness.label}</Badge>
-                  </div>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex items-center gap-4">
+                  {selectedTenant?.logo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={selectedTenant.logo_url}
+                      alt={selectedTenant.name}
+                      className="h-14 w-14 rounded-2xl border object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-bold text-white"
+                      style={{ backgroundColor: selectedTenant?.primary_color ?? "#1976D2" }}
+                    >
+                      {selectedTenant?.name.slice(0, 1).toUpperCase() ?? "E"}
+                    </div>
+                  )}
                   <div>
-                    <CardTitle className="text-xl">Consola de onboarding visible de empresa</CardTitle>
-                    <CardDescription className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
-                      Esta vista ya no trata a la empresa como una fila. La empresa seleccionada se prepara aqui con branding, paquete, modulos habilitados, admin inicial, evidencia de login y siguiente paso operativo.
-                    </CardDescription>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-semibold">{selectedTenant?.name ?? "Sin seleccionar"}</h3>
+                      <Badge variant={selectedTenant?.is_active ? "default" : "secondary"}>
+                        {selectedTenant?.is_active ? "Activa" : "Inactiva"}
+                      </Badge>
+                      <Badge variant={selectedReadiness.tone}>{selectedReadiness.label}</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {selectedTenant?.slug} · {selectedTenant?.domain || "Sin dominio"}
+                    </p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -364,7 +339,7 @@ export function TenantsTab() {
                         setDialogOpen(true);
                       }}
                     >
-                      Editar empresa
+                      Editar
                     </Button>
                   ) : null}
                   {canUploadBranding && selectedTenant ? (
@@ -379,167 +354,63 @@ export function TenantsTab() {
                       Branding
                     </Button>
                   ) : null}
-                  {selectedTenant ? (
-                    <Button
-                      onClick={() => window.open("/login", "_blank", "noopener,noreferrer")}
-                    >
-                      <LogIn className="mr-2 h-4 w-4" />
-                      {selectedNextStepCta}
-                    </Button>
-                  ) : null}
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6 p-5">
-              <div className="grid gap-4 xl:grid-cols-[1.1fr,0.9fr]">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-800 dark:bg-slate-900/40">
-                  <div className="flex items-start gap-4">
-                    {selectedTenant?.logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={selectedTenant.logo_url}
-                        alt={selectedTenant.name}
-                        className="h-20 w-20 rounded-3xl border border-slate-200 object-cover shadow-sm dark:border-slate-700"
-                      />
-                    ) : (
-                      <div
-                        className="flex h-20 w-20 items-center justify-center rounded-3xl text-2xl font-bold text-white shadow-sm"
-                        style={{ backgroundColor: selectedTenant?.primary_color ?? "#1976D2" }}
-                      >
-                        {selectedTenant?.name.slice(0, 1).toUpperCase() ?? "E"}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-xl font-semibold text-slate-900 dark:text-slate-100">
-                          {selectedTenant?.name ?? "Empresa sin seleccionar"}
-                        </h3>
-                        <Badge variant={selectedTenant?.is_active ? "default" : "secondary"}>
-                          {selectedTenant?.is_active ? "Activa" : "Inactiva"}
-                        </Badge>
-                        {currentCompany?.id === selectedTenant?.id ? (
-                          <Badge variant="outline">Tenant activo actual</Badge>
-                        ) : null}
-                      </div>
-                      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                        {selectedTenant?.domain || "Sin dominio corporativo definido"}
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <Badge variant="outline">{selectedTenant?.slug ?? "sin-slug"}</Badge>
-                        <Badge variant="secondary">{selectedPackagePreset.label}</Badge>
-                        <Badge variant="secondary">{selectedRuntimeLinks} items visibles en sidebar</Badge>
-                        <Badge variant="outline">
-                          {selectedProfile.source === "explicit" ? "Asignacion explicita" : "Visibilidad legacy heredada"}
-                        </Badge>
-                      </div>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {[selectedTenant?.primary_color, selectedTenant?.secondary_color, selectedTenant?.tertiary_color]
-                          .filter(Boolean)
-                          .map((color, index) => (
-                            <div
-                              key={`${selectedTenant?.id ?? "tenant"}-hero-color-${index}`}
-                              className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
-                            >
-                              <span className="h-3 w-3 rounded-full border" style={{ backgroundColor: color }} />
-                              {color}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="space-y-3 rounded-lg border p-4">
+                  <p className="text-sm font-medium">Plan y servicios</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{selectedPackagePreset.label}</Badge>
+                    <Badge variant="secondary">{selectedProfile.enabledServices.length} servicios</Badge>
+                    <Badge variant="outline">
+                      {selectedProfile.source === "explicit" ? "Asignacion explicita" : "Herencia legacy"}
+                    </Badge>
+                  </div>
+                  <ServiceBadges services={selectedProfile.enabledServices} />
+                </div>
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium">Admin inicial</p>
+                  </div>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <p>{selectedProfile.onboarding.adminName ?? "Pendiente"}</p>
+                    <p>{selectedProfile.onboarding.adminEmail ?? "Sin email"}</p>
+                    <p>Rol: {selectedProfile.onboarding.roleName ?? "Pendiente"}</p>
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
-                        <KeyRound className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">Admin inicial</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Bootstrap real del tenant</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                      <p>Nombre: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedProfile.onboarding.adminName ?? "Pendiente"}</span></p>
-                      <p>Email: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedProfile.onboarding.adminEmail ?? "Pendiente"}</span></p>
-                      <p>Rol esperado: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedProfile.onboarding.roleName ?? "tenant_admin pendiente"}</span></p>
-                      <p>Estado bootstrap: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedReadiness.label}</span></p>
-                      <p>Evidencia: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedReadiness.evidenceLabel}</span></p>
-                    </div>
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center gap-2">
+                    <Palette className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium">Branding</p>
                   </div>
-
-                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200">
-                        <BadgeCheck className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">Readiness de login</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Estado brutalmente honesto</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-3">
-                      <Badge variant={selectedReadiness.tone}>{selectedReadiness.label}</Badge>
-                      <p className="text-sm text-slate-600 dark:text-slate-300">{selectedReadiness.description}</p>
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
-                        <p className="font-medium text-slate-900 dark:text-slate-100">Siguiente CTA</p>
-                        <p className="mt-1">{selectedNextStepCta}</p>
-                      </div>
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[selectedTenant?.primary_color, selectedTenant?.secondary_color, selectedTenant?.tertiary_color]
+                      .filter(Boolean)
+                      .map((color, index) => (
+                        <div
+                          key={`color-${index}`}
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                        >
+                          <span className="h-3 w-3 rounded-full border" style={{ backgroundColor: color }} />
+                          {color}
+                        </div>
+                      ))}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Logo: {selectedTenant?.logo_url ? "cargado" : "pendiente"}
+                  </p>
                 </div>
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-3">
-                <HighlightCard
-                  icon={Sparkles}
-                  title="Paquete y modulos"
-                  description="No es adorno comercial: aqui se ve exactamente que esta habilitado."
-                  lines={[
-                    `Paquete activo: ${selectedPackagePreset.label}`,
-                    `Servicios asignados: ${selectedProfile.enabledServices.length}`,
-                    `Dominios runtime visibles: ${selectedRuntimeServices.length}`,
-                  ]}
-                  badges={[
-                    selectedPackagePreset.label,
-                    ...selectedProfile.enabledServices.map((serviceCode) => PRODUCT_SERVICE_DEFINITIONS[serviceCode].label),
-                  ]}
-                />
-                <HighlightCard
-                  icon={Palette}
-                  title="Branding basico"
-                  description="La empresa ya muestra identidad visual propia dentro del producto."
-                  lines={[
-                    `Dominio: ${selectedTenant?.domain ?? "sin dominio"}`,
-                    `Logo: ${selectedTenant?.logo_url ? "cargado" : "pendiente"}`,
-                    `Tema base: ${selectedTenant?.primary_color ? "colores definidos" : "colores por defecto"}`,
-                  ]}
-                  badges={[
-                    selectedTenant?.primary_color ?? "Sin primario",
-                    selectedTenant?.secondary_color ?? "Sin secundario",
-                    selectedTenant?.tertiary_color ?? "Sin terciario",
-                  ]}
-                />
-                <HighlightCard
-                  icon={LayoutPanelLeft}
-                  title="Preview del menu real"
-                  description="Este preview responde al runtime verdadero del sidebar, no a una maqueta separada."
-                  lines={[
-                    `${selectedRuntimeMenu.length} secciones visibles en sidebar`,
-                    `${selectedRuntimeLinks} entradas reales para esta empresa`,
-                    selectedProfile.source === "explicit"
-                      ? "Los modulos quedaron guardados explicitamente en settings del tenant."
-                      : "La empresa sigue heredando visibilidad legacy; hace falta guardar la asignacion explicita.",
-                  ]}
-                  badges={selectedRuntimeMenu.map((section) => `${section.label} (${section.items.length})`)}
-                />
               </div>
 
               {selectedReadiness.issues.length ? (
-                <div className="rounded-3xl border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100">
-                  <p className="font-semibold">Bloqueos o degradaciones activas</p>
-                  <ul className="mt-3 list-disc space-y-1 pl-5">
+                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100">
+                  <p className="font-medium">Bloqueos activos</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
                     {selectedReadiness.issues.map((issue) => (
                       <li key={issue}>{issue}</li>
                     ))}
@@ -548,165 +419,6 @@ export function TenantsTab() {
               ) : null}
             </CardContent>
           </Card>
-
-          <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
-            <Card className="border-slate-200 dark:border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-base">Paquetes, servicios y modulos visibles</CardTitle>
-                <CardDescription>
-                  La empresa seleccionada muestra exactamente que paquete tiene, que servicios estan habilitados y en que estado se encuentra cada modulo.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedPackagePreset.label}</p>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{selectedPackagePreset.description}</p>
-                  <div className="mt-3">
-                    <ServiceBadges services={selectedProfile.enabledServices} />
-                  </div>
-                </div>
-
-                <div className="grid gap-3">
-                  {selectedProfile.enabledServices.map((serviceCode) => {
-                    const service = PRODUCT_SERVICE_DEFINITIONS[serviceCode];
-                    const statusMeta = getServiceStatusMeta(service.status);
-                    const runtimeSection = selectedRuntimeMenu.find((section) => section.service === service.code);
-
-                    return (
-                      <div
-                        key={`${selectedTenant?.id ?? "tenant"}-${service.code}`}
-                        className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40"
-                      >
-                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-semibold text-slate-900 dark:text-slate-100">{service.label}</p>
-                              <Badge variant={statusMeta.tone}>{statusMeta.label}</Badge>
-                              {selectedPackagePreset.suggestedServices.includes(serviceCode as AssignableServiceCode) ? (
-                                <Badge variant="outline">Incluido por {selectedPackagePreset.label}</Badge>
-                              ) : (
-                                <Badge variant="secondary">Agregado manualmente</Badge>
-                              )}
-                            </div>
-                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{service.description}</p>
-                          </div>
-                          <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
-                            {runtimeSection ? `${runtimeSection.items.length} entradas reales en sidebar` : "Sin seccion lateral propia"}
-                          </div>
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {service.modules.map((moduleName) => (
-                            <Badge key={`${service.code}-${moduleName}`} variant="secondary">
-                              {moduleName}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 dark:border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-base">Runtime y siguiente paso</CardTitle>
-                <CardDescription>
-                  Esta columna enlaza la empresa operable con el menu real y con el siguiente checkpoint hacia sucursales e infraestructura.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100">Menu que vera la empresa</p>
-                  <div className="mt-3 space-y-3">
-                    {selectedRuntimeMenu.map((section) => (
-                      <div
-                        key={`${selectedTenant?.id ?? "tenant"}-${section.id}`}
-                        className="rounded-2xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-950/40"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="font-medium text-slate-900 dark:text-slate-100">{section.label}</p>
-                          <Badge variant="outline">{section.items.length} items</Badge>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {section.items.map((item) => (
-                            <Badge key={`${section.id}-${item.id}`} variant="secondary">
-                              {item.label}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-950/40">
-                  <p className="font-semibold text-slate-900 dark:text-slate-100">Transicion al siguiente checkpoint</p>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                    Una vez que esta empresa quede realmente lista para iniciar sesion, el siguiente paso visible sera llevarla a <strong>Clientes / Sucursales</strong> para luego entrar a <strong>Acceder a infraestructura</strong>.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => window.open("/login", "_blank", "noopener,noreferrer")}
-                    >
-                      <LogIn className="mr-2 h-4 w-4" />
-                      Probar login real
-                    </Button>
-                    <Button variant="outline" disabled>
-                      <ArrowRight className="mr-2 h-4 w-4" />
-                      Sucursales e infraestructura (siguiente)
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
-            <TenantPortalPreview
-              tenant={selectedTenant}
-              title="Lo que vera la empresa al iniciar sesion"
-              description="Preview visible del branding, del menu y del recorrido de login para el tenant seleccionado."
-            />
-
-            <Card className="border-slate-200 dark:border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-base">Flujo exacto y verificable</CardTitle>
-                <CardDescription>
-                  Secuencia visible que conecta el alta de empresa con el portal tenant real.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ProductStep
-                  step="1"
-                  title="Alta y branding"
-                  description={`La empresa ${selectedTenant?.name ?? "seleccionada"} se crea aqui mismo, con identidad visual, cupos y dominio visibles.`}
-                />
-                <ProductStep
-                  step="2"
-                  title="Paquete y servicios habilitados"
-                  description={`Hoy la empresa tiene ${selectedProfile.enabledServices.length} servicios visibles y ${selectedRuntimeLinks} entradas reales de menu.`}
-                />
-                <ProductStep
-                  step="3"
-                  title="Admin inicial"
-                  description={`El bootstrap actual apunta a ${selectedProfile.onboarding.adminEmail ?? "un admin aun pendiente"} con evidencia ${selectedReadiness.evidenceLabel.toLowerCase()}.`}
-                />
-                <ProductStep
-                  step="4"
-                  title="Readiness de login"
-                  description={selectedReadiness.description}
-                />
-                <ProductStep
-                  step="5"
-                  title="Siguiente paso del producto"
-                  description="Despues de este checkpoint, la empresa pasara a Clientes / Sucursales para entrar a infraestructura por sitio activo."
-                  last
-                />
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </div>
 
@@ -766,76 +478,6 @@ export function TenantsTab() {
         onOpenChange={setOnboardingDialogOpen}
         result={onboardingResult}
       />
-    </div>
-  );
-}
-
-function HighlightCard({
-  icon: Icon,
-  title,
-  description,
-  lines,
-  badges,
-}: {
-  icon: typeof Sparkles;
-  title: string;
-  description: string;
-  lines: string[];
-  badges: string[];
-}) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-950">
-          <Icon className="h-4 w-4 text-slate-700 dark:text-slate-200" />
-        </div>
-        <div>
-          <p className="font-semibold text-slate-900 dark:text-slate-100">{title}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
-        </div>
-      </div>
-      <ul className="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-        {lines.map((line) => (
-          <li key={`${title}-${line}`} className="flex items-start gap-2">
-            <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-            <span>{line}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {badges.filter(Boolean).slice(0, 5).map((badge) => (
-          <Badge key={`${title}-${badge}`} variant="secondary">
-            {badge}
-          </Badge>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ProductStep({
-  step,
-  title,
-  description,
-  last = false,
-}: {
-  step: string;
-  title: string;
-  description: string;
-  last?: boolean;
-}) {
-  return (
-    <div className="flex gap-4">
-      <div className="flex flex-col items-center">
-        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
-          {step}
-        </div>
-        {!last ? <div className="mt-2 h-full w-px bg-slate-200 dark:bg-slate-800" /> : null}
-      </div>
-      <div className="pb-4">
-        <p className="font-semibold text-slate-900 dark:text-slate-100">{title}</p>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{description}</p>
-      </div>
     </div>
   );
 }

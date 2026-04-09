@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { Tenant } from "@/types/api";
 import { Checkbox } from "@/components/ui/checkbox";
-import { TenantPortalPreview } from "@/components/settings/tenant-portal-preview";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +29,6 @@ import {
   ASSIGNABLE_SERVICE_CODES,
   COMMERCIAL_PLAN_PRESETS,
   PRODUCT_SERVICE_DEFINITIONS,
-  buildTenantSettings,
   getSuggestedServicesForPlan,
   getServiceStatusMeta,
   parseTenantProductProfile,
@@ -144,14 +143,6 @@ export function TenantDialog({
   const subscriptionPlan = watch("subscription_plan");
   const createInitialAdmin = watch("create_initial_admin");
   const enabledServices = watch("enabled_services");
-  const previewName = watch("name");
-  const previewSlug = watch("slug");
-  const previewPrimary = watch("primary_color");
-  const previewSecondary = watch("secondary_color");
-  const previewTertiary = watch("tertiary_color");
-  const previewAdminEmail = watch("admin_email");
-  const previewAdminFirstName = watch("admin_first_name");
-  const previewAdminLastName = watch("admin_last_name");
 
   useEffect(() => {
     reset(buildDefaultValues(tenant, tenantProfile.packageProfile));
@@ -171,303 +162,201 @@ export function TenantDialog({
     onOpenChange(value);
   };
 
-  const previewTenant = {
-    id: tenant?.id ?? "tenant-preview",
-    name: previewName || "Nueva empresa",
-    slug: previewSlug || "empresa-preview",
-    domain: tenant?.domain ?? undefined,
-    logo_url: tenant?.logo_url ?? null,
-    primary_color: previewPrimary || "#1976D2",
-    secondary_color: previewSecondary || "#424242",
-    tertiary_color: previewTertiary || "#757575",
-    is_active: tenant?.is_active ?? true,
-    settings: buildTenantSettings({
-      existingSettings: tenant?.settings,
-      packageProfile: subscriptionPlan,
-      enabledServices: enabledServices as AssignableServiceCode[],
-      onboarding: createInitialAdmin
-        ? {
-            status: "admin_created_pending_role" as const,
-            adminEmail: previewAdminEmail?.trim() || undefined,
-            adminName: [previewAdminFirstName, previewAdminLastName].filter(Boolean).join(" ").trim() || undefined,
-            roleName: "tenant_admin",
-            notes: "Preview visual: falta ejecutar el bootstrap real del admin inicial antes de marcar el tenant como listo.",
-            updatedAt: new Date().toISOString(),
-          }
-        : {
-            status: "tenant_created_only" as const,
-            adminEmail: previewAdminEmail?.trim() || undefined,
-            adminName: [previewAdminFirstName, previewAdminLastName].filter(Boolean).join(" ").trim() || undefined,
-            notes: "Preview visual del tenant sin admin inicial confirmado.",
-            updatedAt: new Date().toISOString(),
-          },
-    }),
-    subscription_plan: subscriptionPlan,
-    max_users: watch("max_users"),
-    max_clients: watch("max_clients"),
-    created_at: tenant?.created_at ?? new Date().toISOString(),
-    updated_at: tenant?.updated_at ?? new Date().toISOString(),
-  };
-
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar tenant" : "Nuevo tenant operable"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Editar empresa" : "Nueva empresa"}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Actualiza la empresa operadora, sus servicios habilitados y su perfil comercial."
-              : "Crea la empresa, define los servicios realmente visibles y, si aplica, bootstrapea el admin inicial para dejarla lista para iniciar sesion."}
+              ? "Actualiza los datos, servicios y configuracion de la empresa."
+              : "Crea una empresa, define sus servicios y opcionalmente crea el admin inicial."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <section className="space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Identidad base</h3>
-              <p className="text-sm text-muted-foreground">
-                Datos corporativos y branding inicial del tenant.
-              </p>
-            </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <Tabs defaultValue="identidad">
+            <TabsList className="w-full">
+              <TabsTrigger value="identidad">Identidad</TabsTrigger>
+              <TabsTrigger value="servicios">Servicios</TabsTrigger>
+              <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+            </TabsList>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Nombre *" error={errors.name?.message}>
-                <Input id="name" {...register("name")} />
-              </Field>
-              <Field label="Slug *" error={errors.slug?.message}>
-                <Input id="slug" {...register("slug")} disabled={isEdit} />
-              </Field>
-            </div>
-
-            <Field label="Dominio" error={errors.domain?.message}>
-              <Input id="domain" placeholder="empresa.ejemplo.com" {...register("domain")} />
-            </Field>
-
-            <div className="grid grid-cols-3 gap-4">
-              <ColorField label="Color primario" valueField="primary_color" register={register} />
-              <ColorField label="Secundario" valueField="secondary_color" register={register} />
-              <ColorField label="Terciario" valueField="tertiary_color" register={register} />
-            </div>
-          </section>
-
-          <section className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">C6.2 Servicios y paquetes</h3>
-              <p className="text-sm text-muted-foreground">
-                El plan comercial es una referencia. La habilitacion real del runtime se define con los servicios de abajo y su estado operativo, parcial o WIP.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="Plan comercial" error={errors.subscription_plan?.message}>
-                <Select
-                  value={subscriptionPlan}
-                  onValueChange={(value) => setValue("subscription_plan", value as CommercialPlanCode, { shouldDirty: true })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(COMMERCIAL_PLAN_PRESETS).map((plan) => (
-                      <SelectItem key={plan.code} value={plan.code}>
-                        {plan.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Max. usuarios" error={errors.max_users?.message}>
-                <Input id="max_users" type="number" {...register("max_users", { valueAsNumber: true })} />
-              </Field>
-              <Field label="Max. clientes" error={errors.max_clients?.message}>
-                <Input id="max_clients" type="number" {...register("max_clients", { valueAsNumber: true })} />
-              </Field>
-            </div>
-
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm dark:border-slate-700 dark:bg-slate-950/40">
-              <p className="font-medium text-slate-900 dark:text-slate-100">
-                Sugerencia para {COMMERCIAL_PLAN_PRESETS[subscriptionPlan].label}
-              </p>
-              <p className="mt-1 text-slate-600 dark:text-slate-300">
-                {COMMERCIAL_PLAN_PRESETS[subscriptionPlan].description}
-              </p>
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                Servicios sugeridos: {COMMERCIAL_PLAN_PRESETS[subscriptionPlan].suggestedServices.map((service) => PRODUCT_SERVICE_DEFINITIONS[service].label).join(", ")}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Servicios habilitados para este tenant *</Label>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {assignableServices.map((service) => {
-                  const serviceCode = service.code as AssignableServiceCode;
-                  const selected = enabledServices.includes(serviceCode);
-                  const statusMeta = getServiceStatusMeta(service.status);
-
-                  return (
-                    <label
-                      key={service.code}
-                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition-colors ${
-                        selected
-                          ? "border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
-                          : "border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:bg-slate-900/60"
-                      }`}
-                    >
-                      <Checkbox
-                        checked={selected}
-                        onCheckedChange={() =>
-                          setValue(
-                            "enabled_services",
-                            selected
-                              ? enabledServices.filter((value) => value !== serviceCode)
-                              : [...enabledServices, serviceCode],
-                            { shouldDirty: true, shouldValidate: true },
-                          )
-                        }
-                      />
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium text-slate-900 dark:text-slate-100">{service.label}</p>
-                          <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white dark:bg-slate-100 dark:text-slate-900">
-                            {statusMeta.label}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{service.description}</p>
-                        {service.modules.length ? (
-                          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                            Superficie: {service.modules.join(", ")}
-                          </p>
-                        ) : null}
-                      </div>
-                    </label>
-                  );
-                })}
+            {/* === Tab: Identidad === */}
+            <TabsContent value="identidad" className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Nombre *" error={errors.name?.message}>
+                  <Input id="name" {...register("name")} />
+                </Field>
+                <Field label="Slug *" error={errors.slug?.message}>
+                  <Input id="slug" {...register("slug")} disabled={isEdit} />
+                </Field>
               </div>
-              {errors.enabled_services ? <p className="text-xs text-destructive">{errors.enabled_services.message}</p> : null}
-            </div>
 
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-100/70 p-3 text-sm dark:border-slate-700 dark:bg-slate-900/50">
-              <p className="font-medium text-slate-900 dark:text-slate-100">Regla vigente del producto</p>
-              <p className="mt-1 text-slate-600 dark:text-slate-300">
-                Un modulo puede existir en estado operativo, parcial o WIP. Si el servicio queda habilitado para este tenant, el runtime puede mostrarlo aunque todavia este en construccion, siempre que ya exista su scaffold real en la web.
-              </p>
-            </div>
-          </section>
+              <Field label="Dominio personalizado" error={errors.domain?.message}>
+                <Input id="domain" placeholder="empresa.ejemplo.com" {...register("domain")} />
+              </Field>
 
-          {!isEdit || canRecoverOnboarding ? (
-            <section className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">C6.1 Onboarding tenant</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isEdit
-                    ? "Completa o recupera el bootstrap del admin inicial. Si lo ejecutas aqui, dejamos al tenant listo para iniciar sesion con rol `tenant_admin`."
-                    : "Bootstrap opcional del admin inicial. Si lo completas ahora, dejamos al tenant listo para iniciar sesion con rol `tenant_admin`."}
-                </p>
+                <Label className="mb-2 block">Branding</Label>
+                <div className="grid grid-cols-3 gap-4">
+                  <ColorField label="Primario" valueField="primary_color" register={register} />
+                  <ColorField label="Secundario" valueField="secondary_color" register={register} />
+                  <ColorField label="Terciario" valueField="tertiary_color" register={register} />
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* === Tab: Servicios === */}
+            <TabsContent value="servicios" className="space-y-4 pt-4">
+              <div className="grid grid-cols-3 gap-4">
+                <Field label="Plan comercial" error={errors.subscription_plan?.message}>
+                  <Select
+                    value={subscriptionPlan}
+                    onValueChange={(value) => setValue("subscription_plan", value as CommercialPlanCode, { shouldDirty: true })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(COMMERCIAL_PLAN_PRESETS).map((plan) => (
+                        <SelectItem key={plan.code} value={plan.code}>
+                          {plan.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Max. usuarios" error={errors.max_users?.message}>
+                  <Input id="max_users" type="number" {...register("max_users", { valueAsNumber: true })} />
+                </Field>
+                <Field label="Max. clientes" error={errors.max_clients?.message}>
+                  <Input id="max_clients" type="number" {...register("max_clients", { valueAsNumber: true })} />
+                </Field>
               </div>
 
-              <label className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-white px-3 py-2.5 dark:border-emerald-900/40 dark:bg-slate-950/50">
-                <Checkbox
-                  checked={createInitialAdmin}
-                  onCheckedChange={(checked) => setValue("create_initial_admin", checked === true, { shouldDirty: true })}
-                />
-                <div>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">Crear admin inicial ahora</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Recomendado para dejar el tenant operable al terminar este flujo.
-                  </p>
-                </div>
-              </label>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/40">
+                <span className="font-medium">{COMMERCIAL_PLAN_PRESETS[subscriptionPlan].label}:</span>{" "}
+                <span className="text-muted-foreground">{COMMERCIAL_PLAN_PRESETS[subscriptionPlan].description}</span>
+              </div>
 
-              {createInitialAdmin ? (
-                <div className="space-y-4 rounded-2xl border border-emerald-300/80 bg-white/90 p-4 shadow-sm dark:border-emerald-900/50 dark:bg-slate-950/60">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-3">
+                <Label>Servicios habilitados *</Label>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {assignableServices.map((service) => {
+                    const serviceCode = service.code as AssignableServiceCode;
+                    const selected = enabledServices.includes(serviceCode);
+                    const statusMeta = getServiceStatusMeta(service.status);
+
+                    return (
+                      <label
+                        key={service.code}
+                        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+                          selected
+                            ? "border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
+                            : "border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:bg-slate-900/60"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selected}
+                          onCheckedChange={() =>
+                            setValue(
+                              "enabled_services",
+                              selected
+                                ? enabledServices.filter((v) => v !== serviceCode)
+                                : [...enabledServices, serviceCode],
+                              { shouldDirty: true, shouldValidate: true },
+                            )
+                          }
+                        />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-medium">{service.label}</span>
+                            <span className="rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase dark:bg-slate-700">
+                              {statusMeta.label}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">{service.description}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+                {errors.enabled_services ? <p className="text-xs text-destructive">{errors.enabled_services.message}</p> : null}
+              </div>
+            </TabsContent>
+
+            {/* === Tab: Onboarding === */}
+            <TabsContent value="onboarding" className="space-y-4 pt-4">
+              {!isEdit || canRecoverOnboarding ? (
+                <>
+                  <label className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                    <Checkbox
+                      checked={createInitialAdmin}
+                      onCheckedChange={(checked) => setValue("create_initial_admin", checked === true, { shouldDirty: true })}
+                    />
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Admin inicial del tenant</p>
-                      <p className="text-sm text-slate-600 dark:text-slate-300">
-                        Este bloque define la cuenta base con la que la empresa podra entrar al sistema.
+                      <p className="text-sm font-medium">Crear admin inicial ahora</p>
+                      <p className="text-xs text-muted-foreground">
+                        Deja la empresa lista para iniciar sesion con rol tenant_admin.
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <span className="rounded-full bg-slate-900 px-2.5 py-1 font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
-                        Rol esperado: tenant_admin
-                      </span>
-                      <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 font-medium text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
-                        Pendiente de verificacion real
-                      </span>
+                  </label>
+
+                  {createInitialAdmin ? (
+                    <div className="space-y-4 rounded-xl border border-emerald-200 bg-white p-4 dark:border-emerald-900/40 dark:bg-slate-950/50">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold">Datos del admin inicial</p>
+                        <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
+                          tenant_admin
+                        </span>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label="Nombre *" error={errors.admin_first_name?.message}>
+                          <Input {...register("admin_first_name")} />
+                        </Field>
+                        <Field label="Apellido *" error={errors.admin_last_name?.message}>
+                          <Input {...register("admin_last_name")} />
+                        </Field>
+                        <Field label="Email *" error={errors.admin_email?.message}>
+                          <Input type="email" {...register("admin_email")} />
+                        </Field>
+                        <Field label="Contrasena *" error={errors.admin_password?.message}>
+                          <Input type="password" {...register("admin_password")} />
+                        </Field>
+                        <Field label="Telefono" error={errors.admin_phone?.message}>
+                          <Input {...register("admin_phone")} />
+                        </Field>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Nombre admin *" error={errors.admin_first_name?.message}>
-                      <Input {...register("admin_first_name")} />
-                    </Field>
-                    <Field label="Apellido admin *" error={errors.admin_last_name?.message}>
-                      <Input {...register("admin_last_name")} />
-                    </Field>
-                    <Field label="Email admin *" error={errors.admin_email?.message}>
-                      <Input type="email" {...register("admin_email")} />
-                    </Field>
-                    <Field label="Contrasena inicial *" error={errors.admin_password?.message}>
-                      <Input type="password" {...register("admin_password")} />
-                    </Field>
-                    <Field label="Telefono" error={errors.admin_phone?.message}>
-                      <Input {...register("admin_phone")} />
-                    </Field>
-                  </div>
-
-                  <div className="rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/70 p-3 text-sm text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-100">
-                    La empresa no se considerara <strong>lista para iniciar sesion</strong> hasta que el bootstrap real cree al usuario y deje evidencia persistida de tenant, usuario y rol.
+                  ) : (
+                    <p className="rounded-xl border border-dashed border-amber-300 bg-amber-50/70 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100">
+                      {isEdit
+                        ? "No se ejecutara bootstrap adicional."
+                        : "Se creara sin admin inicial. El onboarding quedara pendiente."}
+                    </p>
+                  )}
+                </>
+              ) : isEdit ? (
+                <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 dark:border-emerald-900/60 dark:bg-emerald-950/20">
+                  <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white">Listo</span>
+                  <div>
+                    <p className="text-sm font-medium">Onboarding completado</p>
+                    {tenantProfile.onboarding.adminEmail ? (
+                      <p className="text-xs text-muted-foreground">Admin: {tenantProfile.onboarding.adminEmail}</p>
+                    ) : null}
                   </div>
                 </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100">
-                  {isEdit
-                    ? "No se ejecutara bootstrap adicional en esta actualizacion. El tenant mantendra el estado actual de onboarding."
-                    : "El tenant se creara sin admin inicial. Eso dejara el onboarding en estado parcial hasta completar el usuario y su rol."}
-                </div>
-              )}
-            </section>
-          ) : isEdit ? (
-            <section className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/20">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Onboarding tenant</p>
-                <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-medium text-white">
-                  Listo para operar
-                </span>
-              </div>
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                Este tenant ya tiene snapshot de onboarding listo. Si necesitas usuarios adicionales o roles internos, se administran desde el portal tenant.
-              </p>
-              {tenantProfile.onboarding.adminEmail ? (
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Admin bootstrap detectado: {tenantProfile.onboarding.adminEmail}
-                </p>
               ) : null}
-            </section>
-          ) : null}
-
-          <section className="space-y-4 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-900/60 dark:bg-blue-950/20">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Vista previa del producto visible</h3>
-              <p className="text-sm text-muted-foreground">
-                Antes de guardar, aqui ya puedes ver que modulo, branding y flujo de entrada tendra la empresa cuando entre a su portal.
-              </p>
-            </div>
-
-            <TenantPortalPreview
-              tenant={previewTenant}
-              loginEmail={previewAdminEmail?.trim() || undefined}
-              roleLabel="tenant_admin"
-              compact
-            />
-          </section>
+            </TabsContent>
+          </Tabs>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Guardando..." : isEdit ? "Actualizar" : "Crear tenant"}
+              {isSubmitting ? "Guardando..." : isEdit ? "Actualizar" : "Crear empresa"}
             </Button>
           </DialogFooter>
         </form>
