@@ -92,24 +92,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ThemeProvider>
-      <div className="flex h-screen flex-col">
-        <Header />
-        <div className="flex flex-1 overflow-hidden">
-          <aside
-            className={cn(
-              "hidden shrink-0 overflow-y-auto bg-sidebar-nav-bg transition-[width] duration-200 md:block",
-              collapsed ? "w-16" : "w-64",
-            )}
-          >
-            <Sidebar collapsed={collapsed} />
-          </aside>
+      <div className="flex h-screen">
+        <aside
+          className={cn(
+            "hidden shrink-0 overflow-y-auto bg-sidebar-nav-bg transition-[width] duration-200 md:flex md:flex-col",
+            collapsed ? "w-16" : "w-64",
+          )}
+        >
+          <Sidebar collapsed={collapsed} />
+        </aside>
 
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetContent side="left" className="w-64 bg-sidebar-nav-bg p-0" showCloseButton={false}>
-              <Sidebar collapsed={false} onNavigate={() => setMobileOpen(false)} />
-            </SheetContent>
-          </Sheet>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="left" className="w-64 bg-sidebar-nav-bg p-0" showCloseButton={false}>
+            <Sidebar collapsed={false} onNavigate={() => setMobileOpen(false)} />
+          </SheetContent>
+        </Sheet>
 
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <Header />
           <main className="flex-1 overflow-y-auto bg-bg-page p-4 md:p-6">
             {hasRouteAccess && hasServiceAccess ? (
               children

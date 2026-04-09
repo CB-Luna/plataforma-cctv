@@ -638,8 +638,8 @@ test.describe("CP5 — Ruta Empresa > Sucursal > Infraestructura", () => {
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 15_000 });
 
-    // El breadcrumb raiz es "Backoffice" (identifica shell global)
-    await expect(page.getByText("Backoffice").first()).toBeVisible();
+    // El breadcrumb raiz es "Plataforma" (identifica shell global)
+    await expect(page.getByText("Plataforma").first()).toBeVisible();
 
     // Los sitios estan disponibles via API (mockBackofficeContract devuelve SITES)
     // El componente SiteSelector debe estar accesible

@@ -33,9 +33,9 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
     },
     {
       accessorKey: "description",
-      header: "DescripciÃ³n",
+      header: "Descripción",
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{row.original.description || "â€”"}</span>
+        <span className="text-muted-foreground">{row.original.description || "—"}</span>
       ),
     },
     {

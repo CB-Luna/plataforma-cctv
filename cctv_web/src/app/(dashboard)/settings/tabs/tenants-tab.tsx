@@ -1,20 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Building2,
   CheckCircle,
-  KeyRound,
-  Palette,
   Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Company, Tenant } from "@/types/api";
-import { ServiceBadges } from "@/components/product/service-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatsCard } from "@/components/ui/stats-card";
@@ -34,7 +30,6 @@ import {
 import { assignRole } from "@/lib/api/users";
 import {
   buildTenantSettings,
-  COMMERCIAL_PLAN_PRESETS,
   getOnboardingStatusMeta,
   getTenantReadinessMeta,
   parseTenantProductProfile,
@@ -62,7 +57,6 @@ export function TenantsTab() {
   const [brandingDialogOpen, setBrandingDialogOpen] = useState(false);
   const [onboardingDialogOpen, setOnboardingDialogOpen] = useState(false);
   const [onboardingResult, setOnboardingResult] = useState<TenantOnboardingResult | null>(null);
-  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(currentCompany?.id ?? null);
 
   const canCreateTenant = canAny("tenants.create", "tenants:create:all");
   const canEditTenant = canAny("tenants.update", "tenants:update:all");
@@ -85,7 +79,6 @@ export function TenantsTab() {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
       queryClient.invalidateQueries({ queryKey: ["tenants", "stats"] });
       setDialogOpen(false);
-      setSelectedTenantId(tenant.id);
       setOnboardingResult(result);
       setOnboardingDialogOpen(true);
       const onboardingMeta = getOnboardingStatusMeta(result.status);
@@ -106,7 +99,6 @@ export function TenantsTab() {
       syncActiveCompany(currentCompany, tenant, setCompany);
       setDialogOpen(false);
       setEditingTenant(null);
-      setSelectedTenantId(tenant.id);
       if (result) {
         setOnboardingResult(result);
         setOnboardingDialogOpen(true);
@@ -165,27 +157,6 @@ export function TenantsTab() {
       ),
     [canEditTenant, canToggleTenant, canUploadBranding, toggleActiveMutation],
   );
-  const selectedTenant = useMemo(
-    () => tenants.find((tenant) => tenant.id === selectedTenantId) ?? tenants[0] ?? null,
-    [selectedTenantId, tenants],
-  );
-  const selectedProfile = parseTenantProductProfile(selectedTenant);
-  const selectedReadiness = getTenantReadinessMeta({
-    companyId: selectedTenant?.id,
-    productProfile: selectedProfile,
-  });
-  const selectedPackagePreset = COMMERCIAL_PLAN_PRESETS[selectedProfile.packageProfile];
-
-  useEffect(() => {
-    if (!tenants.length) return;
-
-    if (selectedTenantId && tenants.some((tenant) => tenant.id === selectedTenantId)) {
-      return;
-    }
-
-    setSelectedTenantId(currentCompany?.id ?? tenants[0].id);
-  }, [currentCompany?.id, selectedTenantId, tenants]);
-
   async function handleSubmit(data: TenantFormValues) {
     if (editingTenant) {
       await updateMutation.mutateAsync({ tenant: editingTenant, data });
@@ -233,194 +204,6 @@ export function TenantsTab() {
           />
         </div>
       ) : null}
-
-      <div className="grid gap-6 xl:grid-cols-[320px,1fr]">
-        <Card className="border-slate-200 dark:border-slate-800">
-          <CardHeader>
-            <CardTitle className="text-base">Empresas operadoras</CardTitle>
-            <CardDescription>
-              Selecciona una empresa para ver de forma visible su paquete, su admin inicial y el portal que recibira.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {tenants.map((tenant) => {
-              const tenantProfile = parseTenantProductProfile(tenant);
-              const tenantReadiness = getTenantReadinessMeta({
-                companyId: tenant.id,
-                productProfile: tenantProfile,
-              });
-              const isSelected = tenant.id === selectedTenant?.id;
-
-              return (
-                <button
-                  key={tenant.id}
-                  type="button"
-                  onClick={() => setSelectedTenantId(tenant.id)}
-                  className={`w-full rounded-3xl border p-4 text-left transition-all ${
-                    isSelected
-                      ? "border-blue-300 bg-blue-50 shadow-sm dark:border-blue-800 dark:bg-blue-950/20"
-                      : "border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-900/40 dark:hover:border-slate-700 dark:hover:bg-slate-900/70"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {tenant.logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={tenant.logo_url}
-                        alt={tenant.name}
-                        className="h-12 w-12 rounded-2xl border object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="flex h-12 w-12 items-center justify-center rounded-2xl text-base font-bold text-white"
-                        style={{ backgroundColor: tenant.primary_color ?? "#1976D2" }}
-                      >
-                        {tenant.name.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate font-semibold text-slate-900 dark:text-slate-100">{tenant.name}</p>
-                        <Badge variant={tenantReadiness.tone}>{tenantReadiness.label}</Badge>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{tenant.slug}</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Badge variant="outline">Plan {tenantProfile.packageProfile}</Badge>
-                        <Badge variant="secondary">{tenantProfile.enabledServices.length} servicios</Badge>
-                      </div>
-                      <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">{tenantReadiness.evidenceLabel}</p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex items-center gap-4">
-                  {selectedTenant?.logo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={selectedTenant.logo_url}
-                      alt={selectedTenant.name}
-                      className="h-14 w-14 rounded-2xl border object-cover"
-                    />
-                  ) : (
-                    <div
-                      className="flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-bold text-white"
-                      style={{ backgroundColor: selectedTenant?.primary_color ?? "#1976D2" }}
-                    >
-                      {selectedTenant?.name.slice(0, 1).toUpperCase() ?? "E"}
-                    </div>
-                  )}
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-semibold">{selectedTenant?.name ?? "Sin seleccionar"}</h3>
-                      <Badge variant={selectedTenant?.is_active ? "default" : "secondary"}>
-                        {selectedTenant?.is_active ? "Activa" : "Inactiva"}
-                      </Badge>
-                      <Badge variant={selectedReadiness.tone}>{selectedReadiness.label}</Badge>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {selectedTenant?.slug} · {selectedTenant?.domain || "Sin dominio"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {canEditTenant && selectedTenant ? (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setEditingTenant(selectedTenant);
-                        setDialogOpen(true);
-                      }}
-                    >
-                      Editar
-                    </Button>
-                  ) : null}
-                  {canUploadBranding && selectedTenant ? (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setBrandingTenant(selectedTenant);
-                        setBrandingDialogOpen(true);
-                      }}
-                    >
-                      <Palette className="mr-2 h-4 w-4" />
-                      Branding
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <div className="space-y-3 rounded-lg border p-4">
-                  <p className="text-sm font-medium">Plan y servicios</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{selectedPackagePreset.label}</Badge>
-                    <Badge variant="secondary">{selectedProfile.enabledServices.length} servicios</Badge>
-                    <Badge variant="outline">
-                      {selectedProfile.source === "explicit" ? "Asignacion explicita" : "Herencia legacy"}
-                    </Badge>
-                  </div>
-                  <ServiceBadges services={selectedProfile.enabledServices} />
-                </div>
-
-                <div className="space-y-3 rounded-lg border p-4">
-                  <div className="flex items-center gap-2">
-                    <KeyRound className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-medium">Admin inicial</p>
-                  </div>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <p>{selectedProfile.onboarding.adminName ?? "Pendiente"}</p>
-                    <p>{selectedProfile.onboarding.adminEmail ?? "Sin email"}</p>
-                    <p>Rol: {selectedProfile.onboarding.roleName ?? "Pendiente"}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 rounded-lg border p-4">
-                  <div className="flex items-center gap-2">
-                    <Palette className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-medium">Branding</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[selectedTenant?.primary_color, selectedTenant?.secondary_color, selectedTenant?.tertiary_color]
-                      .filter(Boolean)
-                      .map((color, index) => (
-                        <div
-                          key={`color-${index}`}
-                          className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                        >
-                          <span className="h-3 w-3 rounded-full border" style={{ backgroundColor: color }} />
-                          {color}
-                        </div>
-                      ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Logo: {selectedTenant?.logo_url ? "cargado" : "pendiente"}
-                  </p>
-                </div>
-              </div>
-
-              {selectedReadiness.issues.length ? (
-                <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100">
-                  <p className="font-medium">Bloqueos activos</p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">
-                    {selectedReadiness.issues.map((issue) => (
-                      <li key={issue}>{issue}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
 
       <DataTable
         columns={columns}

@@ -15,8 +15,8 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
-  email: z.string().email("Email invÃ¡lido"),
-  password: z.string().min(1, "La contraseÃ±a es requerida"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(1, "La contraseña es requerida"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -24,14 +24,14 @@ type LoginForm = z.infer<typeof loginSchema>;
 const demoUsers = [
   { name: "Admin", email: "admin@demo.com", password: "Password123!", role: "Super Admin", color: "from-sky-500 to-blue-600", bg: "bg-sky-50 dark:bg-sky-950/30", border: "border-sky-500", ring: "ring-sky-200 dark:ring-sky-800" },
   { name: "Operador", email: "operator@demo.com", password: "Password123!", role: "Operador", color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-800" },
-  { name: "TÃ©cnico", email: "tech@demo.com", password: "Password123!", role: "TÃ©cnico", color: "from-amber-500 to-orange-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-500", ring: "ring-amber-200 dark:ring-amber-800" },
+  { name: "Técnico", email: "tech@demo.com", password: "Password123!", role: "Técnico", color: "from-amber-500 to-orange-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-500", ring: "ring-amber-200 dark:ring-amber-800" },
   { name: "Viewer", email: "viewer@demo.com", password: "Password123!", role: "Solo Lectura", color: "from-violet-500 to-purple-600", bg: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-500", ring: "ring-violet-200 dark:ring-violet-800" },
 ];
 
 const features = [
   { icon: Camera, label: "Monitoreo 24/7", desc: "Vigilancia continua de toda tu infraestructura" },
-  { icon: Shield, label: "Multi-sucursal", desc: "Gestiona mÃºltiples sitios desde un solo panel" },
-  { icon: Monitor, label: "GestiÃ³n inteligente", desc: "Tickets, SLA y pÃ³lizas automatizados" },
+  { icon: Shield, label: "Multi-sucursal", desc: "Gestiona múltiples sitios desde un solo panel" },
+  { icon: Monitor, label: "Gestión inteligente", desc: "Tickets, SLA y pólizas automatizados" },
 ];
 
 export default function LoginPage() {
@@ -86,7 +86,7 @@ export default function LoginPage() {
       }
 
       if (res.companies.length === 0) {
-        setError("El usuario no tiene una empresa activa disponible para iniciar sesiÃ³n");
+        setError("El usuario no tiene una empresa activa disponible para iniciar sesión");
         return;
       }
 
@@ -98,7 +98,7 @@ export default function LoginPage() {
       setCompany(me.companies[0] ?? res.companies[0]);
       router.push(redirectTo);
     } catch {
-      setError("Credenciales invÃ¡lidas o servidor no disponible");
+      setError("Credenciales inválidas o servidor no disponible");
     }
   }
 
@@ -125,7 +125,7 @@ export default function LoginPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">SyMTickets CCTV</h1>
-            <p className="text-xs text-slate-400">Plataforma de GestiÃ³n CCTV</p>
+            <p className="text-xs text-slate-400">Plataforma de Gestión CCTV</p>
           </div>
         </div>
 
@@ -135,7 +135,7 @@ export default function LoginPage() {
               Control total de tu<br />infraestructura CCTV
             </h2>
             <p className="text-lg text-slate-300">
-              Monitorea cÃ¡maras, gestiona tickets y administra pÃ³lizas desde una sola plataforma multi-tenant.
+              Monitorea cámaras, gestiona tickets y administra pólizas desde una sola plataforma multi-tenant.
             </p>
           </div>
 
@@ -151,7 +151,7 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10">
-          <p className="text-xs text-slate-500">Â© 2026 SyMTickets Â· GestiÃ³n de infraestructura CCTV</p>
+          <p className="text-xs text-slate-500">© 2026 SyMTickets · Gestión de infraestructura CCTV</p>
         </div>
       </div>
 
@@ -188,12 +188,12 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">ContraseÃ±a</Label>
+              <Label htmlFor="password">Contraseña</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="••••••••"
                   autoComplete="current-password"
                   className="h-11 pr-10"
                   {...register("password")}
@@ -236,7 +236,7 @@ export default function LoginPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground dark:bg-gray-900">o accede rÃ¡pido</span>
+                <span className="bg-white px-2 text-muted-foreground dark:bg-gray-900">o accede rápido</span>
               </div>
             </div>
 

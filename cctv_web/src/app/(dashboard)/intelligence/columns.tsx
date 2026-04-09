@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2, Star, Power } from "lucide-react";
@@ -66,7 +66,7 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
       cell: ({ row }) =>
         row.original.monthly_budget_usd != null
           ? `$${row.original.monthly_budget_usd.toFixed(2)}`
-          : "â€”",
+          : "—",
     },
     {
       accessorKey: "has_api_key",

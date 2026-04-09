@@ -145,7 +145,7 @@ export function getWorkspaceExperience(params: {
   return {
     mode,
     hasPlatformWorkspace,
-    shellRootLabel: "Backoffice",
+    shellRootLabel: "Plataforma",
     shellBadgeLabel: "Plataforma",
     shellTitle: "SyMTickets CCTV",
     shellDescription: "Gobierno de empresas, servicios, plantillas y monitoreo de onboarding desde la plataforma global.",

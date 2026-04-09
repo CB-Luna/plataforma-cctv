@@ -43,7 +43,7 @@ export default function ClientsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Clientes</h2>
-          <p className="text-muted-foreground">GestiÃ³n de clientes de la organizaciÃ³n</p>
+          <p className="text-muted-foreground">Gestión de clientes de la organización</p>
         </div>
         {canCreateClient && (
           <Button onClick={() => setDialogOpen(true)}>

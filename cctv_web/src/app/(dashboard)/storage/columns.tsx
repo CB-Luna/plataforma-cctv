@@ -36,13 +36,13 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
     {
       accessorKey: "bucket_name",
       header: "Bucket / Base",
-      cell: ({ row }) => row.original.bucket_name || row.original.database_name || "â€”",
+      cell: ({ row }) => row.original.bucket_name || row.original.database_name || "—",
     },
     {
       accessorKey: "is_default",
       header: "Predeterminado",
       cell: ({ row }) =>
-        row.original.is_default ? <Badge>SÃ­</Badge> : <span className="text-muted-foreground">No</span>,
+        row.original.is_default ? <Badge>Sí</Badge> : <span className="text-muted-foreground">No</span>,
     },
     {
       accessorKey: "is_active",

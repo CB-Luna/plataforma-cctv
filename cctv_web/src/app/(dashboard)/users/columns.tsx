@@ -50,8 +50,8 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
     },
     {
       accessorKey: "phone",
-      header: "TelÃ©fono",
-      cell: ({ row }) => row.original.phone ?? "â€”",
+      header: "Teléfono",
+      cell: ({ row }) => row.original.phone ?? "—",
     },
     {
       accessorKey: "is_active",
@@ -69,13 +69,13 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
         <div className="flex flex-wrap gap-1">
           {row.original.roles?.map((role) => (
             <Badge key={role.id} variant="outline" className="text-xs">{role.name}</Badge>
-          )) ?? "â€”"}
+          )) ?? "—"}
         </div>
       ),
     },
     {
       accessorKey: "last_login_at",
-      header: "Ãšltimo acceso",
+      header: "Último acceso",
       cell: ({ row }) =>
         row.original.last_login_at
           ? new Date(row.original.last_login_at).toLocaleDateString("es-MX")
@@ -104,7 +104,7 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
               {capabilities.canChangePassword && (
                 <DropdownMenuItem onClick={() => actions.onChangePassword(user)}>
                   <Key className="mr-2 h-4 w-4" />
-                  Cambiar contraseÃ±a
+                  Cambiar contraseña
                 </DropdownMenuItem>
               )}
               {capabilities.canManageRoles && (

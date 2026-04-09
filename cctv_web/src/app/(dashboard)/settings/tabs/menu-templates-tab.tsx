@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LayoutTemplate, Pencil, Plus, Save, Trash2 } from "lucide-react";
+import { LayoutTemplate, List, Pencil, Plus, Save, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { AdminMenuItem, MenuItem, MenuTemplate, MenuTenantBasic } from "@/types/api";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
+import { StatsCard } from "@/components/ui/stats-card";
 import { MenuTemplateDialog, type MenuTemplateFormValues } from "./menu-template-dialog";
 
 export function MenuTemplatesTab() {
@@ -101,6 +102,19 @@ export function MenuTemplatesTab() {
       }),
     [menuItems],
   );
+
+  const statsData = useMemo(() => {
+    const totalTenants = tenants.length;
+    const assignedTenantIds = new Set(templates.flatMap((t) => Array.from({ length: t.tenant_count }, () => t.id)));
+    const tenantsWithTemplate = templates.reduce((sum, t) => sum + t.tenant_count, 0);
+
+    return {
+      totalTemplates: templates.length,
+      totalItems: menuItems.length,
+      tenantsWithTemplate,
+      tenantsWithout: Math.max(0, totalTenants - tenantsWithTemplate),
+    };
+  }, [menuItems.length, templates, tenants.length]);
 
   const createMutation = useMutation({
     mutationFn: createMenuTemplate,
@@ -183,6 +197,19 @@ export function MenuTemplatesTab() {
 
   return (
     <div className="space-y-6">
+      {/* Stats resumen */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatsCard title="Plantillas" value={statsData.totalTemplates} icon={LayoutTemplate} color="blue" />
+        <StatsCard title="Items en catalogo" value={statsData.totalItems} icon={List} color="teal" />
+        <StatsCard title="Tenants asignados" value={statsData.tenantsWithTemplate} icon={Users} color="green" />
+        <StatsCard
+          title="Sin plantilla"
+          value={statsData.tenantsWithout}
+          icon={Users}
+          color={statsData.tenantsWithout > 0 ? "amber" : "green"}
+        />
+      </div>
+
       <div className="grid gap-6 2xl:grid-cols-[360px,1fr]">
         <Card className="h-fit">
           <CardHeader className="pb-4">
@@ -272,7 +299,7 @@ export function MenuTemplatesTab() {
                       <Badge className="bg-blue-600 text-white hover:bg-blue-600">Template activo</Badge>
                       {selectedTemplate.is_default ? <Badge variant="secondary">Default</Badge> : null}
                       <Badge variant="outline">{selectedTenantIds.length} tenants asignados</Badge>
-                      <Badge variant="outline">{selectedMenuItemIds.length} items visibles base</Badge>
+                      <Badge variant="outline">{selectedMenuItemIds.length} / {sortedMenuItems.length} items visibles</Badge>
                     </div>
                     <CardTitle className="mt-3 text-xl">{selectedTemplate.name}</CardTitle>
                     <CardDescription className="mt-1 max-w-3xl">
