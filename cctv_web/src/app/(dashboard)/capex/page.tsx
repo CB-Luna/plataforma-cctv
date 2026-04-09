@@ -12,11 +12,14 @@ import {
   Building2,
   AlertTriangle,
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard } from "@/components/ui/stats-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Select,
@@ -96,6 +99,8 @@ export default function CapexPage() {
   const [warrantyFilter, setWarrantyFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>("warrantyDate");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const { data: nvrs = [], isLoading: nvrLoading, isError: nvrError } = useQuery({
     queryKey: ["nvrs"],
@@ -198,7 +203,11 @@ export default function CapexPage() {
   function toggleSort(field: SortField) {
     if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortField(field); setSortDir("asc"); }
+    setPage(1);
   }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedRows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="space-y-6">
@@ -248,12 +257,12 @@ export default function CapexPage() {
               <Input
                 placeholder="Buscar equipo, modelo o serial..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="pl-9"
               />
             </div>
 
-            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? "all")}>
+            <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v ?? "all"); setPage(1); }}>
               <SelectTrigger className="w-40">
                 <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
                 <SelectValue placeholder="Tipo" />
@@ -265,7 +274,7 @@ export default function CapexPage() {
               </SelectContent>
             </Select>
 
-            <Select value={warrantyFilter} onValueChange={(v) => setWarrantyFilter(v ?? "all")}>
+            <Select value={warrantyFilter} onValueChange={(v) => { setWarrantyFilter(v ?? "all"); setPage(1); }}>
               <SelectTrigger className="w-45">
                 <ShieldCheck className="mr-2 h-4 w-4 text-muted-foreground" />
                 <SelectValue placeholder="Garantía" />
@@ -326,7 +335,7 @@ export default function CapexPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((row) => {
+                  {paginatedRows.map((row) => {
                     const badge = WARRANTY_BADGE[row.warrantyStatus];
                     return (
                       <TableRow key={`${row.type}-${row.id}`}>
@@ -371,9 +380,46 @@ export default function CapexPage() {
           )}
 
           {!isLoading && filtered.length > 0 && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              Mostrando {filtered.length} de {equipment.length} equipos
-            </p>
+            <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
+              <p className="text-xs text-muted-foreground">
+                Mostrando {Math.min((page - 1) * pageSize + 1, filtered.length)}–{Math.min(page * pageSize, filtered.length)} de {filtered.length} equipos
+              </p>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}
+                >
+                  <SelectTrigger className="h-8 w-20 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 / pag</SelectItem>
+                    <SelectItem value="25">25 / pag</SelectItem>
+                    <SelectItem value="50">50 / pag</SelectItem>
+                    <SelectItem value="100">100 / pag</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Pag. {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
