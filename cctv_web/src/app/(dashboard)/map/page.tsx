@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { listSites } from "@/lib/api/sites";
-import { AlertTriangle, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useSiteStore } from "@/stores/site-store";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
@@ -67,19 +67,6 @@ export default function MapPage() {
         }
         onClear={currentSite ? clearSite : undefined}
       />
-
-      <Card className="border-amber-200 bg-amber-50/80">
-        <CardContent className="flex gap-3 py-4 text-sm text-amber-950">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-          <div>
-            <p className="font-medium">Precision geografica aproximada</p>
-            <p className="mt-1 text-xs text-amber-900">
-              La posicion del marcador se calcula por ciudad o por un fallback sintetico. Usalo como apoyo
-              visual de cobertura, no como geolocalizacion exacta para campo.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Header + filter */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

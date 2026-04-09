@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, HardDrive, Server, ShieldAlert } from "lucide-react";
+import { AlertTriangle, HardDrive, Server } from "lucide-react";
 import { toast } from "sonner";
 import { createNvr, deleteNvr, getNvrStats, listNvrs, updateNvr } from "@/lib/api/nvrs";
 import { listSites } from "@/lib/api/sites";
@@ -154,19 +154,6 @@ export default function NvrsPage() {
           Nuevo NVR
         </Button>
       </div>
-
-      <Card className="border-amber-200 bg-amber-50/80">
-        <CardContent className="flex flex-col gap-3 py-4 md:flex-row md:items-start">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-          <div className="space-y-1 text-sm text-amber-950">
-            <p className="font-medium">Fase 3: capacidades manuales alineadas al contrato</p>
-            <p className="text-xs text-amber-900">
-              La alta manual cubre el servidor y su contexto base. La edicion desde UI solo actualiza los
-              campos que el backend realmente sostiene: nombre, codigo, modelo, edicion, version y notas.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {displayStats && (
         <div className="grid gap-4 md:grid-cols-4">

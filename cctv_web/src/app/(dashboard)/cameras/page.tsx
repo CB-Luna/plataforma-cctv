@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Camera as CameraIcon, Eye, Search, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Camera as CameraIcon, Eye, Search } from "lucide-react";
 import { toast } from "sonner";
 import { searchCameras, createCamera, deleteCamera, getCameraStats, listCameras } from "@/lib/api/cameras";
 import { listNvrs } from "@/lib/api/nvrs";
@@ -171,20 +171,6 @@ export default function CamerasPage() {
           Nueva camara
         </Button>
       </div>
-
-      <Card className="border-amber-200 bg-amber-50/80">
-        <CardContent className="flex flex-col gap-3 py-4 md:flex-row md:items-start">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-          <div className="space-y-1 text-sm text-amber-950">
-            <p className="font-medium">Fase 3: cierre honesto de capacidades manuales</p>
-            <p className="text-xs text-amber-900">
-              La creacion manual cubre contexto, identificacion y especificaciones base. La edicion se
-              difiere porque el backend no expone `PUT /inventory/cameras/{'{id}'}` y los datos de red se
-              sostienen hoy via importacion.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {displayStats && (
         <div className="grid gap-4 md:grid-cols-4">
