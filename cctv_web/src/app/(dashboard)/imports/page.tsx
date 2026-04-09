@@ -35,14 +35,18 @@ export default function ImportsPage() {
 
   const { data: batches, isLoading } = useQuery({
     queryKey: ["import-batches"],
-    queryFn: () => listImportBatches(),
+    queryFn: () => listImportBatches({ limit: 100 }),
     retry: false,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: stats } = useQuery({
     queryKey: ["import-stats"],
     queryFn: () => getImportStats(),
     retry: false,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const createMutation = useMutation({

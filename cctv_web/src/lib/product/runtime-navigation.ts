@@ -64,6 +64,13 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         service: "cctv",
       },
       {
+        id: "nav-sites",
+        label: "Sucursales",
+        icon: "location_on",
+        route: "/sites",
+        service: "cctv",
+      },
+      {
         id: "nav-cameras",
         label: "Camaras",
         icon: "videocam",

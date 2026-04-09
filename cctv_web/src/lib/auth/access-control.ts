@@ -151,6 +151,14 @@ const ROUTE_ACCESS_RULES: Array<{ route: string; rule: AccessRule }> = [
     },
   },
   {
+    route: "/sites",
+    rule: {
+      anyOf: CCTV_ACCESS,
+      title: "Sin acceso a sucursales",
+      description: "No tienes permisos para consultar las sucursales del tenant activo.",
+    },
+  },
+  {
     route: "/cameras",
     rule: {
       anyOf: CCTV_ACCESS,
