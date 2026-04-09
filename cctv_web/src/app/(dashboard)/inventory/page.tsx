@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowRight,
+  Building2,
   Camera,
   FileUp,
   HardDrive,
@@ -17,18 +18,27 @@ import { listCameras } from "@/lib/api/cameras";
 import { getInventoryDashboardStats, getInventorySummary } from "@/lib/api/inventory";
 import { listNvrs } from "@/lib/api/nvrs";
 import { useSiteStore } from "@/stores/site-store";
+import { useTenantStore } from "@/stores/tenant-store";
+import { usePermissions } from "@/hooks/use-permissions";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { StatsCard } from "@/components/ui/stats-card";
 import { filterByActiveSite } from "@/lib/site-context";
 
 export default function InventoryDashboardPage() {
   const currentSite = useSiteStore((s) => s.currentSite);
   const clearSite = useSiteStore((s) => s.clearSite);
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const { permissions, roles } = usePermissions();
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
 
   const { data: summary, isError: summaryError } = useQuery({
     queryKey: ["inventory", "summary"],
     queryFn: getInventorySummary,
+    enabled: !isPlatformAdmin,
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -38,6 +48,7 @@ export default function InventoryDashboardPage() {
   const { data: stats, isError: statsError } = useQuery({
     queryKey: ["inventory", "dashboard-stats"],
     queryFn: getInventoryDashboardStats,
+    enabled: !isPlatformAdmin,
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -103,6 +114,14 @@ export default function InventoryDashboardPage() {
 
   return (
     <div className="space-y-6">
+      {isPlatformAdmin ? (
+        <EmptyState
+          icon={Building2}
+          title="Inventario disponible por empresa"
+          description="Este modulo opera en el contexto de una empresa especifica. Selecciona una empresa desde el panel de administracion para ver su inventario CCTV."
+        />
+      ) : (
+      <>
       <SiteContextBanner
         site={currentSite}
         description="Los KPI visibles se recalculan con los activos del sitio activo. Limpia el contexto para volver al agregado global del tenant."
@@ -270,6 +289,8 @@ export default function InventoryDashboardPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+      </>
       )}
     </div>
   );

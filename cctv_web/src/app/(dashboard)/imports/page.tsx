@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { FileCheck, FileWarning, Loader2, ShieldAlert, Upload } from "lucide-react";
+import { Building2, FileCheck, FileWarning, Loader2, Upload } from "lucide-react";
 import type { ImportBatch } from "@/types/api";
 import {
   cancelImportBatch,
@@ -20,20 +20,29 @@ import { DataTable } from "@/components/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTenantStore } from "@/stores/tenant-store";
+import { usePermissions } from "@/hooks/use-permissions";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 
 export default function ImportsPage() {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [detailBatch, setDetailBatch] = useState<ImportBatch | null>(null);
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const { permissions, roles } = usePermissions();
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
 
   const { data: batches, isLoading } = useQuery({
     queryKey: ["import-batches"],
     queryFn: () => listImportBatches(),
+    enabled: !isPlatformAdmin,
   });
 
   const { data: stats } = useQuery({
     queryKey: ["import-stats"],
     queryFn: () => getImportStats(),
+    enabled: !isPlatformAdmin,
   });
 
   const createMutation = useMutation({
@@ -104,6 +113,14 @@ export default function ImportsPage() {
 
   return (
     <div className="space-y-6">
+      {isPlatformAdmin ? (
+        <EmptyState
+          icon={Building2}
+          title="Importaciones disponibles por empresa"
+          description="Este modulo opera en el contexto de una empresa especifica. Selecciona una empresa desde el panel de administracion para gestionar sus importaciones."
+        />
+      ) : (
+      <>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Importacion masiva</h1>
@@ -116,19 +133,6 @@ export default function ImportsPage() {
           Nueva importacion
         </Button>
       </div>
-
-      <Card className="border-amber-200 bg-amber-50/80">
-        <CardContent className="flex flex-col gap-3 py-4 md:flex-row md:items-start">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-          <div className="space-y-1 text-sm text-amber-950">
-            <p className="font-medium">Fase 3: flujo utilizable y honesto</p>
-            <p className="text-xs text-amber-900">
-              La UI ya no crea lotes vacios. El archivo se parsea localmente, se expone el mapeo de
-              columnas y el backend recibe `column_mapping` y `data` reales antes de procesar.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -200,6 +204,8 @@ export default function ImportsPage() {
         }}
         batch={detailBatch}
       />
+      </>
+      )}
     </div>
   );
 }
