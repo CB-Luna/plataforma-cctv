@@ -5,6 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Users, Building2 } from "lucide-react";
 import { listClients, createClient } from "@/lib/api/clients";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useTenantStore } from "@/stores/tenant-store";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { DataTable } from "@/components/data-table";
 import { clientColumns } from "./columns";
 import { ClientDialog, type ClientFormValues } from "./client-dialog";
@@ -15,7 +17,10 @@ import { toast } from "sonner";
 
 export default function ClientsPage() {
   const queryClient = useQueryClient();
-  const { canAny } = usePermissions();
+  const { canAny, permissions, roles } = usePermissions();
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
   const [dialogOpen, setDialogOpen] = useState(false);
   const canCreateClient = canAny("clients.create", "clients:create:own", "clients:create:all");
 
@@ -36,6 +41,17 @@ export default function ClientsPage() {
 
   async function handleSubmit(data: ClientFormValues) {
     await createMutation.mutateAsync(data);
+  }
+
+  // F7: guardia de contexto
+  if (isPlatformAdmin && !currentCompany) {
+    return (
+      <EmptyState
+        icon={Users}
+        title="Selecciona una empresa"
+        description="Este modulo muestra clientes del tenant activo. Selecciona una empresa desde la barra de navegacion para continuar."
+      />
+    );
   }
 
   return (

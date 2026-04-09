@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useTenantStore } from "@/stores/tenant-store";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +18,10 @@ import type { SlaPolicy } from "@/types/api";
 
 export default function SlaPage() {
   const queryClient = useQueryClient();
+  const { permissions, roles } = usePermissions();
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editSla, setEditSla] = useState<SlaPolicy | null>(null);
 
@@ -86,6 +93,17 @@ export default function SlaPage() {
       if (confirm("Eliminar esta politica SLA?")) deleteMut.mutate(sla.id);
     },
   });
+
+  // F7: guardia de contexto
+  if (isPlatformAdmin && !currentCompany) {
+    return (
+      <EmptyState
+        icon={Shield}
+        title="Selecciona una empresa"
+        description="Este modulo muestra politicas SLA del tenant activo. Selecciona una empresa desde la barra de navegacion para continuar."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

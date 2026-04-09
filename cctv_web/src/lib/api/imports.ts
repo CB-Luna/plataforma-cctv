@@ -6,6 +6,47 @@ import type {
   ImportStats,
 } from "@/types/api";
 
+// El backend devuelve `status` como NullInventoryImportStatus:
+// { inventory_import_status: string, valid: boolean }
+// Esta funcion normaliza el shape al string esperado por el frontend.
+type RawBatch = Omit<ImportBatch, "status" | "column_mapping"> & {
+  status:
+    | string
+    | { inventory_import_status?: string; valid?: boolean }
+    | null
+    | undefined;
+  column_mapping:
+    | string             // base64 cuando viene de []byte Go
+    | Record<string, unknown>
+    | null
+    | undefined;
+};
+
+function normalizeImportBatch(raw: RawBatch): ImportBatch {
+  // Extraer status del nullable wrapper de Go
+  let status = "pending";
+  if (typeof raw.status === "string") {
+    status = raw.status;
+  } else if (raw.status && typeof raw.status === "object") {
+    status = (raw.status as { inventory_import_status?: string }).inventory_import_status ?? "pending";
+  }
+
+  // Decodificar column_mapping si viene como base64 de []byte
+  let columnMapping: Record<string, unknown> = {};
+  if (typeof raw.column_mapping === "string") {
+    try {
+      const decoded = atob(raw.column_mapping);
+      columnMapping = JSON.parse(decoded) as Record<string, unknown>;
+    } catch {
+      columnMapping = {};
+    }
+  } else if (raw.column_mapping && typeof raw.column_mapping === "object") {
+    columnMapping = raw.column_mapping as Record<string, unknown>;
+  }
+
+  return { ...raw, status, column_mapping: columnMapping } as ImportBatch;
+}
+
 export async function listImportBatches(params?: {
   limit?: number;
   offset?: number;
@@ -13,7 +54,8 @@ export async function listImportBatches(params?: {
   const searchParams: Record<string, string> = {};
   if (params?.limit) searchParams.limit = String(params.limit);
   if (params?.offset) searchParams.offset = String(params.offset);
-  return api.get("inventory/import/batches", { searchParams }).json<ImportBatch[]>();
+  const raw = await api.get("inventory/import/batches", { searchParams }).json<RawBatch[]>();
+  return raw.map(normalizeImportBatch);
 }
 
 export async function getImportBatch(id: string): Promise<{
@@ -46,7 +88,8 @@ export async function createImportBatch(data: {
   column_mapping: Record<string, string>;
   data: Record<string, unknown>[];
 }): Promise<ImportBatch> {
-  return api.post("inventory/import/batches", { json: data }).json<ImportBatch>();
+  const raw = await api.post("inventory/import/batches", { json: data }).json<RawBatch>();
+  return normalizeImportBatch(raw);
 }
 
 export async function processImportBatch(id: string): Promise<void> {

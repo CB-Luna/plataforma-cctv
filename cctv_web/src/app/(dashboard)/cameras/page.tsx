@@ -3,15 +3,17 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Camera as CameraIcon, Eye, Search } from "lucide-react";
+import { AlertTriangle, Camera as CameraIcon, Eye, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { searchCameras, createCamera, deleteCamera, getCameraStats, listCameras } from "@/lib/api/cameras";
+import { createImportBatch, processImportBatch } from "@/lib/api/imports";
 import { listNvrs } from "@/lib/api/nvrs";
 import { listSites } from "@/lib/api/sites";
 import type { Camera } from "@/types/api";
 import { useSiteStore } from "@/stores/site-store";
 import { filterByActiveSite } from "@/lib/site-context";
 import { CameraDialog, type CameraFormValues } from "./camera-dialog";
+import { ImportDialog, type ImportSubmissionPayload } from "../imports/import-dialog";
 import { getColumns } from "./columns";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
 import { DataTable } from "@/components/data-table";
@@ -28,6 +30,7 @@ export default function CamerasPage() {
   const clearSite = useSiteStore((state) => state.clearSite);
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Camera[] | null>(null);
@@ -135,6 +138,29 @@ export default function CamerasPage() {
     await createMutation.mutateAsync(data as Parameters<typeof createCamera>[0]);
   }
 
+  const importMutation = useMutation({
+    mutationFn: async (payload: ImportSubmissionPayload) => {
+      const batch = await createImportBatch({
+        batch_name: payload.batch_name,
+        source_type: payload.source_type,
+        source_filename: payload.source_filename,
+        target_table: payload.target_table,
+        column_mapping: payload.column_mapping,
+        data: payload.data,
+      });
+      if (batch?.id) {
+        await processImportBatch(batch.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cameras"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      toast.success("Importacion iniciada. Los datos apareceran en breve.");
+      setImportOpen(false);
+    },
+    onError: () => toast.error("Error al iniciar la importacion"),
+  });
+
   async function handleSearch() {
     if (!searchQuery.trim()) {
       setSearchResults(null);
@@ -167,9 +193,15 @@ export default function CamerasPage() {
             Inventario operativo CCTV con contexto por sitio y lectura honesta del contrato backend.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          Nueva camara
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Importar Excel
+          </Button>
+          <Button onClick={() => setDialogOpen(true)}>
+            Nueva camara
+          </Button>
+        </div>
       </div>
 
       {displayStats && (
@@ -290,6 +322,13 @@ export default function CamerasPage() {
         onOpenChange={setDialogOpen}
         onSubmit={handleSubmit}
         isSubmitting={createMutation.isPending}
+      />
+
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onSubmit={(payload) => importMutation.mutate(payload)}
+        isLoading={importMutation.isPending}
       />
     </div>
   );

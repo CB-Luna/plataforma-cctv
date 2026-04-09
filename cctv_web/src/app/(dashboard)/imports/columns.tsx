@@ -92,7 +92,14 @@ export function getColumns(actions: ColumnActions): ColumnDef<ImportBatch>[] {
       accessorKey: "status",
       header: "Estado",
       cell: ({ row }) => {
-        const status = row.original.status;
+        // Defensa contra el objeto NullInventoryImportStatus del backend
+        const rawStatus = row.original.status;
+        const status: string =
+          typeof rawStatus === "string"
+            ? rawStatus
+            : typeof rawStatus === "object" && rawStatus !== null
+              ? ((rawStatus as { inventory_import_status?: string }).inventory_import_status ?? "pending")
+              : "pending";
         return (
           <Badge variant={statusVariants[status] ?? "outline"}>
             {statusLabels[status] ?? status}

@@ -22,6 +22,8 @@ import {
 import { usePermissions } from "@/hooks/use-permissions";
 import { toScheduledDatePayload } from "@/lib/contracts/contractual";
 import { useSiteStore } from "@/stores/site-store";
+import { useTenantStore } from "@/stores/tenant-store";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import type { CreateTicketRequest, Ticket, UpdateTicketRequest } from "@/types/api";
 import { DataTable } from "@/components/data-table";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
@@ -74,9 +76,12 @@ function toUpdateTicketPayload(values: TicketFormValues): UpdateTicketRequest {
 export default function TicketsPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { canAny } = usePermissions();
+  const { canAny, permissions, roles } = usePermissions();
   const currentSite = useSiteStore((s) => s.currentSite);
   const clearSite = useSiteStore((s) => s.clearSite);
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [assignTarget, setAssignTarget] = useState<Ticket | null>(null);
@@ -239,6 +244,17 @@ export default function TicketsPage() {
     }
 
     createMutation.mutate(values);
+  }
+
+  // F7: guardia de contexto — el Admin de Plataforma debe seleccionar empresa antes de operar
+  if (isPlatformAdmin && !currentCompany) {
+    return (
+      <EmptyState
+        icon={TicketIcon}
+        title="Selecciona una empresa"
+        description="Este modulo muestra tickets del tenant activo. Selecciona una empresa desde la barra de navegacion para continuar."
+      />
+    );
   }
 
   return (

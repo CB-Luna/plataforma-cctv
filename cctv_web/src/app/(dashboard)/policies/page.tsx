@@ -8,6 +8,9 @@ import { toast } from "sonner";
 import { createPolicy, deletePolicy, listPolicies, updatePolicy } from "@/lib/api/policies";
 import { serializePolicyCoverage } from "@/lib/contracts/contractual";
 import { useSiteStore } from "@/stores/site-store";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useTenantStore } from "@/stores/tenant-store";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import type { CreatePolicyRequest, Policy, UpdatePolicyRequest } from "@/types/api";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -80,6 +83,10 @@ export default function PoliciesPage() {
   const queryClient = useQueryClient();
   const currentSite = useSiteStore((s) => s.currentSite);
   const clearSite = useSiteStore((s) => s.clearSite);
+  const { permissions, roles } = usePermissions();
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editPolicy, setEditPolicy] = useState<Policy | null>(null);
   const [scopeFilter, setScopeFilter] = useState("__all__");
@@ -165,6 +172,17 @@ export default function PoliciesPage() {
   const totalMonthly = visiblePolicies
     .filter((policy) => policy.status === "active")
     .reduce((acc, policy) => acc + policy.monthly_payment, 0);
+
+  // F7: guardia de contexto
+  if (isPlatformAdmin && !currentCompany) {
+    return (
+      <EmptyState
+        icon={FileText}
+        title="Selecciona una empresa"
+        description="Este modulo muestra polizas del tenant activo. Selecciona una empresa desde la barra de navegacion para continuar."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
