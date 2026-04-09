@@ -3,26 +3,41 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import type { UserAdmin } from "@/types/api";
+import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePermissions } from "@/hooks/use-permissions";
+import { registerTenantUser } from "@/lib/api/auth";
 import { listRoles } from "@/lib/api/roles";
 import { assignRole, changePassword, deactivateUser, listUsers, removeRole, updateUser } from "@/lib/api/users";
+import { useTenantStore } from "@/stores/tenant-store";
 import { getColumns } from "../../users/columns";
-import { PasswordDialog, RolesDialog, UserDialog, type UserFormValues } from "../../users/user-dialogs";
+import {
+  CreateUserDialog,
+  PasswordDialog,
+  RolesDialog,
+  UserDialog,
+  setUserAvatar,
+  type CreateUserFormValues,
+  type UserFormValues,
+} from "../../users/user-dialogs";
 
 export function UsersTab() {
   const queryClient = useQueryClient();
   const { canAny } = usePermissions();
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+
   const [editUser, setEditUser] = useState<UserAdmin | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [pwUser, setPwUser] = useState<UserAdmin | null>(null);
   const [pwDialogOpen, setPwDialogOpen] = useState(false);
   const [rolesUser, setRolesUser] = useState<UserAdmin | null>(null);
   const [rolesDialogOpen, setRolesDialogOpen] = useState(false);
 
+  const canCreateUser = canAny("users.create", "users:create:all");
   const canEditUser = canAny("users.update", "users:update:own", "users:update:all");
   const canChangePassword = canEditUser;
   const canManageRoles = canAny("roles.assign", "roles.update", "roles:update:own", "roles:update:all");
@@ -36,6 +51,45 @@ export function UsersTab() {
   const { data: roles = [] } = useQuery({
     queryKey: ["roles"],
     queryFn: listRoles,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async ({ values, themeCode, avatarDataUrl }: { values: CreateUserFormValues; themeCode: string | null; avatarDataUrl: string | null }) => {
+      if (!currentCompany) throw new Error("No hay tenant activo");
+      const user = await registerTenantUser({
+        tenant_id: currentCompany.id,
+        email: values.email,
+        password: values.password,
+        first_name: values.first_name,
+        last_name: values.last_name,
+        phone: values.phone,
+      });
+      // Asignar rol si se selecciono
+      if (values.role_id) {
+        await assignRole(user.id, values.role_id);
+      }
+      // Guardar tema en localStorage
+      if (themeCode) {
+        const key = "user_theme_assignments_v1";
+        try {
+          const raw = localStorage.getItem(key);
+          const themes = raw ? JSON.parse(raw) : {};
+          themes[user.id] = themeCode;
+          localStorage.setItem(key, JSON.stringify(themes));
+        } catch { /* ignorar */ }
+      }
+      // Guardar avatar en localStorage
+      if (avatarDataUrl) {
+        setUserAvatar(user.id, avatarDataUrl);
+      }
+      return user;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("Usuario creado exitosamente");
+      setCreateDialogOpen(false);
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "Error al crear usuario"),
   });
 
   const updateMutation = useMutation({
@@ -116,6 +170,20 @@ export function UsersTab() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {users.length} usuario{users.length !== 1 ? "s" : ""} registrado{users.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        {canCreateUser ? (
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo usuario
+          </Button>
+        ) : null}
+      </div>
+
       <DataTable
         columns={columns}
         data={users}
@@ -124,9 +192,22 @@ export function UsersTab() {
           <EmptyState
             icon={Users}
             title="No hay usuarios"
-            description="Los usuarios de este tenant se gestionan desde el sistema de autenticacion."
+            description="Crea el primer usuario de este tenant para empezar."
+            action={
+              canCreateUser
+                ? { label: "Nuevo usuario", onClick: () => setCreateDialogOpen(true) }
+                : undefined
+            }
           />
         }
+      />
+
+      <CreateUserDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={(values, themeCode, avatarDataUrl) => createMutation.mutate({ values, themeCode, avatarDataUrl })}
+        roles={roles}
+        isLoading={createMutation.isPending}
       />
 
       <UserDialog

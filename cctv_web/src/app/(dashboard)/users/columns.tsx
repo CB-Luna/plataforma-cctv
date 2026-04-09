@@ -5,6 +5,8 @@ import { MoreHorizontal, Pencil, Key, ShieldCheck, UserX } from "lucide-react";
 import type { UserAdmin } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
+import { ThemeBadge } from "@/components/theme-selector";
+import { getUserTheme, getUserAvatar } from "./user-dialogs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,21 +34,25 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
     {
       accessorKey: "email",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          {row.original.avatar_url ? (
-            <img src={row.original.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-              {row.original.first_name?.[0]}{row.original.last_name?.[0]}
+      cell: ({ row }) => {
+        const localAvatar = getUserAvatar(row.original.id);
+        const avatarSrc = row.original.avatar_url || localAvatar;
+        return (
+          <div className="flex items-center gap-3">
+            {avatarSrc ? (
+              <img src={avatarSrc} alt="" className="h-8 w-8 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {row.original.first_name?.[0]}{row.original.last_name?.[0]}
+              </div>
+            )}
+            <div>
+              <div className="font-medium">{row.original.first_name} {row.original.last_name}</div>
+              <div className="text-xs text-muted-foreground">{row.original.email}</div>
             </div>
-          )}
-          <div>
-            <div className="font-medium">{row.original.first_name} {row.original.last_name}</div>
-            <div className="text-xs text-muted-foreground">{row.original.email}</div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       accessorKey: "phone",
@@ -72,6 +78,11 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
           )) ?? "—"}
         </div>
       ),
+    },
+    {
+      id: "theme",
+      header: "Tema",
+      cell: ({ row }) => <ThemeBadge themeCode={getUserTheme(row.original.id)} />,
     },
     {
       accessorKey: "last_login_at",
