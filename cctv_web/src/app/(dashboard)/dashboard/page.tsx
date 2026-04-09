@@ -273,15 +273,15 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Toggle de seccion operativa — en backoffice, colapsada por defecto */}
-      {experience.mode === "hybrid_backoffice" ? (
+      {/* Toggle de seccion operativa — solo si existe empresa activa en backoffice */}
+      {experience.mode === "hybrid_backoffice" && currentCompany ? (
         <Button
           variant="outline"
           className="w-full justify-between gap-2 border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
           onClick={() => setShowTenantOps((prev) => !prev)}
           data-testid="toggle-tenant-ops"
         >
-          <span>Operacion del tenant: {currentCompany?.name ?? "—"}</span>
+          <span>Operacion del tenant: {currentCompany.name}</span>
           <ChevronDown className={cn("h-4 w-4 transition-transform", showTenantOps && "rotate-180")} />
         </Button>
       ) : (
@@ -298,8 +298,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Contenido operativo: siempre visible en portal, colapsable en backoffice */}
-      {(experience.mode !== "hybrid_backoffice" || showTenantOps) && (
+      {/* Contenido operativo: siempre visible en portal, colapsable en backoffice solo si hay empresa */}
+      {(experience.mode !== "hybrid_backoffice" || (showTenantOps && currentCompany)) && (
       <>
       {/* Enterprise Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -145,7 +145,7 @@ export function StorageTab() {
           <EmptyState
             icon={HardDrive}
             title="Sin configuraciones de almacenamiento"
-            description="Configura un proveedor de almacenamiento para este tenant."
+            description="Configura el proveedor de almacenamiento de la plataforma o del tenant activo."
             action={
               canCreateConfig
                 ? {
