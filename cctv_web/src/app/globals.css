@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-geist-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -53,6 +53,11 @@
   --color-sidebar-nav-active: var(--sidebar-nav-text-active);
   --color-bg-page: var(--bg-page);
   --color-bg-surface: var(--bg-surface);
+
+  /* Colores de tenant expuestos como tokens Tailwind */
+  --color-tenant-primary: var(--tenant-primary);
+  --color-tenant-secondary: var(--tenant-secondary);
+  --color-tenant-tertiary: var(--tenant-tertiary);
 }
 
 :root {

@@ -18,6 +18,7 @@ import { getFloorPlanBySite } from "@/lib/api/floor-plans";
 import { listNvrs } from "@/lib/api/nvrs";
 import { listCameras } from "@/lib/api/cameras";
 import type { Camera, NvrServer } from "@/types/api";
+import { safeStatus } from "@/lib/safe-field";
 
 export default function TopologyPage() {
   const params = useParams();
@@ -103,11 +104,11 @@ export default function TopologyPage() {
           type: "default",
           position: { x: camX, y: 380 },
           data: {
-            label: `📷 ${cam.name}\n${cam.ip_address ?? ""}\n${cam.status ?? ""}`,
+            label: `📷 ${cam.name}\n${cam.ip_address ?? ""}\n${safeStatus(cam.status, cam.is_active)}`,
           },
           style: {
-            background: cam.status === "active" ? "#dcfce7" : "#fef3c7",
-            border: `1px solid ${cam.status === "active" ? "#22c55e" : "#f59e0b"}`,
+            background: safeStatus(cam.status, cam.is_active) === "active" ? "#dcfce7" : "#fef3c7",
+            border: `1px solid ${safeStatus(cam.status, cam.is_active) === "active" ? "#22c55e" : "#f59e0b"}`,
             borderRadius: 6,
             padding: "6px 12px",
             fontSize: "11px",

@@ -138,121 +138,6 @@ export default function DashboardPage() {
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-  const portalActions = useMemo(() => {
-    const actions: Array<{ href: string; label: string; description: string }> = [];
-
-    if (canAny("tickets.read", "tickets:read:own", "tickets:read:all")) {
-      actions.push({
-        href: "/tickets",
-        label: "Tickets",
-        description: "Gestiona incidentes, prioridades y estado operativo de la empresa.",
-      });
-    }
-
-    if (canAny("clients.read", "clients:read:own", "clients:read:all")) {
-      actions.push({
-        href: "/clients",
-        label: "Clientes y sitios",
-        description: "Consulta clientes atendidos y el contexto operativo por sucursal.",
-      });
-    }
-
-    if (
-      tenantProfile.enabledServices.includes("access_control") &&
-      canAny(
-        "inventory.read",
-        "inventory:read:own",
-        "inventory:read:all",
-        "settings.read",
-        "configuration.read",
-        "configuration:read:own",
-        "configuration:read:all",
-      )
-    ) {
-      actions.push({
-        href: "/access-control",
-        label: "Control de Acceso",
-        description: "Explora el scaffold WIP del dominio y define el camino operativo del tenant.",
-      });
-    }
-
-    if (
-      tenantProfile.enabledServices.includes("networking") &&
-      canAny(
-        "inventory.read",
-        "inventory:read:own",
-        "inventory:read:all",
-        "settings.read",
-        "configuration.read",
-        "configuration:read:own",
-        "configuration:read:all",
-      )
-    ) {
-      actions.push({
-        href: "/networking",
-        label: "Redes",
-        description: "Consulta la base visible del dominio de redes mientras el modulo termina de madurar.",
-      });
-    }
-
-    if (canAny("users.read", "users:read:own", "users:read:all")) {
-      actions.push({
-        href: "/settings?tab=usuarios",
-        label: "Mi equipo",
-        description: "Administra usuarios internos del tenant activo.",
-      });
-    }
-
-    if (canAny("roles.read", "roles:read:own", "roles:read:all", "permissions:read:all")) {
-      actions.push({
-        href: "/settings?tab=roles",
-        label: "Roles internos",
-        description: "Ajusta perfiles internos del tenant sin tocar el backoffice global.",
-      });
-    }
-
-    if (
-      canAny(
-        "settings.read",
-        "configuration.read",
-        "configuration:read:own",
-        "configuration:read:all",
-        "themes:read:own",
-        "themes:read:all",
-      )
-    ) {
-      actions.push({
-        href: "/settings?tab=tema",
-        label: "Branding y empresa",
-        description: "Revisa plan, servicios visibles e identidad del tenant activo.",
-      });
-    }
-
-    if (
-      tenantProfile.enabledServices.includes("storage") &&
-      canAny("storage.read", "storage:read:own", "storage:read:all")
-    ) {
-      actions.push({
-        href: "/settings?tab=almacenamiento",
-        label: "Storage",
-        description: "Consulta configuraciones de almacenamiento de la empresa.",
-      });
-    }
-
-    if (
-      tenantProfile.enabledServices.includes("intelligence") &&
-      canAny("ai_models.read", "ai_models:read:own", "ai_models:read:all")
-    ) {
-      actions.push({
-        href: "/settings?tab=ia",
-        label: "IA",
-        description: "Revisa modelos y configuracion de inteligencia para la empresa.",
-      });
-    }
-
-    return actions.slice(0, 6);
-  }, [canAny, tenantProfile.enabledServices]);
-
   return (
     <div className="space-y-6">
       {experience.mode === "hybrid_backoffice" ? (
@@ -269,7 +154,6 @@ export default function DashboardPage() {
           plan={tenantProfile.packageProfile}
           services={tenantProfile.enabledServices}
           currentSiteName={currentSite?.name}
-          actions={portalActions}
         />
       )}
 

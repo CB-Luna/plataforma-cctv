@@ -34,6 +34,7 @@ import { useSiteStore } from "@/stores/site-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { SiteSelector } from "./site-selector";
+import { CompanySelector } from "./company-selector";
 
 const breadcrumbMap: Record<string, string> = {
   dashboard: "Dashboard",
@@ -168,15 +169,18 @@ export function Header() {
           </kbd>
         </button>
 
+        <CompanySelector />
         <SiteSelector />
 
         {experience.mode === "hybrid_backoffice" ? (
-          <div className="hidden items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 sm:flex dark:border-sky-800 dark:bg-sky-950/40">
-            <div className="flex h-5 w-5 items-center justify-center rounded bg-sky-600 text-white dark:bg-sky-500">
-              <Monitor className="h-3 w-3" />
+          <div className="hidden items-center gap-1.5 sm:flex">
+            <div className="flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 dark:border-sky-800 dark:bg-sky-950/40">
+              <div className="flex h-5 w-5 items-center justify-center rounded bg-sky-600 text-white dark:bg-sky-500">
+                <Monitor className="h-3 w-3" />
+              </div>
+              <span className="text-xs font-medium text-sky-700 dark:text-sky-300">Plataforma</span>
+              <Badge variant="outline" className="border-sky-300 text-[10px] px-1.5 py-0 text-sky-600 dark:border-sky-700 dark:text-sky-400">{experience.roleLabel}</Badge>
             </div>
-            <span className="text-xs font-medium text-sky-700 dark:text-sky-300">Plataforma</span>
-            <Badge variant="outline" className="border-sky-300 text-[10px] px-1.5 py-0 text-sky-600 dark:border-sky-700 dark:text-sky-400">{experience.roleLabel}</Badge>
           </div>
         ) : currentCompany && experience.mode === "tenant_portal" ? (
           <div className="hidden items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 shadow-sm sm:flex dark:border-gray-700 dark:bg-gray-900">
@@ -234,7 +238,7 @@ export function Header() {
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
             <Avatar className="h-8 w-8 ring-2 ring-gray-200 dark:ring-gray-700">
-              <AvatarFallback className="bg-gradient-to-br from-sky-500 to-blue-700 text-xs font-bold text-white">
+              <AvatarFallback className="text-xs font-bold text-white" style={{ background: `linear-gradient(135deg, var(--tenant-primary, #38bdf8), color-mix(in srgb, var(--tenant-primary, #1d4ed8) 70%, #000))` }}>
                 {initials}
               </AvatarFallback>
             </Avatar>

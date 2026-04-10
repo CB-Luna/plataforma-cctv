@@ -67,9 +67,62 @@ describe("workspace experience", () => {
     });
 
     expect(experience.mode).toBe("hybrid_backoffice");
-    expect(experience.shellRootLabel).toBe("Backoffice");
+    expect(experience.shellRootLabel).toBe("Plataforma");
     expect(experience.settingsLabel).toBe("Configuracion");
     expect(experience.roleContext).toBe("mixed");
+  });
+
+  it("detects tenant_portal when roles are empty but company exists (tenant user sin rol asignado)", () => {
+    const experience = getWorkspaceExperience({
+      permissions: [
+        ...tenantPermissions,
+        { id: "p4", code: "permissions:read:all", description: "permissions", module: "permissions", created_at: "2026-04-07T00:00:00Z" },
+      ],
+      roles: [],
+      company,
+    });
+
+    expect(experience.mode).toBe("tenant_portal");
+    expect(experience.shellRootLabel).toBe("Portal");
+    expect(experience.roleLabel).toBe("Sin rol confirmado");
+  });
+
+  it("detects hybrid_backoffice when no roles, no company and platform permissions exist", () => {
+    const experience = getWorkspaceExperience({
+      permissions: [
+        { id: "p4", code: "permissions:read:all", description: "permissions", module: "permissions", created_at: "2026-04-07T00:00:00Z" },
+        { id: "p5", code: "tenants.read", description: "tenants", module: "tenants", created_at: "2026-04-07T00:00:00Z" },
+      ],
+      roles: [],
+      company: null,
+    });
+
+    expect(experience.mode).toBe("hybrid_backoffice");
+    expect(experience.shellRootLabel).toBe("Plataforma");
+  });
+
+  it("detects tenant_portal for tenant_admin role (is_system but should be tenant)", () => {
+    const experience = getWorkspaceExperience({
+      permissions: [
+        ...tenantPermissions,
+        { id: "p4", code: "permissions:read:all", description: "permissions", module: "permissions", created_at: "2026-04-07T00:00:00Z" },
+      ],
+      roles: [
+        {
+          id: "r-ta",
+          tenant_id: "tenant-1",
+          name: "tenant_admin",
+          description: "Administrador de tenant",
+          is_system: true,
+          created_at: "2026-04-07T00:00:00Z",
+        },
+      ],
+      company,
+    });
+
+    expect(experience.mode).toBe("tenant_portal");
+    expect(experience.shellRootLabel).toBe("Portal");
+    expect(experience.roleLabel).toBe("tenant_admin");
   });
 
   it("picks the first visible tenant settings tab based on permissions and services", () => {

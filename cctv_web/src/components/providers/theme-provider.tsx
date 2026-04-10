@@ -35,7 +35,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const { primary_color, secondary_color, tertiary_color } = currentCompany;
 
-    if (primary_color) root.style.setProperty("--tenant-primary", primary_color);
+    if (primary_color) {
+      root.style.setProperty("--tenant-primary", primary_color);
+      // Sincronizar el indicador activo del sidebar con el color de la empresa
+      root.style.setProperty("--sidebar-nav-indicator", primary_color);
+    }
     if (secondary_color) root.style.setProperty("--tenant-secondary", secondary_color);
     if (tertiary_color) root.style.setProperty("--tenant-tertiary", tertiary_color);
 
@@ -43,6 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.style.removeProperty("--tenant-primary");
       root.style.removeProperty("--tenant-secondary");
       root.style.removeProperty("--tenant-tertiary");
+      root.style.removeProperty("--sidebar-nav-indicator");
     };
   }, [currentCompany]);
 

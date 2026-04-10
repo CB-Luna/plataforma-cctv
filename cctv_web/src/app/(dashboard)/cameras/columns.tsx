@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import type { Camera } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
+import { safeString, safeStatus } from "@/lib/safe-field";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,10 +56,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Camera>[] {
       accessorKey: "camera_type",
       header: "Tipo",
       cell: ({ row }) => {
-        const rawType = row.original.camera_type;
-        if (!rawType) return "—";
-        // Backend may return object {inventory_camera_type: string, valid: boolean} or plain string
-        const type = typeof rawType === "string" ? rawType : (rawType as Record<string, unknown>).inventory_camera_type as string ?? "";
+        const type = safeString(row.original.camera_type, "");
         if (!type) return "—";
         const labels: Record<string, string> = {
           dome: "Domo",
@@ -114,7 +112,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<Camera>[] {
       accessorKey: "status",
       header: "Estado",
       cell: ({ row }) => {
-        const status = row.original.status ?? (row.original.is_active ? "active" : "inactive");
+        const status = safeStatus(row.original.status, row.original.is_active);
         return (
           <Badge variant={status === "active" ? "default" : "secondary"}>
             {status === "active" ? "Activo" : "Inactivo"}

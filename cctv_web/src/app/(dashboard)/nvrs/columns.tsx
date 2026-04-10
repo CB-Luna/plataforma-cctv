@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { safeStatus } from "@/lib/safe-field";
 
 interface ColumnActions {
   onDelete: (nvr: NvrServer) => void;
@@ -75,7 +76,7 @@ export function getColumns(actions: ColumnActions): ColumnDef<NvrServer>[] {
       accessorKey: "status",
       header: "Estado",
       cell: ({ row }) => {
-        const status = row.original.status ?? (row.original.is_active ? "active" : "inactive");
+        const status = safeStatus(row.original.status, row.original.is_active);
         return (
           <Badge variant={status === "active" ? "default" : "secondary"}>
             {status === "active" ? "Activo" : status === "maintenance" ? "Mant." : "Inactivo"}

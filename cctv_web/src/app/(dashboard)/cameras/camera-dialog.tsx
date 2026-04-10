@@ -193,9 +193,9 @@ export function CameraDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3">
           <Card className="border-amber-200 bg-amber-50/80">
-            <CardContent className="flex gap-3 py-4">
+            <CardContent className="flex gap-3 py-3 px-4">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
               <div className="text-sm text-amber-900">
                 <p className="font-medium">Capacidad manual acotada al contrato actual</p>
@@ -207,7 +207,7 @@ export function CameraDialog({
             </CardContent>
           </Card>
           <Card className="border-sky-200 bg-sky-50/80">
-            <CardContent className="flex gap-3 py-4">
+            <CardContent className="flex gap-3 py-3 px-4">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" />
               <div className="text-sm text-sky-950">
                 <p className="font-medium">Contexto recomendado</p>

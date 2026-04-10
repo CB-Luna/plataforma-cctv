@@ -75,14 +75,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
 
-    const activeCompany = companies[0];
-    if (!activeCompany) {
+    if (companies.length === 0) {
       void hydrateSession();
       return;
     }
 
-    if (!currentCompany || currentCompany.id !== activeCompany.id || currentCompany.id !== user.tenant_id) {
-      setCompany(activeCompany);
+    // Solo establecer empresa si no hay ninguna seleccionada,
+    // o si la seleccionada ya no existe en la lista de empresas.
+    // Esto permite al Admin Sistema cambiar de empresa sin que se resetee.
+    if (!currentCompany || !companies.some((c) => c.id === currentCompany.id)) {
+      setCompany(companies[0]);
     }
 
     setIsHydrating(false);

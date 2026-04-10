@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Camera as CameraIcon, Eye, Search, Upload } from "lucide-react";
+import { AlertTriangle, Building2, Camera as CameraIcon, Eye, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { searchCameras, createCamera, deleteCamera, getCameraStats, listCameras } from "@/lib/api/cameras";
 import { createImportBatch, processImportBatch } from "@/lib/api/imports";
@@ -11,7 +11,11 @@ import { listNvrs } from "@/lib/api/nvrs";
 import { listSites } from "@/lib/api/sites";
 import type { Camera } from "@/types/api";
 import { useSiteStore } from "@/stores/site-store";
+import { useTenantStore } from "@/stores/tenant-store";
+import { usePermissions } from "@/hooks/use-permissions";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { filterByActiveSite } from "@/lib/site-context";
+import { safeString, safeStatus } from "@/lib/safe-field";
 import { CameraDialog, type CameraFormValues } from "./camera-dialog";
 import { ImportDialog, type ImportSubmissionPayload } from "../imports/import-dialog";
 import { getColumns } from "./columns";
@@ -29,6 +33,11 @@ export default function CamerasPage() {
   const currentSite = useSiteStore((state) => state.currentSite);
   const clearSite = useSiteStore((state) => state.clearSite);
 
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const { permissions, roles } = usePermissions();
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,6 +47,7 @@ export default function CamerasPage() {
   const { data: cameras = [], isLoading } = useQuery({
     queryKey: ["cameras"],
     queryFn: () => listCameras({ limit: 200 }),
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: stats } = useQuery({
@@ -102,7 +112,7 @@ export default function CamerasPage() {
     if (!currentSite) return stats;
 
     const activeCameras = scopedCameras.filter((camera) => {
-      const status = camera.status ?? (camera.is_active ? "active" : "inactive");
+      const status = safeStatus(camera.status, camera.is_active);
       return status === "active";
     });
 
@@ -110,9 +120,9 @@ export default function CamerasPage() {
       total_cameras: scopedCameras.length,
       active_cameras: activeCameras.length,
       inactive_cameras: scopedCameras.length - activeCameras.length,
-      dome_cameras: scopedCameras.filter((camera) => String(camera.camera_type ?? "").toLowerCase().includes("dome")).length,
-      bullet_cameras: scopedCameras.filter((camera) => String(camera.camera_type ?? "").toLowerCase().includes("bullet")).length,
-      ptz_cameras: scopedCameras.filter((camera) => String(camera.camera_type ?? "").toLowerCase().includes("ptz")).length,
+      dome_cameras: scopedCameras.filter((camera) => safeString(camera.camera_type, "").toLowerCase().includes("dome")).length,
+      bullet_cameras: scopedCameras.filter((camera) => safeString(camera.camera_type, "").toLowerCase().includes("bullet")).length,
+      ptz_cameras: scopedCameras.filter((camera) => safeString(camera.camera_type, "").toLowerCase().includes("ptz")).length,
       counting_enabled: scopedCameras.filter((camera) => camera.counting_enabled).length,
     };
   }, [currentSite, scopedCameras, stats]);
@@ -180,6 +190,23 @@ export default function CamerasPage() {
 
   return (
     <div className="space-y-6">
+      {/* Guard: Admin del Sistema sin empresa seleccionada */}
+      {isPlatformAdmin && !currentCompany ? (
+        <>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Camaras</h2>
+            <p className="text-muted-foreground">
+              Inventario operativo CCTV.
+            </p>
+          </div>
+          <EmptyState
+            icon={Building2}
+            title="Selecciona una empresa"
+            description="Para ver y gestionar camaras, primero selecciona una empresa desde Configuracion."
+          />
+        </>
+      ) : (
+        <>
       <SiteContextBanner
         site={currentSite}
         description="La tabla, los KPI y el alta manual se acotan al sitio activo. Limpia el contexto para volver al inventario agregado del tenant."
@@ -317,19 +344,25 @@ export default function CamerasPage() {
         )}
       />
 
-      <CameraDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={handleSubmit}
-        isSubmitting={createMutation.isPending}
-      />
+      {dialogOpen && (
+        <CameraDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onSubmit={handleSubmit}
+          isSubmitting={createMutation.isPending}
+        />
+      )}
 
-      <ImportDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onSubmit={(payload) => importMutation.mutate(payload)}
-        isLoading={importMutation.isPending}
-      />
+      {importOpen && (
+        <ImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onSubmit={(payload) => importMutation.mutate(payload)}
+          isLoading={importMutation.isPending}
+        />
+      )}
+        </>
+      )}
     </div>
   );
 }

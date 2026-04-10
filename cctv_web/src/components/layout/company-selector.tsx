@@ -1,0 +1,92 @@
+"use client";
+
+import { useQueryClient } from "@tanstack/react-query";
+import { Building2, ChevronDown, Check } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuthStore } from "@/stores/auth-store";
+import { useTenantStore } from "@/stores/tenant-store";
+import { useSiteStore } from "@/stores/site-store";
+
+/**
+ * Selector global de empresa.
+ * - Admin Sistema: dropdown con todas las empresas disponibles.
+ * - Tenant Admin (1 sola empresa): no se renderiza (el contexto ya es fijo).
+ */
+export function CompanySelector() {
+  const companies = useAuthStore((s) => s.companies);
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const setCompany = useTenantStore((s) => s.setCompany);
+  const clearSite = useSiteStore((s) => s.clearSite);
+  const queryClient = useQueryClient();
+
+  // Si solo hay una empresa, el contexto es fijo — no mostrar selector
+  if (companies.length <= 1) return null;
+
+  function handleSelect(company: typeof companies[0]) {
+    if (company.id === currentCompany?.id) return;
+    setCompany(company);
+    // Limpiar sucursal activa al cambiar de empresa
+    clearSite();
+    // Invalidar queries que dependen del contexto de tenant
+    void queryClient.invalidateQueries({ queryKey: ["sites"] });
+    void queryClient.invalidateQueries({ queryKey: ["cameras"] });
+    void queryClient.invalidateQueries({ queryKey: ["nvrs"] });
+    void queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    void queryClient.invalidateQueries({ queryKey: ["tickets"] });
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800">
+        <div
+          className="flex h-5 w-5 items-center justify-center rounded"
+          style={{ backgroundColor: currentCompany?.primary_color ?? "#6366f1" }}
+        >
+          <Building2 className="h-3 w-3 text-white" />
+        </div>
+        <span className="hidden max-w-[140px] truncate font-medium sm:inline">
+          {currentCompany?.name ?? "Seleccionar empresa"}
+        </span>
+        <ChevronDown className="h-3 w-3 text-muted-foreground" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72">
+        <DropdownMenuLabel>Empresas disponibles</DropdownMenuLabel>
+        <p className="px-2 pb-2 text-xs text-muted-foreground">
+          Selecciona una empresa para inspeccionar sus datos, sucursales y configuracion.
+        </p>
+        <DropdownMenuSeparator />
+        {companies.map((company) => {
+          const isSelected = company.id === currentCompany?.id;
+          return (
+            <DropdownMenuItem
+              key={company.id}
+              onClick={() => handleSelect(company)}
+              className="flex items-center gap-2.5"
+            >
+              <div
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white"
+                style={{ backgroundColor: company.primary_color ?? "#6366f1" }}
+              >
+                <Building2 className="h-3.5 w-3.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{company.name}</p>
+                <p className="truncate text-xs text-muted-foreground">{company.slug}</p>
+              </div>
+              {isSelected && (
+                <Check className="h-4 w-4 shrink-0 text-primary" />
+              )}
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

@@ -115,15 +115,27 @@ export default function ImportsPage() {
     failed_batches?: number;
   } | undefined;
 
-  return (
-    <div className="space-y-6">
-      {isPlatformAdmin && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
-          <p className="text-sm text-blue-700">
-            Estas viendo importaciones en modo plataforma. Los lotes listados corresponden al contexto de servidor activo.
+  // Guard: Admin del Sistema sin empresa seleccionada no puede operar imports
+  if (isPlatformAdmin && !currentCompany) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Importacion masiva</h1>
+          <p className="text-muted-foreground">
+            Carga CSV o Excel, revisa el mapeo y crea batches reales para camaras y NVR.
           </p>
         </div>
-      )}
+        <EmptyState
+          icon={Building2}
+          title="Selecciona una empresa"
+          description="Para ver y gestionar importaciones, primero selecciona una empresa desde Configuracion."
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
       <>
       <div className="flex items-center justify-between">
         <div>
@@ -192,22 +204,26 @@ export default function ImportsPage() {
         )}
       />
 
-      <ImportDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSubmit={(values) => createMutation.mutate(values)}
-        isLoading={createMutation.isPending}
-      />
+      {createOpen && (
+        <ImportDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSubmit={(values) => createMutation.mutate(values)}
+          isLoading={createMutation.isPending}
+        />
+      )}
 
-      <BatchDetailDialog
-        open={!!detailBatch}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDetailBatch(null);
-          }
-        }}
-        batch={detailBatch}
-      />
+      {!!detailBatch && (
+        <BatchDetailDialog
+          open={!!detailBatch}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDetailBatch(null);
+            }
+          }}
+          batch={detailBatch}
+        />
+      )}
       </>
     </div>
   );

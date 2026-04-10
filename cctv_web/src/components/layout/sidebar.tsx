@@ -79,47 +79,11 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
     <div className="flex h-full flex-col">
       <SidebarBranding
         collapsed={collapsed}
-        companyName={experience.mode === "tenant_portal" ? currentCompany?.name : undefined}
+        company={experience.mode === "tenant_portal" ? currentCompany : undefined}
         experienceBadge={experience.shellBadgeLabel}
+        roleLabel={experience.roleLabel}
+        services={visibleRuntimeServices}
       />
-
-      {experience.mode === "tenant_portal" && currentCompany && !collapsed ? (
-        <div className="mx-3 mt-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90">
-          <div className="flex items-center gap-2">
-            {currentCompany.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={currentCompany.logo_url}
-                alt={currentCompany.name}
-                className="h-8 w-8 rounded-xl border border-white/10 object-cover"
-              />
-            ) : (
-              <div
-                className="flex h-8 w-8 items-center justify-center rounded-xl text-white"
-                style={{ backgroundColor: currentCompany.primary_color ?? "#1976D2" }}
-              >
-                <Building2 className="h-4 w-4" />
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{currentCompany.name}</p>
-              <p className="truncate text-[11px] text-slate-300">{experience.roleLabel}</p>
-            </div>
-          </div>
-          {visibleRuntimeServices.length ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {visibleRuntimeServices.map((serviceCode) => (
-                <span
-                  key={`sidebar-service-${serviceCode}`}
-                  className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80"
-                >
-                  {PRODUCT_SERVICE_DEFINITIONS[serviceCode].shortLabel}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
 
       <nav
         className={cn(
@@ -216,29 +180,68 @@ function SidebarSeparator({ collapsed }: { collapsed: boolean }) {
 
 function SidebarBranding({
   collapsed,
-  companyName,
+  company,
   experienceBadge,
+  roleLabel,
+  services,
 }: {
   collapsed: boolean;
-  companyName?: string;
+  company?: { name: string; logo_url?: string | null; primary_color?: string | null } | null;
   experienceBadge: string;
+  roleLabel?: string;
+  services?: ProductServiceCode[];
 }) {
+  const isTenant = Boolean(company);
+
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center border-b border-white/10",
-        collapsed ? "h-16 justify-center px-2" : "h-16 gap-3 px-6",
+        "shrink-0 border-b border-white/10",
+        collapsed ? "flex h-16 items-center justify-center px-2" : "px-4 py-4",
       )}
     >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-blue-600 text-sm font-bold text-white shadow-lg shadow-sky-500/25">
-        <Camera className="h-4 w-4" />
+      <div className={cn("flex items-center", collapsed ? "" : "gap-3")}>
+        {isTenant && company?.logo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={company.logo_url}
+            alt={company.name}
+            className="h-9 w-9 shrink-0 rounded-xl border border-white/10 object-cover"
+          />
+        ) : isTenant && company ? (
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
+            style={{ backgroundColor: company.primary_color ?? "#1976D2" }}
+          >
+            {company.name.charAt(0).toUpperCase()}
+          </div>
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white shadow-lg" style={{ background: `linear-gradient(135deg, var(--tenant-primary, #38bdf8), color-mix(in srgb, var(--tenant-primary, #2563eb) 70%, #000))` }}>
+            <Camera className="h-4 w-4" />
+          </div>
+        )}
+        {!collapsed ? (
+          <div className="min-w-0">
+            <h2 className="truncate text-sm font-bold leading-tight text-white">
+              {company?.name ?? "SyMTickets"}
+            </h2>
+            <p className="truncate text-[10px] leading-tight text-slate-400/70">
+              {isTenant && roleLabel ? roleLabel : experienceBadge}
+            </p>
+          </div>
+        ) : null}
       </div>
-      {!collapsed ? (
-        <div className="min-w-0">
-          <h2 className="truncate text-sm font-bold leading-tight text-white">
-            {companyName ?? "SyMTickets"}
-          </h2>
-          <p className="truncate text-[10px] leading-tight text-slate-400/70">{experienceBadge}</p>
+      {/* Servicios visibles del tenant */}
+      {!collapsed && isTenant && services && services.length > 0 ? (
+        <div className="mt-2.5 flex flex-wrap gap-1.5 pl-12">
+          {services.map((serviceCode) => (
+            <span
+              key={`sidebar-service-${serviceCode}`}
+              className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-medium text-white/80"
+            >
+              {PRODUCT_SERVICE_DEFINITIONS[serviceCode].shortLabel}
+            </span>
+          ))}
         </div>
       ) : null}
     </div>
@@ -285,13 +288,13 @@ function MenuLink({
       )}
     >
       {active && !collapsed ? (
-        <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-sky-400" />
+        <span className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-tenant-primary" />
       ) : null}
       {renderIcon(
         item.icon,
         cn(
           "h-5 w-5 shrink-0 transition-transform duration-200",
-          active ? "scale-110 text-sky-400" : "text-slate-500 group-hover:text-slate-300",
+          active ? "scale-110 text-tenant-primary" : "text-slate-500 group-hover:text-slate-300",
         ),
       )}
       {!collapsed ? <span>{item.label}</span> : null}

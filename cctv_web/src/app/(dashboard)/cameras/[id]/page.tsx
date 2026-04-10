@@ -18,6 +18,7 @@ import {
   BarChart3,
   Info,
 } from "lucide-react";
+import { safeString, safeStatus } from "@/lib/safe-field";
 
 function Field({ label, value }: { label: string; value?: string | number | boolean | null }) {
   if (value == null || value === "") return null;
@@ -79,7 +80,7 @@ export default function CameraDetailPage({ params }: { params: Promise<{ id: str
           )}
         </div>
         <Badge variant={camera.is_active ? "default" : "secondary"}>
-          {camera.status ?? (camera.is_active ? "Activa" : "Inactiva")}
+          {safeStatus(camera.status, camera.is_active) === "active" ? "Activa" : "Inactiva"}
         </Badge>
       </div>
 
@@ -94,7 +95,7 @@ export default function CameraDetailPage({ params }: { params: Promise<{ id: str
           </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-2 gap-4">
-              <Field label="Tipo" value={camera.camera_type} />
+              <Field label="Tipo" value={safeString(camera.camera_type)} />
               <Field label="Modelo" value={camera.camera_model_name} />
               <Field label="Generación" value={camera.generation} />
               <Field label="No. Serie" value={camera.serial_number} />

@@ -2,7 +2,8 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Edit2, MapPin, Plus, Trash2 } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Building2, Edit2, Info, MapPin, Plus, Trash2 } from "lucide-react";
 import type { SiteListItem } from "@/types/api";
 import { listSites } from "@/lib/api/sites";
 import {
@@ -12,6 +13,10 @@ import {
   updateLocalSite,
   type LocalSite,
 } from "@/lib/sites/local-sites-store";
+import { useTenantStore } from "@/stores/tenant-store";
+import { usePermissions } from "@/hooks/use-permissions";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,6 +37,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+// Mapa Leaflet lazy-load (requiere browser)
+const BranchMap = dynamic(() => import("@/components/map/branch-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
+      Cargando mapa...
+    </div>
+  ),
+});
+
+// Mini mapa interactivo para seleccionar ubicacion en dialogo
+const MiniMapPicker = dynamic(() => import("@/components/map/mini-map-picker"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[220px] items-center justify-center rounded-lg border bg-muted/20 text-sm text-muted-foreground">
+      Cargando mapa...
+    </div>
+  ),
+});
 
 // ---------- formulario -------------------------------------------------------
 
@@ -82,7 +107,7 @@ function SiteDialog({ open, onOpenChange, initial, title, onSave }: SiteDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -142,13 +167,26 @@ function SiteDialog({ open, onOpenChange, initial, title, onSave }: SiteDialogPr
             </div>
           </div>
 
-          {/* Coordenadas */}
+          {/* Coordenadas + mini mapa interactivo */}
           <div className="rounded-lg border bg-muted/40 p-3">
             <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
               <MapPin className="h-3.5 w-3.5" />
-              Coordenadas para el mapa (opcional)
+              Ubicacion en el mapa — haz clic para colocar el marcador
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="h-[220px] overflow-hidden rounded-lg border">
+              <MiniMapPicker
+                lat={form.lat ? parseFloat(form.lat) : undefined}
+                lng={form.lng ? parseFloat(form.lng) : undefined}
+                onPositionChange={(lat, lng) => {
+                  setForm((f) => ({
+                    ...f,
+                    lat: lat.toFixed(6),
+                    lng: lng.toFixed(6),
+                  }));
+                }}
+              />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
                 <Label>Latitud</Label>
                 <Input
@@ -173,7 +211,7 @@ function SiteDialog({ open, onOpenChange, initial, title, onSave }: SiteDialogPr
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Puedes obtener las coordenadas haciendo clic derecho en Google Maps.
+              Tambien puedes escribir las coordenadas manualmente.
             </p>
           </div>
         </div>
@@ -200,12 +238,18 @@ export default function SitesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<LocalSite | null>(null);
 
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const { permissions, roles } = usePermissions();
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
+
   const { data: apiSites = [], isLoading } = useQuery<SiteListItem[]>({
     queryKey: ["sites"],
     queryFn: listSites,
     retry: false,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: false,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const allSites = useMemo<CombinedSite[]>(() => {
@@ -274,6 +318,23 @@ export default function SitesPage() {
 
   return (
     <div className="space-y-5">
+      {/* Guard: Admin del Sistema sin empresa seleccionada */}
+      {isPlatformAdmin && !currentCompany ? (
+        <>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Sucursales</h1>
+            <p className="text-sm text-muted-foreground">
+              Gestiona las ubicaciones de cada empresa.
+            </p>
+          </div>
+          <EmptyState
+            icon={Building2}
+            title="Selecciona una empresa"
+            description="Para ver las sucursales, primero selecciona una empresa desde Configuracion."
+          />
+        </>
+      ) : (
+        <>
       {/* Encabezado */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -289,22 +350,17 @@ export default function SitesPage() {
         </Button>
       </div>
 
-      {/* Nota sobre sucursales de API vs locales */}
-      {localSites.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5">
-          <p className="text-xs text-amber-700">
-            <strong>Sucursales locales:</strong> Las sucursales con el badge{" "}
-            <Badge
-              variant="outline"
-              className="border-amber-400 py-0 text-[10px] text-amber-600"
-            >
-              local
-            </Badge>{" "}
-            se guardan en este dispositivo. Para persistirlas en el servidor contacta al
-            administrador de plataforma.
-          </p>
-        </div>
-      )}
+      {/* Banner GAP-01: creacion de sucursales en modo preparacion */}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 dark:border-blue-800 dark:bg-blue-950/30">
+        <p className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+          <Info className="h-3.5 w-3.5 shrink-0" />
+          <span>
+            <strong>Modo preparacion:</strong> La creacion y edicion de sucursales se guarda
+            localmente en este dispositivo. La persistencia en servidor estara disponible
+            proximamente.
+          </span>
+        </p>
+      </div>
 
       {/* Tabla */}
       <Card>
@@ -441,6 +497,27 @@ export default function SitesPage() {
         title="Editar sucursal"
         onSave={handleUpdate}
       />
+
+      {/* Mapa de sucursales */}
+      {allSites.length > 0 && (
+        <Card>
+          <CardContent className="h-[350px] p-0 overflow-hidden rounded-xl">
+            <BranchMap sites={allSites.map((s) => ({
+              id: s.id,
+              name: s.name,
+              client_name: s.client_name,
+              address: s.address,
+              city: s.city,
+              state: s.state,
+              camera_count: s.camera_count ?? 0,
+              nvr_count: s.nvr_count ?? 0,
+              has_floor_plan: false,
+            }))} filterClient="" />
+          </CardContent>
+        </Card>
+      )}
+        </>
+      )}
     </div>
   );
 }

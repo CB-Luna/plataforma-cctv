@@ -2,14 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, HardDrive, Server } from "lucide-react";
+import { AlertTriangle, Building2, HardDrive, Server } from "lucide-react";
 import { toast } from "sonner";
 import { createNvr, deleteNvr, getNvrStats, listNvrs, updateNvr } from "@/lib/api/nvrs";
 import { listSites } from "@/lib/api/sites";
 import type { NvrServer } from "@/types/api";
 import { useSiteStore } from "@/stores/site-store";
+import { useTenantStore } from "@/stores/tenant-store";
+import { usePermissions } from "@/hooks/use-permissions";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { filterByActiveSite } from "@/lib/site-context";
 import { getColumns } from "./columns";
+import { safeStatus } from "@/lib/safe-field";
 import { NvrDialog, type NvrFormValues } from "./nvr-dialog";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
 import { DataTable } from "@/components/data-table";
@@ -23,12 +27,18 @@ export default function NvrsPage() {
   const currentSite = useSiteStore((state) => state.currentSite);
   const clearSite = useSiteStore((state) => state.clearSite);
 
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const { permissions, roles } = usePermissions();
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingNvr, setEditingNvr] = useState<NvrServer | null>(null);
 
   const { data: nvrs = [], isLoading } = useQuery({
     queryKey: ["nvrs"],
     queryFn: listNvrs,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: stats } = useQuery({
@@ -92,7 +102,7 @@ export default function NvrsPage() {
     if (!currentSite) return stats;
 
     const activeServers = scopedNvrs.filter((nvr) => {
-      const status = nvr.status ?? (nvr.is_active ? "active" : "inactive");
+      const status = safeStatus(nvr.status, nvr.is_active);
       return status === "active";
     });
 
@@ -134,6 +144,23 @@ export default function NvrsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Guard: Admin del Sistema sin empresa seleccionada */}
+      {isPlatformAdmin && !currentCompany ? (
+        <>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Servidores NVR</h2>
+            <p className="text-muted-foreground">
+              Infraestructura de grabacion.
+            </p>
+          </div>
+          <EmptyState
+            icon={Building2}
+            title="Selecciona una empresa"
+            description="Para ver y gestionar servidores NVR, primero selecciona una empresa desde Configuracion."
+          />
+        </>
+      ) : (
+        <>
       <SiteContextBanner
         site={currentSite}
         description="La lista, los KPI y el alta manual se acotan al sitio activo. Limpia el contexto para volver al agregado global del tenant."
@@ -245,6 +272,8 @@ export default function NvrsPage() {
         onSubmit={handleSubmit}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
       />
+        </>
+      )}
     </div>
   );
 }

@@ -4,9 +4,14 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { listSites } from "@/lib/api/sites";
-import { MapPin } from "lucide-react";
+import { listLocalSites, type LocalSite } from "@/lib/sites/local-sites-store";
+import type { SiteListItem } from "@/types/api";
+import { Building2, MapPin } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useSiteStore } from "@/stores/site-store";
+import { useTenantStore } from "@/stores/tenant-store";
+import { usePermissions } from "@/hooks/use-permissions";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -22,10 +27,34 @@ const BranchMap = dynamic(() => import("@/components/map/branch-map"), {
 export default function MapPage() {
   const currentSite = useSiteStore((state) => state.currentSite);
   const clearSite = useSiteStore((state) => state.clearSite);
-  const { data: sites = [] } = useQuery({
+
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const { permissions, roles } = usePermissions();
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
+
+  const { data: apiSites = [] } = useQuery({
     queryKey: ["sites"],
     queryFn: listSites,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
+
+  // Fusionar sitios de la API con sitios locales (GAP-01)
+  const sites = useMemo<SiteListItem[]>(() => {
+    const localSites = listLocalSites();
+    const localAsSiteList: SiteListItem[] = localSites.map((ls: LocalSite) => ({
+      id: ls.id,
+      name: ls.name,
+      client_name: ls.client_name,
+      address: ls.address,
+      city: ls.city,
+      state: ls.state,
+      camera_count: ls.camera_count ?? 0,
+      nvr_count: ls.nvr_count ?? 0,
+      has_floor_plan: false,
+    }));
+    return [...apiSites, ...localAsSiteList];
+  }, [apiSites]);
 
   const [filterClient, setFilterClient] = useState("");
 
@@ -42,6 +71,18 @@ export default function MapPage() {
     : filterClient
       ? sites.filter((site) => site.client_name === filterClient)
       : sites;
+
+  if (isPlatformAdmin && !currentCompany) {
+    return (
+      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
+        <EmptyState
+          icon={Building2}
+          title="Selecciona una empresa"
+          description="Para ver el mapa de sucursales, primero selecciona una empresa desde Configuracion."
+        />
+      </div>
+    );
+  }
 
   if (sites.length === 0) {
     return (

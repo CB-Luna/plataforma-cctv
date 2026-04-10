@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ThemeSelector, type ThemeSelection } from "@/components/theme-selector";
+import { Eye, EyeOff } from "lucide-react";
 import {
   ASSIGNABLE_SERVICE_CODES,
   COMMERCIAL_PLAN_PRESETS,
@@ -205,6 +207,12 @@ export function TenantDialog({
                   <ColorField label="Terciario" valueField="tertiary_color" register={register} />
                 </div>
               </div>
+
+              <ThemeSelector
+                value={null}
+                onChange={() => {}}
+                label="Tema visual (referencia)"
+              />
             </TabsContent>
 
             {/* === Tab: Servicios === */}
@@ -242,7 +250,7 @@ export function TenantDialog({
 
               <div className="space-y-3">
                 <Label>Servicios habilitados *</Label>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {assignableServices.map((service) => {
                     const serviceCode = service.code as AssignableServiceCode;
                     const selected = enabledServices.includes(serviceCode);
@@ -251,7 +259,7 @@ export function TenantDialog({
                     return (
                       <label
                         key={service.code}
-                        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+                        className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
                           selected
                             ? "border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20"
                             : "border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 dark:hover:bg-slate-900/60"
@@ -321,9 +329,11 @@ export function TenantDialog({
                         <Field label="Email *" error={errors.admin_email?.message}>
                           <Input type="email" {...register("admin_email")} />
                         </Field>
-                        <Field label="Contrasena *" error={errors.admin_password?.message}>
-                          <Input type="password" {...register("admin_password")} />
-                        </Field>
+                        <PasswordFieldInline
+                          label="Contrasena *"
+                          error={errors.admin_password?.message}
+                          register={register("admin_password")}
+                        />
                         <Field label="Telefono" error={errors.admin_phone?.message}>
                           <Input {...register("admin_phone")} />
                         </Field>
@@ -447,6 +457,39 @@ function ColorField({
         <Input type="color" className="h-9 w-12 p-1" {...register(valueField)} />
         <Input className="flex-1" {...register(valueField)} />
       </div>
+    </div>
+  );
+}
+
+function PasswordFieldInline({
+  label,
+  error,
+  register: reg,
+}: {
+  label: string;
+  error?: string;
+  register: ReturnType<ReturnType<typeof useForm<TenantFormValues>>["register"]>;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="relative">
+        <Input
+          type={show ? "text" : "password"}
+          className="pr-9"
+          {...reg}
+        />
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          onClick={() => setShow(!show)}
+          tabIndex={-1}
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );
 }

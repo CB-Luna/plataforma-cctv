@@ -37,11 +37,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { safeString, safeStatus } from "@/lib/safe-field";
 
 // ---------- helpers ---------------------------------------------------------
 
-function statusBadge(status: string | undefined, isActive: boolean) {
-  const s = status ?? (isActive ? "active" : "inactive");
+function statusBadge(status: unknown, isActive: boolean) {
+  const s = safeStatus(status, isActive);
   return (
     <Badge variant={s === "active" ? "default" : "secondary"} className="text-xs">
       {s === "active" ? "Activo" : s === "inactive" ? "Inactivo" : s}
@@ -98,7 +99,7 @@ function CamerasTable({ cameras }: { cameras: (CameraType | LocalCamera)[] }) {
                 <TableCell>
                   {cam.camera_type ? (
                     <Badge variant="outline" className="text-xs">
-                      {cam.camera_type}
+                      {safeString(cam.camera_type)}
                     </Badge>
                   ) : (
                     "—"
@@ -194,7 +195,7 @@ export default function InventoryPage() {
 
   // Tenants para Admin del Sistema
   const { data: tenants = [] } = useQuery<Tenant[]>({
-    queryKey: ["tenants-for-inventory"],
+    queryKey: ["tenants", "inventory"],
     queryFn: () => listTenants(200),
     enabled: isPlatformAdmin,
     retry: false,

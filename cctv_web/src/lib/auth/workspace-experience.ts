@@ -126,10 +126,11 @@ export function getWorkspaceExperience(params: {
   const hasPlatformRoles = params.roles.some(
     (role) => role.is_system && role.name !== "tenant_admin",
   );
-  // Fallback a permisos solo cuando no hay roles definidos (e.g. usuarios sin rol asignado)
+  // Fallback a permisos solo cuando no hay roles definidos Y no hay empresa activa.
+  // Si existe empresa (company), el usuario es un usuario de tenant sin importar sus permisos.
   const hasPlatformWorkspace =
     hasPlatformRoles ||
-    (params.roles.length === 0 && hasAnyPermission(permissionCodes, PLATFORM_PERMISSION_HINTS));
+    (!params.company && params.roles.length === 0 && hasAnyPermission(permissionCodes, PLATFORM_PERMISSION_HINTS));
   const roleContext = resolveRoleContext(params.roles);
   const mode: WorkspaceMode = hasPlatformWorkspace ? "hybrid_backoffice" : "tenant_portal";
   const companyName = params.company?.name ?? "tu empresa";

@@ -23,6 +23,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 const demoUsers = [
   { name: "Admin", email: "admin@demo.com", password: "Password123!", role: "Super Admin", color: "from-sky-500 to-blue-600", bg: "bg-sky-50 dark:bg-sky-950/30", border: "border-sky-500", ring: "ring-sky-200 dark:ring-sky-800" },
+  { name: "Calimax", email: "calimax@gmail.com", password: "empresa_calimax", role: "Tenant Admin", color: "from-red-500 to-rose-600", bg: "bg-red-50 dark:bg-red-950/30", border: "border-red-500", ring: "ring-red-200 dark:ring-red-800" },
   { name: "Operador", email: "operator@demo.com", password: "Password123!", role: "Operador", color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-800" },
   { name: "Técnico", email: "tech@demo.com", password: "Password123!", role: "Técnico", color: "from-amber-500 to-orange-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-500", ring: "ring-amber-200 dark:ring-amber-800" },
   { name: "Viewer", email: "viewer@demo.com", password: "Password123!", role: "Solo Lectura", color: "from-violet-500 to-purple-600", bg: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-500", ring: "ring-violet-200 dark:ring-violet-800" },
@@ -240,7 +241,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid grid-cols-3 gap-3">
               {demoUsers.map((demoUser) => {
                 const isSelected = selectedDemo === demoUser.email;
                 return (
