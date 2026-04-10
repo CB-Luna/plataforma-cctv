@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Map, Camera, Server, CheckCircle, Circle, Search, Building2, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { listFloorPlanSites } from "@/lib/api/floor-plans";
+import { useAllSites } from "@/hooks/use-all-sites";
 import { useSiteStore } from "@/stores/site-store";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
 
@@ -33,10 +32,7 @@ export default function FloorPlansPage() {
   const currentSite = useSiteStore((state) => state.currentSite);
   const clearSite = useSiteStore((state) => state.clearSite);
 
-  const { data: sites = [], isLoading } = useQuery({
-    queryKey: ["floor-plan-sites"],
-    queryFn: listFloorPlanSites,
-  });
+  const { sites, isLoading } = useAllSites();
 
   // Unique client names for filter
   const clientNames = useMemo(() => {
@@ -64,7 +60,7 @@ export default function FloorPlansPage() {
       );
     }
     return result;
-  }, [sites, clientFilter, search]);
+  }, [sites, clientFilter, search, currentSite]);
 
   const withPlan = sites.filter((s) => s.has_floor_plan).length;
 
@@ -144,10 +140,19 @@ export default function FloorPlansPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((site) => (
+              {filtered.map((site) => {
+                const isLocal = site.id.startsWith("local_");
+                return (
                 <TableRow key={site.id}>
                   <TableCell>
-                    <div className="font-medium">{site.name}</div>
+                    <div className="flex items-center gap-1.5 font-medium">
+                      {site.name}
+                      {isLocal && (
+                        <Badge variant="outline" className="border-amber-400 text-[10px] text-amber-600">
+                          local
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">{site.client_name ?? "—"}</span>
@@ -198,7 +203,8 @@ export default function FloorPlansPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </Card>

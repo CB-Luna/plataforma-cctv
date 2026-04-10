@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import { Building2, Edit2, Info, MapPin, Plus, Trash2 } from "lucide-react";
+import { Building2, Edit2, Info, List, MapIcon, MapPin, Plus, Trash2 } from "lucide-react";
 import type { SiteListItem } from "@/types/api";
 import { listSites } from "@/lib/api/sites";
 import {
@@ -237,6 +237,7 @@ export default function SitesPage() {
   const [localSites, setLocalSites] = useState<LocalSite[]>(() => listLocalSites());
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<LocalSite | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "map">("table");
 
   const currentCompany = useTenantStore((s) => s.currentCompany);
   const { permissions, roles } = usePermissions();
@@ -344,10 +345,33 @@ export default function SitesPage() {
             localmente y aparecen en el mapa con sus coordenadas.
           </p>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          Nueva sucursal
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Toggle vista tabla / mapa */}
+          <div className="flex rounded-md border">
+            <Button
+              size="sm"
+              variant={viewMode === "table" ? "default" : "ghost"}
+              className="rounded-r-none"
+              onClick={() => setViewMode("table")}
+            >
+              <List className="mr-1.5 h-4 w-4" />
+              Tabla
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === "map" ? "default" : "ghost"}
+              className="rounded-l-none"
+              onClick={() => setViewMode("map")}
+            >
+              <MapIcon className="mr-1.5 h-4 w-4" />
+              Mapa
+            </Button>
+          </div>
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Nueva sucursal
+          </Button>
+        </div>
       </div>
 
       {/* Banner GAP-01: creacion de sucursales en modo preparacion */}
@@ -362,7 +386,8 @@ export default function SitesPage() {
         </p>
       </div>
 
-      {/* Tabla */}
+      {/* Vista Tabla */}
+      {viewMode === "table" && (
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -480,6 +505,37 @@ export default function SitesPage() {
           </div>
         </CardContent>
       </Card>
+      )}
+
+      {/* Vista Mapa */}
+      {viewMode === "map" && (
+        allSites.length > 0 ? (
+        <Card>
+          <CardContent className="h-[calc(100vh-280px)] min-h-[400px] p-0 overflow-hidden rounded-xl">
+            <BranchMap sites={allSites.map((s) => ({
+              id: s.id,
+              name: s.name,
+              client_name: s.client_name,
+              address: s.address,
+              city: s.city,
+              state: s.state,
+              camera_count: s.camera_count ?? 0,
+              nvr_count: s.nvr_count ?? 0,
+              has_floor_plan: false,
+            }))} filterClient="" />
+          </CardContent>
+        </Card>
+        ) : (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <MapIcon className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
+            <p className="text-sm font-medium text-muted-foreground">
+              No hay sucursales para mostrar en el mapa
+            </p>
+          </CardContent>
+        </Card>
+        )
+      )}
 
       {/* Dialogo crear */}
       <SiteDialog
@@ -497,25 +553,6 @@ export default function SitesPage() {
         title="Editar sucursal"
         onSave={handleUpdate}
       />
-
-      {/* Mapa de sucursales */}
-      {allSites.length > 0 && (
-        <Card>
-          <CardContent className="h-[350px] p-0 overflow-hidden rounded-xl">
-            <BranchMap sites={allSites.map((s) => ({
-              id: s.id,
-              name: s.name,
-              client_name: s.client_name,
-              address: s.address,
-              city: s.city,
-              state: s.state,
-              camera_count: s.camera_count ?? 0,
-              nvr_count: s.nvr_count ?? 0,
-              has_floor_plan: false,
-            }))} filterClient="" />
-          </CardContent>
-        </Card>
-      )}
         </>
       )}
     </div>

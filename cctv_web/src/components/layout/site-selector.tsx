@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useSiteStore } from "@/stores/site-store";
-import { listSites } from "@/lib/api/sites";
+import { useAllSites } from "@/hooks/use-all-sites";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,11 +20,7 @@ export function SiteSelector() {
   const clearSite = useSiteStore((s) => s.clearSite);
   const reconcileSite = useSiteStore((s) => s.reconcileSite);
 
-  const { data: sites = [] } = useQuery({
-    queryKey: ["sites"],
-    queryFn: listSites,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { sites } = useAllSites();
 
   useEffect(() => {
     if (sites.length === 0) return;
