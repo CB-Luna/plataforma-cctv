@@ -9,7 +9,7 @@ import { listSites } from "@/lib/api/sites";
 import {
   createLocalSite,
   deleteLocalSite,
-  listLocalSites,
+  listLocalSitesForCompany,
   updateLocalSite,
   type LocalSite,
 } from "@/lib/sites/local-sites-store";
@@ -234,7 +234,7 @@ function SiteDialog({ open, onOpenChange, initial, title, onSave }: SiteDialogPr
 type CombinedSite = (SiteListItem & { isLocal?: false }) | LocalSite;
 
 export default function SitesPage() {
-  const [localSites, setLocalSites] = useState<LocalSite[]>(() => listLocalSites());
+  const [localSites, setLocalSites] = useState<LocalSite[]>(() => listLocalSitesForCompany(currentCompany?.id));
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<LocalSite | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "map">("table");
@@ -258,24 +258,25 @@ export default function SitesPage() {
   }, [apiSites, localSites]);
 
   const refreshLocal = useCallback(() => {
-    setLocalSites(listLocalSites());
-  }, []);
+    setLocalSites(listLocalSitesForCompany(currentCompany?.id));
+  }, [currentCompany?.id]);
 
   const handleCreate = useCallback(
     (data: SiteFormData) => {
       createLocalSite({
         name: data.name.trim(),
-        client_name: data.client_name.trim() || undefined,
+        client_name: data.client_name.trim() || currentCompany?.name || undefined,
         address: data.address.trim() || undefined,
         city: data.city.trim() || undefined,
         state: data.state.trim() || undefined,
         lat: data.lat ? parseFloat(data.lat) : undefined,
         lng: data.lng ? parseFloat(data.lng) : undefined,
+        company_id: currentCompany?.id,
       });
       refreshLocal();
       setCreateOpen(false);
     },
-    [refreshLocal],
+    [refreshLocal, currentCompany],
   );
 
   const handleUpdate = useCallback(

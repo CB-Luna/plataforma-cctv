@@ -2,6 +2,7 @@
  * local-sites-store.ts
  * Gestión de sucursales creadas localmente (localStorage).
  * El backend no soporta POST/PUT/DELETE /sites (GAP-01/GAP-10).
+ * Los sitios se almacenan con company_id para aislamiento por empresa.
  */
 
 const STORAGE_KEY = "cctv_local_sites_v1";
@@ -18,6 +19,8 @@ export interface LocalSite {
   camera_count?: number;
   nvr_count?: number;
   createdAt: string;
+  /** ID de la empresa propietaria */
+  company_id?: string;
   /** Siempre true para distinguir locales de los de la API */
   isLocal: true;
 }
@@ -41,9 +44,15 @@ function writeAll(sites: LocalSite[]): void {
   }
 }
 
-/** Lista todas las sucursales locales */
+/** Lista todas las sucursales locales (sin filtrar) */
 export function listLocalSites(): LocalSite[] {
   return readAll();
+}
+
+/** Lista sucursales locales de una empresa especifica */
+export function listLocalSitesForCompany(companyId: string | undefined): LocalSite[] {
+  if (!companyId) return [];
+  return readAll().filter((s) => s.company_id === companyId);
 }
 
 /** Crea una nueva sucursal local, retorna el objeto creado */

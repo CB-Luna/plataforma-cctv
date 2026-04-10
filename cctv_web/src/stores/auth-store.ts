@@ -3,6 +3,7 @@ import type { User, Company, Permission, Role } from "@/types/api";
 import { setTokenCookie, removeTokenCookie } from "@/lib/cookies";
 import { hasAnyPermission, hasPermission } from "@/lib/auth/permissions";
 import { useTenantStore } from "@/stores/tenant-store";
+import { useSiteStore } from "@/stores/site-store";
 
 const PENDING_TENANT_SELECTION_KEY = "pending_tenant_selection";
 
@@ -97,6 +98,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       sessionStorage.removeItem(PENDING_TENANT_SELECTION_KEY);
     }
     useTenantStore.getState().clearCompany();
+    useSiteStore.getState().clearSite();
     set({
       token: null,
       user: null,

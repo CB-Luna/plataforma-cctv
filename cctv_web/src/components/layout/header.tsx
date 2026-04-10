@@ -2,6 +2,7 @@
 
 import { Fragment } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   Building2,
@@ -85,6 +86,7 @@ export function Header() {
   const setMobileOpen = useSidebarStore((state) => state.setMobileOpen);
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
+  const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -103,6 +105,8 @@ export function Header() {
 
     clearCompany();
     clearAuth();
+    // Vaciar cache de TanStack Query para evitar datos residuales de sesion anterior
+    queryClient.clear();
     router.push("/login");
   }
 

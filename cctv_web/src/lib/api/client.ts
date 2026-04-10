@@ -24,6 +24,8 @@ export const api = ky.create({
           localStorage.removeItem("access_token");
           localStorage.removeItem("tenant_id");
           localStorage.removeItem("tenant_snapshot");
+          localStorage.removeItem("site_id");
+          localStorage.removeItem("site_snapshot");
           removeTokenCookie();
           window.location.href = "/login";
         }

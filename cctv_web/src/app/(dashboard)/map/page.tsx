@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { listSites } from "@/lib/api/sites";
-import { listLocalSites, type LocalSite } from "@/lib/sites/local-sites-store";
+import { listLocalSitesForCompany, type LocalSite } from "@/lib/sites/local-sites-store";
 import type { SiteListItem } from "@/types/api";
 import { Building2, MapPin } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -41,7 +41,7 @@ export default function MapPage() {
 
   // Fusionar sitios de la API con sitios locales (GAP-01)
   const sites = useMemo<SiteListItem[]>(() => {
-    const localSites = listLocalSites();
+    const localSites = listLocalSitesForCompany(currentCompany?.id);
     const localAsSiteList: SiteListItem[] = localSites.map((ls: LocalSite) => ({
       id: ls.id,
       name: ls.name,
@@ -54,7 +54,7 @@ export default function MapPage() {
       has_floor_plan: false,
     }));
     return [...apiSites, ...localAsSiteList];
-  }, [apiSites]);
+  }, [apiSites, currentCompany?.id]);
 
   const [filterClient, setFilterClient] = useState("");
 
