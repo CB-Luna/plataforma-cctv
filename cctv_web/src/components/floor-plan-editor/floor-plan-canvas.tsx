@@ -115,7 +115,10 @@ export default function FloorPlanCanvas({ stageRef }: FloorPlanCanvasProps) {
     }
 
     if (activeTool === "room") {
-      addElement({ id: `room-${Date.now()}`, type: "room", x, y, width: 120, height: 80, name: "Sala", fillColor: "#e0f2fe", strokeColor: "#0284c7" });
+      // Nombre incremental para evitar multiples "Sala" identicas
+      const roomCount = elements.filter((e) => e.type === "room").length;
+      const roomName = `Sala ${roomCount + 1}`;
+      addElement({ id: `room-${Date.now()}`, type: "room", x, y, width: 120, height: 80, name: roomName, fillColor: "#e0f2fe", strokeColor: "#0284c7" });
     } else if (activeTool === "wall") {
       addElement({ id: `wall-${Date.now()}`, type: "wall", x, y, points: [0, 0, 100, 0], thickness: 4 });
     } else if (activeTool === "text") {

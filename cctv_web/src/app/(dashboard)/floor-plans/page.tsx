@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { Map, Camera, Server, CheckCircle, Circle, Search, Building2, Filter } from "lucide-react";
+import { Map, Camera, Server, ChevronLeft, ChevronRight, Search, Building2, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import {
+} from "@/components/ui/select";import {
   Table,
   TableBody,
   TableCell,
@@ -29,6 +28,8 @@ import { SiteContextBanner } from "@/components/context/site-context-banner";
 export default function FloorPlansPage() {
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const currentSite = useSiteStore((state) => state.currentSite);
   const clearSite = useSiteStore((state) => state.clearSite);
 
@@ -62,6 +63,13 @@ export default function FloorPlansPage() {
     return result;
   }, [sites, clientFilter, search, currentSite]);
 
+  // Paginacion
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page, pageSize]);
+  const handleSearch = useCallback((v: string) => { setSearch(v); setPage(1); }, []);
+  const handleClientFilter = useCallback((v: string) => { setClientFilter(v ?? "all"); setPage(1); }, []);
+  const handlePageSize = useCallback((s: number) => { setPageSize(s); setPage(1); }, []);
+
   const withPlan = sites.filter((s) => s.has_floor_plan).length;
 
   if (isLoading) {
@@ -93,11 +101,11 @@ export default function FloorPlansPage() {
           <Input
             placeholder="Buscar por nombre, dirección o ciudad..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="pl-9"
           />
         </div>
-        <Select value={clientFilter} onValueChange={(v) => setClientFilter(v ?? "all")}>
+        <Select value={clientFilter} onValueChange={(v) => handleClientFilter(v ?? "all")}>
           <SelectTrigger className="w-full sm:w-[250px]">
             <Building2 className="mr-2 h-4 w-4 text-muted-foreground" />
             <SelectValue placeholder="Todas las empresas" />
@@ -127,8 +135,9 @@ export default function FloorPlansPage() {
         </Card>
       ) : (
         <Card>
+          <div className="max-h-125 overflow-auto rounded-lg">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead>Sucursal</TableHead>
                 <TableHead>Empresa</TableHead>
@@ -140,18 +149,23 @@ export default function FloorPlansPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((site) => {
+              {paged.map((site) => {
                 const isLocal = site.id.startsWith("local_");
                 return (
                 <TableRow key={site.id}>
                   <TableCell>
-                    <div className="flex items-center gap-1.5 font-medium">
-                      {site.name}
-                      {isLocal && (
-                        <Badge variant="outline" className="border-amber-400 text-[10px] text-amber-600">
-                          local
-                        </Badge>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400">
+                        <Map className="h-4 w-4" />
+                      </div>
+                      <div className="flex items-center gap-1.5 font-medium">
+                        {site.name}
+                        {isLocal && (
+                          <Badge variant="outline" className="border-amber-400 text-[10px] text-amber-600">
+                            local
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -176,15 +190,15 @@ export default function FloorPlansPage() {
                   </TableCell>
                   <TableCell className="text-center">
                     {site.has_floor_plan ? (
-                      <Badge variant="default" className="text-xs">
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                        Sí
-                      </Badge>
+                      <div className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Si</span>
+                      </div>
                     ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        <Circle className="mr-1 h-3 w-3" />
-                        No
-                      </Badge>
+                      <div className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-gray-400" />
+                        <span className="text-xs font-medium text-muted-foreground">No</span>
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -207,6 +221,36 @@ export default function FloorPlansPage() {
               })}
             </TableBody>
           </Table>
+          </div>
+
+          {/* Paginacion */}
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Mostrar</span>
+              <Select value={String(pageSize)} onValueChange={(v) => handlePageSize(Number(v ?? pageSize))}>
+                <SelectTrigger className="h-7 w-17.5 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 25, 50, 100].map((s) => (
+                    <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span>de {filtered.length}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="px-2 text-xs text-muted-foreground">
+                {page} / {totalPages || 1}
+              </span>
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </Card>
       )}
     </div>

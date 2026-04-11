@@ -46,16 +46,14 @@ function buildEditorDocument(
     }
 
     if (element.type === "nvr") {
+      // NVR legacy se convierte a texto, no a "room" para evitar confusion con salas
       editorElements.push({
         id: element.id,
-        type: "room",
+        type: "text",
         x: element.x,
         y: element.y,
-        width: 24,
-        height: 24,
-        name: element.name,
-        fillColor: element.color ?? "#8b5cf6",
-        strokeColor: "#6d28d9",
+        text: element.name ?? "NVR",
+        fontSize: 12,
       });
       continue;
     }

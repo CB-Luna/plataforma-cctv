@@ -1,175 +1,3 @@
-# Plan de Accion v2 — SyMTickets CCTV (Abril 2026)
-
-> Documento vivo. Actualizar estado de cada item conforme se complete.
-> Criterio de cierre: la mejora es visible en runtime real, no solo en codigo.
-> Plan anterior archivado en `.github/planes_completados/PLAN_DE_ACCION_v1.md`.
-
----
-
-## Politica de cierre de fase (OBLIGATORIO)
-
-Al terminar cualquier fase:
-1. `npm run build` — sin errores TypeScript
-2. Verificacion visual en `http://localhost:3011`
-3. Si aplica, test de Playwright que valide el comportamiento nuevo
-4. Commit: `git add -A && git commit -m "fase(FX): descripcion corta del cambio"`
-5. Actualizar el estado de la fase en este documento
-
----
-
-## Resumen de fases
-
-| Fase | Nombre | Prioridad | Estado |
-|------|--------|-----------|--------|
-| F1 | Temas: aplicacion completa de colores por tenant | **Critica** | **En progreso** |
-| F2 | Inventario: paginacion, filtros y buscador | **Alta** | **Completada** |
-| F3 | Sidebar: ocultar paginas redundantes (/cameras, /nvrs) | Alta | **Completada** || F4 | Planos: fix texto "Salas" y mejora en grabado | Alta | **Parcial** |
-| F5 | Dashboard Global real para Admin del Sistema | Critica | Pendiente |
-| F6 | Shell Admin Sistema — separacion limpia de contextos | Critica | Pendiente |
-| F7 | Portal Tenant — logo, nombre empresa, identidad visual | Media | Parcial |
-| F8 | Encapsulamiento por tenant en pantallas de operacion | Critica | Pendiente |
-| F9 | CAPEX — paginacion, estados reales, filtros por empresa | Media | Pendiente |
-| F10 | Operaciones — Tickets, Clientes, Polizas coherentes | Baja | Pendiente |
-| F11 | Imagen de perfil de usuario (localStorage) | Baja | Pendiente |
-| F12 | Mejoras enterprise generales (tablas, empty states, toasts) | Baja | **Parcial** |
-
----
-
-## Fase 1 — Temas: aplicacion completa de colores por tenant
-
-**Objetivo:** Cuando se asigna un tema a una empresa o usuario, TODOS los componentes de la UI deben reflejar esos colores.
-
-### F1-01: Puente de variables CSS tenant → shadcn oklch — **COMPLETADA** ✅
-- **Archivos:** `theme-provider.tsx`, `globals.css`
-- **Problema:** shadcn usa variables oklch (`--primary`, `--secondary`, etc.) y los temas del tenant usan hex (`--tenant-primary`). Los componentes de shadcn (botones, badges, inputs, sidebar) no cambian con el tema.
-- **Solucion aplicada:** `hexToOklch()` en `theme-provider.tsx` convierte colores hex a oklch y los inyecta tanto en `--tenant-*` como en `--primary`, `--accent`, `--ring`, `--sidebar-primary`, `--chart-*`.
-
-### F1-02: Sidebar cambia de color con el tema — **COMPLETADA** ✅
-- **Problema:** `applyCoreColors()` NO actualizaba `--sidebar-nav-bg`, `--sidebar-nav-text` ni `--sidebar-nav-active-bg`. El sidebar quedaba siempre en el color base (#0f172a) sin importar el tema.
-- **Solucion:** Se agrega deteccion de luminancia (`isLightColor`) para elegir texto claro u oscuro automaticamente. Se inyectan `--sidebar-nav-bg` (= primary), `--sidebar-nav-text`, `--sidebar-nav-text-active`, `--sidebar-nav-active-bg` segun contraste.
-- **Indicador:** `--sidebar-nav-indicator` ahora usa el terciario para distinguirse del fondo.
-
-### F1-03: Tema del Admin Sistema vs tema de empresa
-- El Admin del Sistema usa el tema base de la plataforma (sin sobreescritura)
-- El Admin de Empresa ve los colores de su empresa
-- Verificar que al cambiar de empresa (como Admin Sistema inspeccionando), el tema se actualice
-
----
-
-## Fase 2 — Inventario: paginacion, filtros y buscador — **COMPLETADA**
-
-### F2-01: Paginacion en CamerasTable y NvrsTable ✅
-- Paginacion client-side con selector de items por pagina (10/25/50/100)
-- Controles anterior/siguiente con indicador de pagina actual
-- Default cambiado de 25 a **10 items por pagina**
-
-### F2-02: Buscador por texto libre ✅
-- Busqueda por nombre, codigo, IP y modelo en ambas tablas
-
-### F2-03: Filtros por tipo y estado ✅
-- Filtro por tipo de camara (dome, bullet, PTZ, etc.) en CamerasTable
-- Filtro por estado (activo/inactivo) en ambas tablas
-- Reset automatico de pagina al cambiar filtros
-
-### F2-04: Max-height con scroll interno ✅
-- Tablas con `max-h-[500px]` y `overflow-auto`
-- Header sticky para mantener visibilidad de columnas al hacer scroll
-
----
-
-## Fase 3 — Sidebar: ocultar paginas redundantes — **COMPLETADA**
-
-### F3-01: Ocultar /cameras y /nvrs del menu lateral ✅
-- Comentadas en `runtime-navigation.ts`
-- Las rutas siguen existiendo (no eliminadas) para acceso directo si es necesario
-- Todo el inventario se gestiona desde `/inventory` con tabs de Camaras y NVRs
-
----
-
-## Fase 4 — Planos: fix texto "Salas" y mejora en grabado
-
-### F4-01: Nombres incrementales para nuevas salas ✅
-- Antes: toda sala nueva se llamaba "Sala" (generico)
-- Ahora: "Sala 1", "Sala 2", "Sala 3"... basado en conteo de rooms existentes
-
-### F4-02: NVRs legacy ya no se convierten a rooms ✅
-- Antes: `buildEditorDocument()` convertia NVR legacy a `type: "room"`, causando textos "Sala" fantasma
-- Ahora: NVR legacy se convierte a `type: "text"` con su nombre original
-
-### F4-03: Investigar problemas de grabado — Pendiente
-- El usuario reporta problemas al guardar planos
-- Investigar: `handleSave()` serializa correctamente? El backend responde OK? Se pierde data?
-- La funcion `handleSave` guarda tanto `editor_document` (formato completo) como `elements` (formato legacy)
-- Verificar que al recargar el plano, los datos persisten correctamente
-
----
-
-## Fase 5 — Dashboard Global real para Admin del Sistema
-
-**Objetivo:** KPIs reales de plataforma en vez de datos de tenant.
-
-- Empresas activas / total
-- Servicios definidos
-- Ultimas empresas creadas
-- NO mostrar camaras, NVRs, tickets (eso es operacion tenant)
-
----
-
-## Fase 6 — Shell Admin Sistema: separacion de contextos
-
-**Objetivo:** Hacer inequivoco cuando el usuario esta en modo plataforma vs inspeccionando una empresa.
-
-- Banner claro al inspeccionar una empresa
-- Modo plataforma como default al iniciar sesion como Admin del Sistema
-
----
-
-## Fase 7 — Portal Tenant: identidad visual
-
-- Logo de empresa en sidebar
-- Nombre de empresa como titulo del sidebar
-- Iconos y colores del tema aplicados en todo el portal
-
----
-
-## Fase 8 — Encapsulamiento por tenant
-
-**Objetivo:** Cada pantalla de operacion filtra datos por empresa activa.
-
-- /map: solo sucursales de la empresa
-- /inventory: solo equipos de la empresa
-- /tickets, /clients: solo datos del tenant
-- Admin Sistema puede ver todo + filtrar por empresa
-
----
-
-## Fase 9 — CAPEX
-
-- Paginacion (similar a inventario)
-- Estados reales (activo/inactivo con color)
-- Filtros por empresa y sucursal
-- Garantia: mostrar "Sin registro" en gris si no hay fecha
-
----
-
-## GAPs de backend conocidos
-
-| GAP | Impacto | Mitigacion frontend |
-|-----|---------|---------------------|
-| GAP-01 | CRUD de sucursales no existe | Banner "Modo preparacion" en portal tenant |
-| GAP-04 | Sin refresh token | 401 redirige a login |
-| GAP-08 | Upload avatar no persiste | localStorage como fallback |
-| GAP-09 | /inventory/summary 500 sin tenant | EmptyState con mensaje claro |
-
----
-
-## Criterio de cierre
-
-Una fase se cierra SOLO si:
-1. El cambio es visible en `http://localhost:3011`
-2. Sin errores de consola relacionados
-3. Build exitoso
-4. Commit descriptivo realizado
 # Plan de Accion — SyMTickets CCTV (Abril 2026)
 
 > Documento vivo. Actualizar estado de cada item conforme se complete.
@@ -519,59 +347,32 @@ Una fase se considera cerrada SOLO si:
 
 ---
 
-## Fase 12 — Mejoras enterprise generales (tablas, scroll, paginacion) — **PARCIAL**
-
-### F12-01: Paginacion en Sucursales (sites) ✅
-- Buscador por nombre, cliente, direccion, ciudad
-- Paginacion client-side (default 10 items) con selector 10/25/50/100
-- Max-height 500px con scroll interno y header sticky
-
-### F12-02: Paginacion en Planos interactivos (floor-plans) ✅
-- Paginacion client-side (default 10 items) con selector 10/25/50/100
-- Max-height 500px con scroll interno y header sticky
-- Reset de pagina al cambiar filtros de busqueda o empresa
-
-### F12-03: Max-height + scroll interno en DataTable compartido ✅
-- Componente `data-table.tsx` ahora tiene `max-h-[500px]` con `overflow-auto`
-- Header sticky con `backdrop-blur-sm` para visibilidad al hacer scroll
-
-### F12-04: Estilo visual "Proveedores" para tablas — Completado
-- Iconos circulares con color por tipo (Camera azul, Server violeta, Building2 esmeralda, Map ambar)
-- Badges de tipo de camara con colores por categoria (dome=azul, bullet=verde, PTZ=morado, turret=naranja, fisheye=teal, box=rosa)
-- Status con indicador de punto (verde activo, gris inactivo) en vez de Badge plano
-- Boton "Exportar" CSV con BOM UTF-8 en CamerasTable y NvrsTable
-- IP con fondo `bg-muted` para destacar
-- Floor-plans: indicador de punto en columna "Plano" en vez de Badge
-- Soporte dark mode en todos los colores
-
----
-
-## Fase 13 — Empresas reales en dropdowns y listados
+## Fase 12 — Empresas reales en dropdowns y listados
 
 **Objetivo:** Las empresas creadas desde la UI real (no hardcodeadas ni seeds) deben aparecer en todos los dropdowns, filtros y listados de la aplicacion.
 
-### F13-01: Diagnosticar origen de datos en dropdowns de empresa
+### F12-01: Diagnosticar origen de datos en dropdowns de empresa
 - **Problema:** Empresas como "Calimax" y "Bimbo" creadas desde `Configuracion → Empresas` no aparecen en selectores de empresa en otras pantallas (ej: filtro de CAPEX, selector en /map, etc.).
 - **Hipotesis A:** Los dropdowns usan datos hardcodeados o seeds en vez de llamar al API real (`listTenants()`).
 - **Hipotesis B:** Hay un cache de TanStack Query que no invalida al crear una empresa nueva.
 - **Hipotesis C:** El hook/store que alimenta esos dropdowns no esta conectado al mismo endpoint que el CRUD de empresas.
 - **Accion:** Buscar en el codebase todos los lugares donde se renderizan listas de empresas y verificar su fuente de datos.
 
-### F13-02: Unificar fuente de datos de empresas
+### F12-02: Unificar fuente de datos de empresas
 - Todos los dropdowns y listados que muestran empresas deben usar el mismo `listTenants()` de `src/lib/api/tenants.ts` con TanStack Query.
 - Al crear o editar una empresa, invalidar la query `["tenants"]` para que todos los componentes se actualicen.
 
-### F13-03: Verificar que el selector global de empresa en el header usa datos reales
+### F12-03: Verificar que el selector global de empresa en el header usa datos reales
 - **Componente:** El selector "Todas las sucursales" / "Todas las empresas" visible en el header.
 - **Verificar:** Que la lista venga de `listTenants()` y no de datos estaticos.
 
 ---
 
-## Fase 14 — Sucursales: CRUD desde Portal Tenant
+## Fase 13 — Sucursales: CRUD desde Portal Tenant
 
 **Objetivo:** Una empresa que inicia sesion debe poder ver, crear y gestionar sus propias sucursales, incluyendo posicionarlas en un mapa.
 
-### F14-01: Pantalla "Mis Sucursales" en el Portal Tenant
+### F13-01: Pantalla "Mis Sucursales" en el Portal Tenant
 - **Ruta propuesta:** `/sites` o como tab dentro de la configuracion del tenant
 - **Problema actual:** No existe una pantalla donde una empresa pueda crear sus propias sucursales. GAP-01 indica que `POST/PUT/DELETE /sites` no existe en el backend.
 - **Solucion parcial (sin backend completo):** Crear la pantalla con:
@@ -579,11 +380,11 @@ Una fase se considera cerrada SOLO si:
   - Formulario de alta de sucursal (nombre, direccion, ciudad) — mostrar con disclaimer "Funcionalidad en proceso de activacion"
   - Mapa Leaflet con marcador arrastrable para posicionar la sucursal
 
-### F14-02: Bloquear alta de sucursal si GAP-01 no esta resuelto
+### F13-02: Bloquear alta de sucursal si GAP-01 no esta resuelto
 - Si el backend no acepta POST /sites, mostrar el formulario en modo "preparacion" con un mensaje claro para el usuario: "La creacion de sucursales estara disponible proximalente."
 - No simular exito si el endpoint falla.
 
-### F14-03: Admin del Sistema puede ver las sucursales de cualquier empresa
+### F13-03: Admin del Sistema puede ver las sucursales de cualquier empresa
 - Cuando el Admin del Sistema inspecciona una empresa, debe poder ver sus sucursales.
 
 ---

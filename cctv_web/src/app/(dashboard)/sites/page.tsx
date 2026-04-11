@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import { Building2, Edit2, Info, List, MapIcon, MapPin, Plus, Trash2 } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, Edit2, Info, List, MapIcon, MapPin, Plus, Search, Trash2 } from "lucide-react";
 import type { SiteListItem } from "@/types/api";
 import { listSites } from "@/lib/api/sites";
 import {
@@ -29,6 +29,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -239,6 +246,9 @@ export default function SitesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<LocalSite | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "map">("table");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { permissions, roles } = usePermissions();
   const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
@@ -256,6 +266,25 @@ export default function SitesPage() {
   const allSites = useMemo<CombinedSite[]>(() => {
     return [...apiSites, ...localSites];
   }, [apiSites, localSites]);
+
+  // Filtrado por busqueda
+  const filtered = useMemo(() => {
+    if (!search.trim()) return allSites;
+    const q = search.toLowerCase();
+    return allSites.filter(
+      (s) =>
+        s.name?.toLowerCase().includes(q) ||
+        s.client_name?.toLowerCase().includes(q) ||
+        s.address?.toLowerCase().includes(q) ||
+        s.city?.toLowerCase().includes(q),
+    );
+  }, [allSites, search]);
+
+  // Paginacion
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page, pageSize]);
+  const handleSearch = useCallback((v: string) => { setSearch(v); setPage(1); }, []);
+  const handlePageSize = useCallback((s: number) => { setPageSize(s); setPage(1); }, []);
 
   const refreshLocal = useCallback(() => {
     setLocalSites(listLocalSitesForCompany(currentCompany?.id));
@@ -390,10 +419,21 @@ export default function SitesPage() {
       {/* Vista Tabla */}
       {viewMode === "table" && (
       <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
+        <CardContent className="space-y-3 p-4">
+          {/* Barra de busqueda */}
+          <div className="relative max-w-sm">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, cliente, direccion..."
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="h-9 pl-9 text-sm"
+            />
+          </div>
+
+          <div className="max-h-125 overflow-auto rounded-lg border">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background">
                 <TableRow>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Cliente</TableHead>
@@ -412,36 +452,43 @@ export default function SitesPage() {
                     </TableCell>
                   </TableRow>
                 )}
-                {!isLoading && allSites.length === 0 && (
+                {!isLoading && filtered.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="py-16 text-center">
                       <Building2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
                       <p className="text-sm font-medium text-muted-foreground">
-                        No hay sucursales registradas
+                        {allSites.length === 0 ? "No hay sucursales registradas" : "Sin resultados para la busqueda"}
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Crea tu primera sucursal con el boton superior
-                      </p>
+                      {allSites.length === 0 && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Crea tu primera sucursal con el boton superior
+                        </p>
+                      )}
                     </TableCell>
                   </TableRow>
                 )}
-                {allSites.map((site) => {
+                {paged.map((site) => {
                   const isLocal = "isLocal" in site && site.isLocal;
                   const lat = isLocal ? (site as LocalSite).lat : undefined;
                   const lng = isLocal ? (site as LocalSite).lng : undefined;
                   return (
                     <TableRow key={site.id}>
                       <TableCell>
-                        <div className="flex items-center gap-1.5 font-medium">
-                          {site.name}
-                          {isLocal && (
-                            <Badge
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+                            <Building2 className="h-4 w-4" />
+                          </div>
+                          <div className="flex items-center gap-1.5 font-medium">
+                            {site.name}
+                            {isLocal && (
+                              <Badge
                               variant="outline"
                               className="border-amber-400 text-[10px] text-amber-600"
                             >
                               local
                             </Badge>
                           )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -503,6 +550,35 @@ export default function SitesPage() {
                 })}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Paginacion */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Mostrar</span>
+              <Select value={String(pageSize)} onValueChange={(v) => handlePageSize(Number(v ?? pageSize))}>
+                <SelectTrigger className="h-7 w-17.5 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 25, 50, 100].map((s) => (
+                    <SelectItem key={s} value={String(s)}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span>de {filtered.length}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="px-2 text-xs text-muted-foreground">
+                {page} / {totalPages || 1}
+              </span>
+              <Button variant="outline" size="icon" className="h-7 w-7" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -20,6 +20,47 @@ const BUILT_IN_PRESETS: Record<string, [string, string, string]> = {
   "midnight-gold": ["#1e293b", "#334155", "#eab308"],
 };
 
+/**
+ * Convierte hex (#RRGGBB) a una cadena oklch() aproximada.
+ * Se usa para inyectar colores del tenant en las variables oklch de shadcn.
+ */
+function hexToOklch(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+  // sRGB -> linear
+  const toLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  const rl = toLinear(r), gl = toLinear(g), bl = toLinear(b);
+
+  // linear sRGB -> OKLab (via LMS)
+  const l_ = 0.4122214708 * rl + 0.5363325363 * gl + 0.0514459929 * bl;
+  const m_ = 0.2119034982 * rl + 0.6806995451 * gl + 0.1073969566 * bl;
+  const s_ = 0.0883024619 * rl + 0.2817188376 * gl + 0.6299787005 * bl;
+
+  const l3 = Math.cbrt(l_), m3 = Math.cbrt(m_), s3 = Math.cbrt(s_);
+
+  const L = 0.2104542553 * l3 + 0.7936177850 * m3 - 0.0040720468 * s3;
+  const a = 1.9779984951 * l3 - 2.4285922050 * m3 + 0.4505937099 * s3;
+  const bk = 0.0259040371 * l3 + 0.7827717662 * m3 - 0.8086757660 * s3;
+
+  const C = Math.sqrt(a * a + bk * bk);
+  let H = Math.atan2(bk, a) * (180 / Math.PI);
+  if (H < 0) H += 360;
+
+  return `oklch(${L.toFixed(3)} ${C.toFixed(3)} ${H.toFixed(1)})`;
+}
+
+/** Genera un foreground contrastante (blanco u oscuro) para un color hex */
+function contrastForeground(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // Luminancia relativa simplificada
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.5 ? "oklch(0.205 0 0)" : "oklch(0.985 0 0)";
+}
+
 // Mapeo de campos de ThemeConfig a variables CSS
 const THEME_VAR_MAP: Record<string, string> = {
   primary: "--tenant-primary",
@@ -78,6 +119,63 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     const appliedVars: string[] = [];
 
+    /** Devuelve true si el color hex es claro (luminancia relativa > 0.5) */
+    function isLightColor(hex: string): boolean {
+      const h = hex.replace("#", "");
+      const r = parseInt(h.slice(0, 2), 16);
+      const g = parseInt(h.slice(2, 4), 16);
+      const b = parseInt(h.slice(4, 6), 16);
+      return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5;
+    }
+
+    /** Inyecta los 3 colores principales tanto en vars tenant como en vars shadcn */
+    function applyCoreColors(primary: string, secondary: string, tertiary: string) {
+      // Variables tenant propias
+      root.style.setProperty("--tenant-primary", primary);
+      root.style.setProperty("--tenant-secondary", secondary);
+      root.style.setProperty("--tenant-tertiary", tertiary);
+      root.style.setProperty("--sidebar-nav-indicator", tertiary);
+      appliedVars.push("--tenant-primary", "--tenant-secondary", "--tenant-tertiary", "--sidebar-nav-indicator");
+
+      // Sidebar nav — fondo usa color primario, texto con contraste adecuado
+      const light = isLightColor(primary);
+      root.style.setProperty("--sidebar-nav-bg", primary);
+      root.style.setProperty("--sidebar-nav-text", light ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.85)");
+      root.style.setProperty("--sidebar-nav-text-active", light ? "#000000" : "#ffffff");
+      root.style.setProperty("--sidebar-nav-active-bg", light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.12)");
+      appliedVars.push("--sidebar-nav-bg", "--sidebar-nav-text", "--sidebar-nav-text-active", "--sidebar-nav-active-bg");
+
+      // Variables oklch de shadcn — para que botones, badges, etc usen colores del tenant
+      const primaryOklch = hexToOklch(primary);
+      const secondaryOklch = hexToOklch(secondary);
+      const accentOklch = hexToOklch(tertiary);
+      const primaryFg = contrastForeground(primary);
+      const secondaryFg = contrastForeground(secondary);
+      const accentFg = contrastForeground(tertiary);
+
+      root.style.setProperty("--primary", primaryOklch);
+      root.style.setProperty("--primary-foreground", primaryFg);
+      root.style.setProperty("--accent", accentOklch);
+      root.style.setProperty("--accent-foreground", accentFg);
+      root.style.setProperty("--ring", primaryOklch);
+      // Sidebar primary = tema primario
+      root.style.setProperty("--sidebar-primary", primaryOklch);
+      root.style.setProperty("--sidebar-primary-foreground", primaryFg);
+      root.style.setProperty("--sidebar-accent", accentOklch);
+      root.style.setProperty("--sidebar-accent-foreground", accentFg);
+      // Charts usan primario / secundario / terciario
+      root.style.setProperty("--chart-1", primaryOklch);
+      root.style.setProperty("--chart-2", secondaryOklch);
+      root.style.setProperty("--chart-3", accentOklch);
+
+      appliedVars.push(
+        "--primary", "--primary-foreground", "--accent", "--accent-foreground", "--ring",
+        "--sidebar-primary", "--sidebar-primary-foreground",
+        "--sidebar-accent", "--sidebar-accent-foreground",
+        "--chart-1", "--chart-2", "--chart-3",
+      );
+    }
+
     // 1) Intentar tema asignado al usuario actual
     let userPresetColors: [string, string, string] | null = null;
     if (currentUser?.id) {
@@ -96,12 +194,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (userPresetColors) {
-      // Aplicar los 3 colores del preset del usuario
-      root.style.setProperty("--tenant-primary", userPresetColors[0]);
-      root.style.setProperty("--tenant-secondary", userPresetColors[1]);
-      root.style.setProperty("--tenant-tertiary", userPresetColors[2]);
-      root.style.setProperty("--sidebar-nav-indicator", userPresetColors[0]);
-      appliedVars.push("--tenant-primary", "--tenant-secondary", "--tenant-tertiary", "--sidebar-nav-indicator");
+      applyCoreColors(userPresetColors[0], userPresetColors[1], userPresetColors[2]);
     } else {
       // 2) Intentar leer tema completo del configurador local
       let fullTheme: Record<string, string> | null = null;
@@ -128,21 +221,34 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           root.style.setProperty("--sidebar-nav-indicator", fullTheme.primary);
           appliedVars.push("--sidebar-nav-indicator");
         }
+        // Tambien mapear a shadcn si hay colores core disponibles
+        const p = fullTheme.primary, s = fullTheme.secondary, a = fullTheme.accent;
+        if (p && s && a) {
+          applyCoreColors(p, s, a);
+        }
       } else if (currentCompany) {
         // 3) Fallback: solo los 3 colores del backend
         const { primary_color, secondary_color, tertiary_color } = currentCompany;
-        if (primary_color) {
-          root.style.setProperty("--tenant-primary", primary_color);
-          root.style.setProperty("--sidebar-nav-indicator", primary_color);
-          appliedVars.push("--tenant-primary", "--sidebar-nav-indicator");
-        }
-        if (secondary_color) {
-          root.style.setProperty("--tenant-secondary", secondary_color);
-          appliedVars.push("--tenant-secondary");
-        }
-        if (tertiary_color) {
-          root.style.setProperty("--tenant-tertiary", tertiary_color);
-          appliedVars.push("--tenant-tertiary");
+        if (primary_color && secondary_color && tertiary_color) {
+          applyCoreColors(primary_color, secondary_color, tertiary_color);
+        } else {
+          // Aplicacion parcial si no estan los 3
+          if (primary_color) {
+            root.style.setProperty("--tenant-primary", primary_color);
+            root.style.setProperty("--sidebar-nav-indicator", primary_color);
+            root.style.setProperty("--primary", hexToOklch(primary_color));
+            root.style.setProperty("--primary-foreground", contrastForeground(primary_color));
+            root.style.setProperty("--ring", hexToOklch(primary_color));
+            appliedVars.push("--tenant-primary", "--sidebar-nav-indicator", "--primary", "--primary-foreground", "--ring");
+          }
+          if (secondary_color) {
+            root.style.setProperty("--tenant-secondary", secondary_color);
+            appliedVars.push("--tenant-secondary");
+          }
+          if (tertiary_color) {
+            root.style.setProperty("--tenant-tertiary", tertiary_color);
+            appliedVars.push("--tenant-tertiary");
+          }
         }
       }
     }

@@ -172,9 +172,9 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm dark:border-gray-800">
+      <div className="max-h-125 overflow-auto rounded-xl border border-gray-200 shadow-sm dark:border-gray-800">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-gray-50/95 backdrop-blur-sm dark:bg-gray-900/95">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="bg-gray-50/80 hover:bg-gray-50/80 dark:bg-gray-900/50">
                 {headerGroup.headers.map((header) => (
