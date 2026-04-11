@@ -15,5 +15,10 @@ export function usePermissions() {
   const canAny = useAuthStore((s) => s.hasAnyPermission);
   const canAll = (...codes: string[]): boolean => codes.every((code) => can(code));
 
-  return { can, canAny, canAll, permissions, roles, user };
+  // Admin del sistema: tiene rol de plataforma (is_system) que NO sea tenant_admin
+  const isSystemAdmin = roles.some(
+    (role) => role.is_system && role.name !== "tenant_admin",
+  );
+
+  return { can, canAny, canAll, permissions, roles, user, isSystemAdmin };
 }

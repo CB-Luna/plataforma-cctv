@@ -61,6 +61,46 @@ function contrastForeground(hex: string): string {
   return lum > 0.5 ? "oklch(0.205 0 0)" : "oklch(0.985 0 0)";
 }
 
+/** Convierte hex a HSL [h 0-360, s 0-1, l 0-1] */
+function hexToHsl(hex: string): [number, number, number] {
+  const rr = parseInt(hex.slice(1, 3), 16) / 255;
+  const gg = parseInt(hex.slice(3, 5), 16) / 255;
+  const bb = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(rr, gg, bb), min = Math.min(rr, gg, bb);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === rr) h = ((gg - bb) / d + (gg < bb ? 6 : 0)) / 6;
+  else if (max === gg) h = ((bb - rr) / d + 2) / 6;
+  else h = ((rr - gg) / d + 4) / 6;
+  return [h * 360, s, l];
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const hue2rgb = (p: number, q: number, t: number) => {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  h /= 360;
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const r = Math.round(hue2rgb(p, q, h + 1 / 3) * 255);
+  const g = Math.round(hue2rgb(p, q, h) * 255);
+  const b = Math.round(hue2rgb(p, q, h - 1 / 3) * 255);
+  return "#" + [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+/** Deriva un color sidebar oscuro a partir del primario (misma logica que la vista previa) */
+function deriveSidebarBg(primary: string): string {
+  const [h, s] = hexToHsl(primary);
+  return hslToHex(h, Math.min(s, 0.7), 0.12);
+}
+
 // Mapeo de campos de ThemeConfig a variables CSS
 const THEME_VAR_MAP: Record<string, string> = {
   primary: "--tenant-primary",
@@ -137,9 +177,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.style.setProperty("--sidebar-nav-indicator", tertiary);
       appliedVars.push("--tenant-primary", "--tenant-secondary", "--tenant-tertiary", "--sidebar-nav-indicator");
 
-      // Sidebar nav — fondo usa color primario, texto con contraste adecuado
-      const light = isLightColor(primary);
-      root.style.setProperty("--sidebar-nav-bg", primary);
+      // Sidebar nav — fondo usa version oscura del primario (igual que la vista previa)
+      const sidebarBg = deriveSidebarBg(primary);
+      const light = isLightColor(sidebarBg);
+      root.style.setProperty("--sidebar-nav-bg", sidebarBg);
       root.style.setProperty("--sidebar-nav-text", light ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.85)");
       root.style.setProperty("--sidebar-nav-text-active", light ? "#000000" : "#ffffff");
       root.style.setProperty("--sidebar-nav-active-bg", light ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.12)");

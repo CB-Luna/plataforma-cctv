@@ -100,7 +100,7 @@ export default function CapexPage() {
   const [sortField, setSortField] = useState<SortField>("warrantyDate");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(10);
 
   const { data: nvrs = [], isLoading: nvrLoading, isError: nvrError } = useQuery({
     queryKey: ["nvrs"],
@@ -305,9 +305,9 @@ export default function CapexPage() {
               }
             />
           ) : (
-            <div className="overflow-x-auto rounded-md border">
+            <div className="max-h-125 overflow-auto rounded-md border">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-background">
                   <TableRow>
                     <TableHead className="w-40">
                       <button onClick={() => toggleSort("type")} className="flex items-center font-medium">

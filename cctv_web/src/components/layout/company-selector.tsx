@@ -1,6 +1,6 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Building2, ChevronDown, Check } from "lucide-react";
 import {
   DropdownMenu,
@@ -13,18 +13,45 @@ import {
 import { useAuthStore } from "@/stores/auth-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { useSiteStore } from "@/stores/site-store";
+import { usePermissions } from "@/hooks/use-permissions";
+import { listTenants } from "@/lib/api/tenants";
+import type { Tenant, Company } from "@/types/api";
 
 /**
  * Selector global de empresa.
- * - Admin Sistema: dropdown con todas las empresas disponibles.
+ * - Admin Sistema: dropdown con todas las empresas (via API real, se actualiza al crear empresas).
  * - Tenant Admin (1 sola empresa): no se renderiza (el contexto ya es fijo).
  */
 export function CompanySelector() {
-  const companies = useAuthStore((s) => s.companies);
+  const authCompanies = useAuthStore((s) => s.companies);
   const currentCompany = useTenantStore((s) => s.currentCompany);
   const setCompany = useTenantStore((s) => s.setCompany);
   const clearSite = useSiteStore((s) => s.clearSite);
   const queryClient = useQueryClient();
+  const { isSystemAdmin } = usePermissions();
+
+  // Admin del sistema: fetch empresas via API (se actualiza cuando se invalida ["tenants"])
+  const { data: apiTenants } = useQuery<Tenant[]>({
+    queryKey: ["tenants"],
+    queryFn: () => listTenants(200),
+    enabled: isSystemAdmin,
+    staleTime: 2 * 60 * 1000,
+    retry: false,
+  });
+
+  // Para admins del sistema, usar empresas del API; para tenant admin, las del auth store
+  const companies: Company[] = isSystemAdmin && apiTenants
+    ? apiTenants.map((t) => ({
+        id: t.id,
+        name: t.name,
+        slug: t.slug ?? t.name.toLowerCase().replace(/\s+/g, "-"),
+        primary_color: t.primary_color ?? undefined,
+        secondary_color: t.secondary_color ?? undefined,
+        tertiary_color: t.tertiary_color ?? undefined,
+        logo_url: t.logo_url ?? null,
+        is_active: t.is_active,
+      }))
+    : authCompanies;
 
   // Si solo hay una empresa, el contexto es fijo — no mostrar selector
   if (companies.length <= 1) return null;

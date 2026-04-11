@@ -200,15 +200,15 @@ Al terminar cualquier fase:
 | F1 | Shell Admin del Sistema — separacion limpia de contexto | **Critica** | **Parcial** | F1-03 completado (accesos rapidos eliminados). Resto pendiente |
 | F2 | Dashboard Global real para Admin del Sistema | **Critica** | Pendiente | Dashboard muestra portal de empresa, no metricas globales |
 | F3 | Inventario e Imports — manejo correcto sin tenant | **Critica** | **Parcial** | Crashes de object-as-child corregidos, lazy-mount en dialogs aplicado |
-| F4 | CAPEX — paginacion, estados reales, filtros | Media | Pendiente | 1149 equipos, todas garantias "Sin info" (AUD-06) |
-| F5 | Imagen de perfil de usuario | Baja | Pendiente | — |
+| F4 | CAPEX — paginacion, estados reales, filtros | Media | **Parcial** | max-h-125, sticky header, default 10 items, paginacion. Filtros empresa/sucursal pendiente |
+| F5 | Imagen de perfil de usuario | Baja | **Parcial** | Header muestra avatar_url del usuario (AvatarImage). Upload localStorage pendiente |
 | F6 | Portal Tenant — logo, nombre empresa en sidebar | Media | **Parcial** | Nombre ✅, logo solo muestra inicial (no imagen real) |
 | F7 | Modulo Operaciones — Tickets, Clientes, Polizas, CAPEX | Baja | **Regresado** | Clientes duplicados (AUD-05), NVRs duplicados (AUD-10), filtros __all__ (AUD-07) |
 | F8 | Mejoras enterprise generales | Baja | **Regresado** | Filtros __all__, routing /settings=/storage (AUD-07,09) |
 | F9 | Encapsulamiento por tenant — cada pantalla filtra por empresa | **Critica** | **Regresado** | Mapa "Todas las empresas" (AUD-03), Planos sin filtro tenant (AUD-16) |
 | F10 | Roles — filtrado por contexto (roles sistema ocultos a empresas) | Alta | **Verificado** ✅ | super_admin/tenant_admin NO visibles en cards de roles |
-| F11 | Temas — aplicacion real de variables CSS por empresa | Alta | **No verificable** | Capturas usan tema default; sin prueba de temas alternativos |
-| F12 | Empresas reales en dropdowns — coherencia de datos | Alta | **No verificable** | Admin entra como tenant; no hay dropdown global de empresas |
+| F11 | Temas — aplicacion real de variables CSS por empresa | Alta | **Parcial** | Sidebar oscuro (deriveSidebarBg), tablas con colores de tema, puente shadcn oklch |
+| F12 | Empresas reales en dropdowns — coherencia de datos | Alta | **Parcial** | CompanySelector usa TanStack Query (F13-01 resuelto) |
 | F13 | Sucursales — CRUD desde Portal Tenant con mapa | Media | **Parcial** | Tabla muestra datos backend (Admin). Calimax vacio. Banner "Modo preparacion" OK |
 | F14 | Pantallas operativas — coherencia Admin Sistema vs Empresa | Media | **Regresado** | Admin opera identico a tenant — sin diferenciacion (AUD-02,18) |
 
@@ -494,13 +494,13 @@ Una fase se considera cerrada SOLO si:
 
 **Objetivo:** Los temas asignados a empresas o usuarios deben aplicarse realmente en la UI, no solo guardarse en localStorage.
 
-### F11-01: Diagnosticar por que los temas no se aplican
-- **Problema:** Los temas se pueden seleccionar y guardar, pero la UI no cambia visualmente.
-- **Hipotesis:** Las variables CSS (color primario, secundario, etc.) se guardan pero no se inyectan en el `:root` o en el elemento del layout al montar.
-- **Investigar:**
-  - Donde se lee el tema activo al cargar la app (`layout.tsx`, algun provider, `tenantStore`).
-  - Si existe algun `ThemeProvider` que aplique las variables CSS al `document.documentElement`.
-  - Si el tema del tenant se carga desde el store y se aplica como `style` en el elemento raiz.
+### F11-01: Diagnosticar por que los temas no se aplican — **RESUELTO** ✅
+- **Problema original:** Los temas se podian seleccionar pero la UI no cambiaba visualmente.
+- **Causa raiz:** `applyCoreColors()` en `theme-provider.tsx` inyectaba el color primario directamente como fondo de sidebar (muy brillante). Las tablas usaban clases Tailwind hardcoded (`bg-muted/50`) en vez de las CSS variables del tema.
+- **Solucion aplicada:**
+  - Sidebar: Se agrego `deriveSidebarBg()` (misma logica que la vista previa) — fuerza HSL lightness a 0.12, cap de saturacion a 0.7. El sidebar ahora es oscuro independientemente del color primario elegido.
+  - Tablas: `table.tsx` ahora usa `--table-header-bg` (inline style en TableHeader), `--table-stripe-bg` y `--table-hover-bg` (Tailwind arbitrary values en TableRow). Estos se inyectan desde `THEME_VAR_MAP` en `applyCoreColors()`.
+  - `usePermissions()` ahora exporta `isSystemAdmin` (bool) para uso en componentes.
 
 ### F11-02: Implementar aplicacion real de variables CSS del tema
 - **Patron esperado:** Al iniciar sesion, leer el tema del tenant/usuario activo y set variables CSS:
@@ -550,12 +550,14 @@ Una fase se considera cerrada SOLO si:
 
 **Objetivo:** Las empresas creadas desde la UI real (no hardcodeadas ni seeds) deben aparecer en todos los dropdowns, filtros y listados de la aplicacion.
 
-### F13-01: Diagnosticar origen de datos en dropdowns de empresa
-- **Problema:** Empresas como "Calimax" y "Bimbo" creadas desde `Configuracion → Empresas` no aparecen en selectores de empresa en otras pantallas (ej: filtro de CAPEX, selector en /map, etc.).
-- **Hipotesis A:** Los dropdowns usan datos hardcodeados o seeds en vez de llamar al API real (`listTenants()`).
-- **Hipotesis B:** Hay un cache de TanStack Query que no invalida al crear una empresa nueva.
-- **Hipotesis C:** El hook/store que alimenta esos dropdowns no esta conectado al mismo endpoint que el CRUD de empresas.
-- **Accion:** Buscar en el codebase todos los lugares donde se renderizan listas de empresas y verificar su fuente de datos.
+### F13-01: Diagnosticar origen de datos en dropdowns de empresa — **RESUELTO** ✅
+- **Problema:** Empresas creadas desde `Configuracion → Empresas` no aparecian en el `CompanySelector` del header.
+- **Causa raiz:** `CompanySelector` leia de `useAuthStore((s) => s.companies)` (Zustand), que solo se llena al hacer login via `getMe()`. Crear una empresa invalidaba `["tenants"]` en TanStack Query pero NUNCA actualizaba el Zustand store.
+- **Solucion aplicada:** Se reescribio `CompanySelector` para que:
+  - Admin del Sistema: usa `useQuery` con `queryKey: ["tenants"]` y `listTenants(200)`. Al crear empresas, se invalida esta query y el dropdown se actualiza automaticamente.
+  - Admin de Empresa: sigue usando `authStore.companies` (contexto fijo).
+  - Mapeo `Tenant[] → Company[]` con campos `id, name, slug, primary_color, secondary_color, tertiary_color, logo_url, is_active`.
+- **Archivos:** `company-selector.tsx`, `use-permissions.ts` (agrego `isSystemAdmin`)
 
 ### F13-02: Unificar fuente de datos de empresas
 - Todos los dropdowns y listados que muestran empresas deben usar el mismo `listTenants()` de `src/lib/api/tenants.ts` con TanStack Query.
