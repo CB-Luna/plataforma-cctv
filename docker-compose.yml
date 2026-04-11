@@ -89,7 +89,7 @@ services:
     image: dpage/pgadmin4:latest
     container_name: mono-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@symtickets.local
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@symtickets.dev}
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "${PGADMIN_HOST_PORT:-5058}:80"

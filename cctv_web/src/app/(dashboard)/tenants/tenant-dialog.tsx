@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,8 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ThemeSelector, type ThemeSelection } from "@/components/theme-selector";
-import { Eye, EyeOff } from "lucide-react";
+import { ThemeSelector, type ThemeSelection, findPresetByColors } from "@/components/theme-selector";
+import { Eye, EyeOff, Upload } from "lucide-react";
 import {
   ASSIGNABLE_SERVICE_CODES,
   COMMERCIAL_PLAN_PRESETS,
@@ -114,6 +114,7 @@ interface TenantDialogProps {
   onOpenChange: (open: boolean) => void;
   tenant?: Tenant | null;
   onSubmit: (data: TenantFormValues) => Promise<void>;
+  onLogoUpload?: (file: File) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -124,6 +125,7 @@ export function TenantDialog({
   onOpenChange,
   tenant,
   onSubmit,
+  onLogoUpload,
   isSubmitting,
 }: TenantDialogProps) {
   const isEdit = !!tenant;
@@ -145,9 +147,36 @@ export function TenantDialog({
   const subscriptionPlan = watch("subscription_plan");
   const createInitialAdmin = watch("create_initial_admin");
   const enabledServices = watch("enabled_services");
+  const primaryColor = watch("primary_color");
+  const secondaryColor = watch("secondary_color");
+  const tertiaryColor = watch("tertiary_color");
+
+  // Estado para logo file upload
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
+  const logoPreviewUrl = useMemo(() => {
+    if (logoFile) return URL.createObjectURL(logoFile);
+    return tenant?.logo_url ?? null;
+  }, [logoFile, tenant?.logo_url]);
+
+  // Limpiar object URL al desmontar
+  useEffect(() => {
+    return () => {
+      if (logoFile && logoPreviewUrl && logoPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(logoPreviewUrl);
+      }
+    };
+  }, [logoFile, logoPreviewUrl]);
+
+  // Detectar preset activo basado en los colores actuales del form
+  const activeThemeCode = useMemo(() => {
+    return findPresetByColors(primaryColor, secondaryColor, tertiaryColor);
+  }, [primaryColor, secondaryColor, tertiaryColor]);
 
   useEffect(() => {
     reset(buildDefaultValues(tenant, tenantProfile.packageProfile));
+    setLogoFile(null);
   }, [tenant, tenantProfile.packageProfile, reset, open]);
 
   useEffect(() => {
@@ -160,8 +189,31 @@ export function TenantDialog({
   const handleOpenChange = (value: boolean) => {
     if (!value) {
       reset(buildDefaultValues(tenant, tenantProfile.packageProfile));
+      setLogoFile(null);
     }
     onOpenChange(value);
+  };
+
+  // Al enviar el form, tambien subir logo si se selecciono archivo
+  const handleFormSubmit = async (data: TenantFormValues) => {
+    await onSubmit(data);
+    if (logoFile && onLogoUpload && tenant) {
+      setIsUploadingLogo(true);
+      try {
+        await onLogoUpload(logoFile);
+      } finally {
+        setIsUploadingLogo(false);
+      }
+    }
+  };
+
+  // Cuando el usuario selecciona un preset, aplicar sus colores al form
+  const handleThemeChange = (selection: ThemeSelection | null) => {
+    if (selection) {
+      setValue("primary_color", selection.colors[0], { shouldDirty: true });
+      setValue("secondary_color", selection.colors[1], { shouldDirty: true });
+      setValue("tertiary_color", selection.colors[2], { shouldDirty: true });
+    }
   };
 
   return (
@@ -176,7 +228,7 @@ export function TenantDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <Tabs defaultValue="identidad">
             <TabsList className="w-full">
               <TabsTrigger value="identidad">Identidad</TabsTrigger>
@@ -199,6 +251,39 @@ export function TenantDialog({
                 <Input id="domain" placeholder="empresa.ejemplo.com" {...register("domain")} />
               </Field>
 
+              {/* Logo de empresa */}
+              {isEdit && onLogoUpload ? (
+                <div className="space-y-2">
+                  <Label>Logo de empresa</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60">
+                      {logoPreviewUrl ? (
+                        <img
+                          src={logoPreviewUrl}
+                          alt={`Logo de ${tenant?.name ?? "empresa"}`}
+                          className="h-12 max-w-full rounded-lg object-contain"
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Sin logo</span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm transition-colors hover:bg-muted/50 dark:border-slate-700">
+                        <Upload className="h-4 w-4 text-muted-foreground" />
+                        <span>{logoFile ? logoFile.name : "Cambiar logo"}</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                          onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+                        />
+                      </label>
+                      <p className="mt-1 text-xs text-muted-foreground">PNG, JPG, WebP o SVG</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
               <div>
                 <Label className="mb-2 block">Branding</Label>
                 <div className="grid grid-cols-3 gap-4">
@@ -209,8 +294,8 @@ export function TenantDialog({
               </div>
 
               <ThemeSelector
-                value={null}
-                onChange={() => {}}
+                value={activeThemeCode}
+                onChange={handleThemeChange}
                 label="Tema visual (referencia)"
               />
             </TabsContent>
@@ -365,8 +450,8 @@ export function TenantDialog({
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Guardando..." : isEdit ? "Actualizar" : "Crear empresa"}
+            <Button type="submit" disabled={isSubmitting || isUploadingLogo}>
+              {isUploadingLogo ? "Subiendo logo..." : isSubmitting ? "Guardando..." : isEdit ? "Actualizar" : "Crear empresa"}
             </Button>
           </DialogFooter>
         </form>

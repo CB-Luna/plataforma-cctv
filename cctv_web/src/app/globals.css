@@ -58,12 +58,26 @@
   --color-tenant-primary: var(--tenant-primary);
   --color-tenant-secondary: var(--tenant-secondary);
   --color-tenant-tertiary: var(--tenant-tertiary);
+  --color-tenant-success: var(--tenant-success);
+  --color-tenant-warning: var(--tenant-warning);
+  --color-tenant-error: var(--tenant-error);
+  --color-tenant-info: var(--tenant-info);
+  --color-tenant-text-primary: var(--tenant-text-primary);
+  --color-tenant-text-secondary: var(--tenant-text-secondary);
+  --color-tenant-border: var(--tenant-border-color);
 }
 
 :root {
   --tenant-primary: #1976D2;
   --tenant-secondary: #424242;
   --tenant-tertiary: #757575;
+  --tenant-success: #10b981;
+  --tenant-warning: #f59e0b;
+  --tenant-error: #ef4444;
+  --tenant-info: #3b82f6;
+  --tenant-text-primary: #111827;
+  --tenant-text-secondary: #6b7280;
+  --tenant-border-color: #e5e7eb;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -161,6 +175,11 @@
   /* Page surfaces */
   --bg-page: #0b0f19;
   --bg-surface: #111827;
+
+  /* Tenant semantic colors dark */
+  --tenant-text-primary: #f9fafb;
+  --tenant-text-secondary: #9ca3af;
+  --tenant-border-color: #374151;
 
   /* Table */
   --table-header-bg: rgba(30, 41, 59, 0.8);

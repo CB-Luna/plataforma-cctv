@@ -2,8 +2,6 @@ import { create } from "zustand";
 import type { User, Company, Permission, Role } from "@/types/api";
 import { setTokenCookie, removeTokenCookie } from "@/lib/cookies";
 import { hasAnyPermission, hasPermission } from "@/lib/auth/permissions";
-import { useTenantStore } from "@/stores/tenant-store";
-import { useSiteStore } from "@/stores/site-store";
 
 const PENDING_TENANT_SELECTION_KEY = "pending_tenant_selection";
 
@@ -93,12 +91,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   clearAuth: () => {
     localStorage.removeItem("access_token");
+    localStorage.removeItem("site_id");
+    localStorage.removeItem("site_snapshot");
     removeTokenCookie();
     if (typeof window !== "undefined") {
       sessionStorage.removeItem(PENDING_TENANT_SELECTION_KEY);
     }
+    // Import dinamico para evitar dependencia circular entre stores
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { useTenantStore } = require("@/stores/tenant-store") as { useTenantStore: { getState: () => { clearCompany: () => void } } };
     useTenantStore.getState().clearCompany();
-    useSiteStore.getState().clearSite();
     set({
       token: null,
       user: null,

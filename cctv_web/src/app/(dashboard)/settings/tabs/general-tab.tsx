@@ -478,6 +478,8 @@ export function GeneralTab() {
   const handleSave = useCallback(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(theme));
+      // Notificar al ThemeProvider para que re-lea las variables CSS
+      window.dispatchEvent(new Event("theme-config-changed"));
     }
     setSavedTheme(theme);
     setHasChanges(false);

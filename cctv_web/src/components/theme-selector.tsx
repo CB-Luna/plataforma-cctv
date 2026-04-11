@@ -44,6 +44,26 @@ export interface ThemeSelection {
   colors: [string, string, string];
 }
 
+/**
+ * Busca un preset que coincida con los 3 colores dados.
+ * Devuelve el code del preset, o null si no coincide.
+ */
+export function findPresetByColors(
+  primary?: string,
+  secondary?: string,
+  tertiary?: string,
+): string | null {
+  if (!primary || !secondary || !tertiary) return null;
+  const norm = (c: string) => c.toLowerCase().trim();
+  const match = BUILT_IN_PRESETS.find(
+    (p) =>
+      norm(p.colors[0]) === norm(primary) &&
+      norm(p.colors[1]) === norm(secondary) &&
+      norm(p.colors[2]) === norm(tertiary),
+  );
+  return match?.code ?? null;
+}
+
 interface ThemeSelectorProps {
   value?: string | null;
   onChange: (selection: ThemeSelection | null) => void;

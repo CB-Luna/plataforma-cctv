@@ -18,7 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, Info } from "lucide-react";
 
 const optionalString = () =>
   z.preprocess(
@@ -185,40 +183,13 @@ export function CameraDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edicion manual no disponible" : "Nueva camara"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Detalle de camara" : "Nueva camara"}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "El backend actual no expone PUT para camaras. Esta vista deja visible el contexto guardado, pero la edicion se difiere para no prometer una capacidad inexistente."
-              : "La alta manual guarda contexto operativo y especificaciones base. Red, tipo y megapixeles avanzados se capturan hoy por importacion."}
+              ? "Vista de la camara registrada. La edicion no esta disponible en este momento."
+              : "Registra una nueva camara con su ubicacion y especificaciones base."}
           </DialogDescription>
         </DialogHeader>
-
-        <div className="grid gap-3">
-          <Card className="border-amber-200 bg-amber-50/80">
-            <CardContent className="flex gap-3 py-3 px-4">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-              <div className="text-sm text-amber-900">
-                <p className="font-medium">Capacidad manual acotada al contrato actual</p>
-                <p className="mt-1 text-xs text-amber-800">
-                  El alta manual no persiste `camera_type`, `ip_address`, `mac_address`, `megapixels`
-                  ni estado operativo avanzado.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-sky-200 bg-sky-50/80">
-            <CardContent className="flex gap-3 py-3 px-4">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" />
-              <div className="text-sm text-sky-950">
-                <p className="font-medium">Contexto recomendado</p>
-                <p className="mt-1 text-xs text-sky-800">
-                  Asigna siempre sitio y, si existe, NVR. Eso mantiene coherente inventario, tickets,
-                  topologia y floor plans por sucursal.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <fieldset className="space-y-4">

@@ -234,12 +234,12 @@ function SiteDialog({ open, onOpenChange, initial, title, onSave }: SiteDialogPr
 type CombinedSite = (SiteListItem & { isLocal?: false }) | LocalSite;
 
 export default function SitesPage() {
+  const currentCompany = useTenantStore((s) => s.currentCompany);
   const [localSites, setLocalSites] = useState<LocalSite[]>(() => listLocalSitesForCompany(currentCompany?.id));
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<LocalSite | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "map">("table");
 
-  const currentCompany = useTenantStore((s) => s.currentCompany);
   const { permissions, roles } = usePermissions();
   const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";

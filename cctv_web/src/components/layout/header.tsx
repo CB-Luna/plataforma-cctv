@@ -96,6 +96,8 @@ export function Header() {
     company: currentCompany,
   });
 
+  const clearSite = useSiteStore((state) => state.clearSite);
+
   async function handleLogout() {
     try {
       await logout();
@@ -104,6 +106,7 @@ export function Header() {
     }
 
     clearCompany();
+    clearSite();
     clearAuth();
     // Vaciar cache de TanStack Query para evitar datos residuales de sesion anterior
     queryClient.clear();

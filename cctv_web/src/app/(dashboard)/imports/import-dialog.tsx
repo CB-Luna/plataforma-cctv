@@ -332,8 +332,7 @@ export function ImportDialog({ open, onOpenChange, onSubmit, isLoading }: Import
                 <div>
                   <p className="text-sm font-medium">Archivo fuente</p>
                   <p className="text-xs text-muted-foreground">
-                    El parsing ocurre en frontend y el backend recibe un lote con `data` y `column_mapping`
-                    reales.
+                    Formatos aceptados: CSV, XLSX, XLS.
                   </p>
                 </div>
                 <Input
@@ -457,8 +456,8 @@ export function ImportDialog({ open, onOpenChange, onSubmit, isLoading }: Import
                 <div>
                   <h3 className="text-sm font-semibold">Mapeo de columnas</h3>
                   <p className="text-xs text-muted-foreground">
-                    Ajusta el destino de cada header antes de crear el lote. Solo las columnas mapeadas se
-                    estandarizan para el proceso backend.
+                    Ajusta el destino de cada columna antes de crear el lote. Solo las columnas mapeadas
+                    se incluiran en la importacion.
                   </p>
                 </div>
 

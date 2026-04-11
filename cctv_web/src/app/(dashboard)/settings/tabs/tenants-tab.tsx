@@ -239,6 +239,9 @@ export function TenantsTab() {
         }}
         tenant={editingTenant}
         onSubmit={handleSubmit}
+        onLogoUpload={editingTenant ? async (file) => {
+          await uploadLogoMutation.mutateAsync({ id: editingTenant.id, file });
+        } : undefined}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
       />
 
@@ -298,6 +301,7 @@ async function createTenantOperationally(data: TenantFormValues): Promise<{
       mapTenantFormToPayload(data, {
         existingSettings: tenant.settings,
         onboarding: onboardingSnapshot,
+        existingLogoUrl: tenant.logo_url,
       }),
     );
   } catch (error) {
@@ -322,6 +326,7 @@ async function updateTenantOperationally(
     tenant.id,
     mapTenantFormToPayload(data, {
       existingSettings: tenant.settings,
+      existingLogoUrl: tenant.logo_url,
     }),
   );
 
@@ -347,6 +352,7 @@ async function updateTenantOperationally(
       mapTenantFormToPayload(data, {
         existingSettings: baseTenant.settings,
         onboarding: snapshot,
+        existingLogoUrl: baseTenant.logo_url,
       }),
     );
   } catch (error) {
@@ -518,12 +524,14 @@ function mapTenantFormToPayload(
   options?: {
     existingSettings?: Record<string, unknown> | null;
     onboarding?: TenantOnboardingSnapshot;
+    existingLogoUrl?: string | null;
   },
 ) {
   return {
     name: data.name,
     slug: data.slug,
     domain: data.domain?.trim() || undefined,
+    logo_url: options?.existingLogoUrl || undefined,
     primary_color: data.primary_color?.trim() || undefined,
     secondary_color: data.secondary_color?.trim() || undefined,
     tertiary_color: data.tertiary_color?.trim() || undefined,
