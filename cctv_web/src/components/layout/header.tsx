@@ -36,6 +36,7 @@ import { useTenantStore } from "@/stores/tenant-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { SiteSelector } from "./site-selector";
 import { CompanySelector } from "./company-selector";
+import { getUserAvatar } from "@/app/(dashboard)/users/user-dialogs";
 
 const breadcrumbMap: Record<string, string> = {
   dashboard: "Dashboard",
@@ -75,6 +76,8 @@ function resolveBreadcrumbLabel(segment: string, settingsLabel: string, dashboar
 
 export function Header() {
   const user = useAuthStore((state) => state.user);
+  const localAvatar = user?.id ? getUserAvatar(user.id) : null;
+  const avatarSrc = user?.avatar_url || localAvatar;
   const roles = useAuthStore((state) => state.roles);
   const permissions = useAuthStore((state) => state.permissions);
   const clearAuth = useAuthStore((state) => state.clearAuth);
@@ -245,8 +248,8 @@ export function Header() {
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
             <Avatar className="h-8 w-8 ring-2 ring-gray-200 dark:ring-gray-700">
-              {user?.avatar_url && (
-                <AvatarImage src={user.avatar_url} alt={`${user.first_name} ${user.last_name}`} />
+              {avatarSrc && (
+                <AvatarImage src={avatarSrc} alt={`${user?.first_name} ${user?.last_name}`} />
               )}
               <AvatarFallback className="text-xs font-bold text-white" style={{ background: `linear-gradient(135deg, var(--tenant-primary, #38bdf8), color-mix(in srgb, var(--tenant-primary, #1d4ed8) 70%, #000))` }}>
                 {initials}
