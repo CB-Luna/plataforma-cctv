@@ -101,6 +101,15 @@ function deriveSidebarBg(primary: string): string {
   return hslToHex(h, Math.min(s, 0.7), 0.12);
 }
 
+/** Mezcla un color hex con blanco. factor=1 → blanco puro, factor=0 → color original. */
+function tintColor(hex: string, factor: number): string {
+  const h = hex.replace("#", "");
+  const r = Math.round(parseInt(h.slice(0, 2), 16) + (255 - parseInt(h.slice(0, 2), 16)) * factor);
+  const g = Math.round(parseInt(h.slice(2, 4), 16) + (255 - parseInt(h.slice(2, 4), 16)) * factor);
+  const b = Math.round(parseInt(h.slice(4, 6), 16) + (255 - parseInt(h.slice(4, 6), 16)) * factor);
+  return "#" + [r, g, b].map((x) => Math.min(255, x).toString(16).padStart(2, "0")).join("");
+}
+
 // Mapeo de campos de ThemeConfig a variables CSS
 const THEME_VAR_MAP: Record<string, string> = {
   primary: "--tenant-primary",
@@ -209,11 +218,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.style.setProperty("--chart-2", secondaryOklch);
       root.style.setProperty("--chart-3", accentOklch);
 
+      // Colores de tabla derivados del primario (tintes suaves)
+      root.style.setProperty("--table-header-bg", tintColor(primary, 0.92));
+      root.style.setProperty("--table-stripe-bg", tintColor(primary, 0.96));
+      root.style.setProperty("--table-hover-bg", tintColor(primary, 0.90));
+
       appliedVars.push(
         "--primary", "--primary-foreground", "--accent", "--accent-foreground", "--ring",
         "--sidebar-primary", "--sidebar-primary-foreground",
         "--sidebar-accent", "--sidebar-accent-foreground",
         "--chart-1", "--chart-2", "--chart-3",
+        "--table-header-bg", "--table-stripe-bg", "--table-hover-bg",
       );
     }
 

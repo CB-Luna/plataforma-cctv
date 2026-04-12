@@ -29,6 +29,7 @@ import {
   getServiceStatusMeta,
   parseTenantProductProfile,
 } from "@/lib/product/service-catalog";
+import { ChevronDown, ChevronRight, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ServicesPackagesTab() {
@@ -43,7 +44,9 @@ export function ServicesPackagesTab() {
 
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   // Overrides locales del usuario: solo se guardan cuando hay edicion pendiente
-  const [editOverrides, setEditOverrides] = useState<Record<string, { services: ProductServiceCode[]; plan: CommercialPlanCode }>>({}); 
+  const [editOverrides, setEditOverrides] = useState<Record<string, { services: ProductServiceCode[]; plan: CommercialPlanCode; disabledScreens: Partial<Record<ProductServiceCode, string[]>> }>>({});
+  // Servicios expandidos en la UI para mostrar pantallas individuales
+  const [expandedServices, setExpandedServices] = useState<Set<ProductServiceCode>>(new Set());
 
   // Auto-seleccion: usar el primer tenant disponible si no hay seleccion explicita
   const effectiveTenantId = selectedTenantId ?? (tenants[0]?.id ?? null);
@@ -54,6 +57,7 @@ export function ServicesPackagesTab() {
   const currentOverride = effectiveTenantId ? editOverrides[effectiveTenantId] : null;
   const editedServices: ProductServiceCode[] = currentOverride?.services ?? currentProfile?.enabledServices ?? [];
   const editedPlan: CommercialPlanCode = currentOverride?.plan ?? currentProfile?.packageProfile ?? "basic";
+  const editedDisabledScreens: Partial<Record<ProductServiceCode, string[]>> = currentOverride?.disabledScreens ?? currentProfile?.disabledScreens ?? {};
   const isDirty = !!currentOverride;
 
   const stats = useMemo(() => {
@@ -63,6 +67,7 @@ export function ServicesPackagesTab() {
       basic: profiles.filter((p) => p.packageProfile === "basic").length,
       professional: profiles.filter((p) => p.packageProfile === "professional").length,
       enterprise: profiles.filter((p) => p.packageProfile === "enterprise").length,
+      custom: profiles.filter((p) => p.packageProfile === "custom").length,
       operational: ASSIGNABLE_SERVICE_CODES.filter(
         (c) => PRODUCT_SERVICE_DEFINITIONS[c]?.status === "operational",
       ).length,
@@ -74,19 +79,54 @@ export function ServicesPackagesTab() {
     const newServices = editedServices.includes(code)
       ? editedServices.filter((s) => s !== code)
       : [...editedServices, code];
+    // Al deshabilitar un servicio, limpiar sus pantallas deshabilitadas
+    const newDisabled = { ...editedDisabledScreens };
+    if (!newServices.includes(code)) {
+      delete newDisabled[code];
+    }
     setEditOverrides((prev) => ({
       ...prev,
-      [effectiveTenantId]: { services: newServices, plan: editedPlan },
+      [effectiveTenantId]: { services: newServices, plan: editedPlan, disabledScreens: newDisabled },
     }));
+  }
+
+  function toggleScreen(serviceCode: ProductServiceCode, screenKey: string) {
+    if (!effectiveTenantId) return;
+    const current = editedDisabledScreens[serviceCode] ?? [];
+    const isDisabled = current.includes(screenKey);
+    const newScreens = isDisabled
+      ? current.filter((k) => k !== screenKey)
+      : [...current, screenKey];
+    const newDisabled = { ...editedDisabledScreens };
+    if (newScreens.length > 0) {
+      newDisabled[serviceCode] = newScreens;
+    } else {
+      delete newDisabled[serviceCode];
+    }
+    setEditOverrides((prev) => ({
+      ...prev,
+      [effectiveTenantId]: { services: editedServices, plan: editedPlan, disabledScreens: newDisabled },
+    }));
+  }
+
+  function toggleServiceExpanded(code: ProductServiceCode) {
+    setExpandedServices((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      return next;
+    });
   }
 
   function applyPlan(planCode: CommercialPlanCode) {
     if (!effectiveTenantId) return;
     const plan = COMMERCIAL_PLAN_PRESETS[planCode];
     if (!plan) return;
+    // Plan personalizado: no cambiar servicios, solo permitir edicion manual
+    const newServices = planCode === "custom" ? editedServices : [...plan.suggestedServices];
     setEditOverrides((prev) => ({
       ...prev,
-      [effectiveTenantId]: { services: [...plan.suggestedServices], plan: planCode },
+      [effectiveTenantId]: { services: newServices, plan: planCode, disabledScreens: editedDisabledScreens },
     }));
   }
 
@@ -98,6 +138,7 @@ export function ServicesPackagesTab() {
         existingSettings: selectedTenant.settings as Record<string, unknown> | null,
         packageProfile: editedPlan,
         enabledServices: editedServices,
+        disabledScreens: editedDisabledScreens,
         onboarding: profile.onboarding,
       });
       return updateTenant(selectedTenant.id, {
@@ -215,7 +256,7 @@ export function ServicesPackagesTab() {
               <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Plan comercial
               </h3>
-              <div className="grid gap-4 xl:grid-cols-3">
+              <div className="grid gap-4 xl:grid-cols-4">
                 {Object.values(COMMERCIAL_PLAN_PRESETS).map((plan) => {
                   const isActive = editedPlan === plan.code;
                   return (
@@ -301,13 +342,41 @@ export function ServicesPackagesTab() {
                           <Badge variant={meta.tone} className="mt-2 text-[10px]">
                             {meta.label}
                           </Badge>
-                          {def.modules && def.modules.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {def.modules.map((mod) => (
-                                <Badge key={mod} variant="outline" className="text-[10px]">
-                                  {mod}
-                                </Badge>
-                              ))}
+                          {isEnabled && def.screens.length > 0 && (
+                            <div className="mt-2">
+                              <button
+                                type="button"
+                                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleServiceExpanded(serviceCode); }}
+                              >
+                                {expandedServices.has(serviceCode) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                <Monitor className="h-3 w-3" />
+                                <span>{def.screens.length} pantallas</span>
+                              </button>
+                              {expandedServices.has(serviceCode) && (
+                                <div className="mt-2 space-y-1 border-l-2 border-blue-200 pl-3 dark:border-blue-800">
+                                  {def.screens.map((screen) => {
+                                    const screenDisabled = editedDisabledScreens[serviceCode]?.includes(screen.key) ?? false;
+                                    return (
+                                      <label
+                                        key={screen.key}
+                                        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-slate-100 dark:hover:bg-slate-800"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <Checkbox
+                                          checked={!screenDisabled}
+                                          onCheckedChange={() => toggleScreen(serviceCode, screen.key)}
+                                          disabled={!canEdit}
+                                          className="h-3.5 w-3.5"
+                                        />
+                                        <span className={cn(screenDisabled && "text-muted-foreground line-through")}>
+                                          {screen.label}
+                                        </span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -335,6 +404,7 @@ export function ServicesPackagesTab() {
                       <th className="px-3 py-3 font-semibold">Basic</th>
                       <th className="px-3 py-3 font-semibold">Professional</th>
                       <th className="px-3 py-3 font-semibold">Enterprise</th>
+                      <th className="px-3 py-3 font-semibold">Personalizado</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -372,6 +442,9 @@ export function ServicesPackagesTab() {
                             ) : (
                               <span className="text-slate-400">—</span>
                             )}
+                          </td>
+                          <td className="px-3 py-2">
+                            <span className="text-xs text-muted-foreground italic">Manual</span>
                           </td>
                         </tr>
                       );

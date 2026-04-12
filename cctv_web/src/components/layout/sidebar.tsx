@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, Camera } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getRouteAccessRule } from "@/lib/auth/access-control";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
@@ -57,6 +57,7 @@ export function Sidebar({ collapsed = false, onNavigate }: SidebarProps) {
     enabledServices: tenantProfile.enabledServices,
     hasRoleContext: roles.length > 0,
     hasAnyPermission,
+    disabledScreens: tenantProfile.disabledScreens,
   });
   const secondaryLinks = filterVisibleLinks(
     [
@@ -216,14 +217,18 @@ function SidebarBranding({
             {company.name.charAt(0).toUpperCase()}
           </div>
         ) : (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white shadow-lg" style={{ background: `linear-gradient(135deg, var(--tenant-primary, #38bdf8), color-mix(in srgb, var(--tenant-primary, #2563eb) 70%, #000))` }}>
-            <Camera className="h-4 w-4" />
-          </div>
+          /* Admin del sistema: logo de la plataforma */
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/logo.png"
+            alt="INFRAIX"
+            className="h-9 w-9 shrink-0 rounded-xl border border-white/10 object-cover"
+          />
         )}
         {!collapsed ? (
           <div className="min-w-0">
             <h2 className="truncate text-sm font-bold leading-tight text-white">
-              {company?.name ?? "SyMTickets"}
+              {company?.name ?? "INFRAIX"}
             </h2>
             <p className="truncate text-[10px] leading-tight text-slate-400/70">
               {isTenant && roleLabel ? roleLabel : experienceBadge}

@@ -46,9 +46,9 @@ const tenantSchema = z
     primary_color: z.string().optional(),
     secondary_color: z.string().optional(),
     tertiary_color: z.string().optional(),
-    subscription_plan: z.enum(["basic", "professional", "enterprise"]),
+    subscription_plan: z.enum(["basic", "professional", "enterprise", "custom"]),
     enabled_services: z
-      .array(z.enum(["cctv", "storage", "intelligence", "access_control", "networking"]))
+      .array(z.enum(["cctv", "operations", "storage", "intelligence", "access_control", "networking"]))
       .min(1, "Selecciona al menos un servicio habilitado"),
     max_users: z.number().int().positive(),
     max_clients: z.number().int().positive(),

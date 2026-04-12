@@ -137,7 +137,12 @@ export default function MapPage() {
 
       {/* Map container */}
       <div className="relative flex-1 overflow-hidden rounded-xl border border-gray-200 shadow-sm dark:border-gray-800">
-        <BranchMap sites={visibleSites} filterClient={currentSite ? "" : filterClient} />
+        <BranchMap
+          sites={visibleSites}
+          filterClient={currentSite ? "" : filterClient}
+          companyLogo={currentCompany?.logo_url ?? null}
+          companyName={currentCompany?.name ?? null}
+        />
       </div>
     </div>
   );

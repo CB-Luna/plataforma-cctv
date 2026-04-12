@@ -2,13 +2,14 @@ import type { Company, Tenant } from "@/types/api";
 
 export type ProductServiceCode =
   | "cctv"
+  | "operations"
   | "storage"
   | "intelligence"
   | "access_control"
   | "networking";
 
 export type AssignableServiceCode = ProductServiceCode;
-export type CommercialPlanCode = "basic" | "professional" | "enterprise";
+export type CommercialPlanCode = "basic" | "professional" | "enterprise" | "custom";
 export type ServiceSupportStatus = "operational" | "partial" | "wip" | "future";
 export type ProductProfileSource = "explicit" | "legacy_default";
 export type TenantOnboardingStatus =
@@ -17,6 +18,11 @@ export type TenantOnboardingStatus =
   | "admin_created_pending_role"
   | "admin_creation_failed";
 
+export interface ServiceScreen {
+  key: string;
+  label: string;
+}
+
 export interface ProductServiceDefinition {
   code: ProductServiceCode;
   label: string;
@@ -24,7 +30,7 @@ export interface ProductServiceDefinition {
   description: string;
   status: ServiceSupportStatus;
   assignable: boolean;
-  modules: string[];
+  screens: ServiceScreen[];
   runtimeVisible: boolean;
 }
 
@@ -52,6 +58,7 @@ export interface TenantOnboardingSnapshot {
 export interface TenantProductProfile {
   packageProfile: CommercialPlanCode;
   enabledServices: ProductServiceCode[];
+  disabledScreens: Partial<Record<ProductServiceCode, string[]>>;
   source: ProductProfileSource;
   onboarding: TenantOnboardingSnapshot;
 }
@@ -74,7 +81,32 @@ export const PRODUCT_SERVICE_DEFINITIONS: Record<ProductServiceCode, ProductServ
     description: "Inventario, camaras, NVR, planos, importacion, mapa y CAPEX del dominio CCTV.",
     status: "operational",
     assignable: true,
-    modules: ["Inventario", "Camaras", "Fichas tecnicas", "NVR", "Planos", "Mapa", "Importacion", "CAPEX"],
+    screens: [
+      { key: "inventory", label: "Inventario" },
+      { key: "cameras", label: "Camaras" },
+      { key: "camera-models", label: "Fichas tecnicas" },
+      { key: "nvrs", label: "NVR" },
+      { key: "floor-plans", label: "Planos" },
+      { key: "map", label: "Mapa" },
+      { key: "imports", label: "Importacion" },
+      { key: "sites", label: "Sucursales" },
+    ],
+    runtimeVisible: true,
+  },
+  operations: {
+    code: "operations",
+    label: "Operaciones",
+    shortLabel: "Ops",
+    description: "Tickets, clientes, polizas SLA, niveles SLA y CAPEX/garantias para gestion operativa.",
+    status: "operational",
+    assignable: true,
+    screens: [
+      { key: "tickets", label: "Tickets" },
+      { key: "clients", label: "Clientes" },
+      { key: "policies", label: "Polizas y SLA" },
+      { key: "sla", label: "Niveles SLA" },
+      { key: "capex", label: "CAPEX / Garantias" },
+    ],
     runtimeVisible: true,
   },
   storage: {
@@ -84,7 +116,7 @@ export const PRODUCT_SERVICE_DEFINITIONS: Record<ProductServiceCode, ProductServ
     description: "Capacidad parcial del producto: configuracion de almacenamiento y archivos del tenant activo dentro del shell actual.",
     status: "partial",
     assignable: true,
-    modules: ["Configuracion > Storage"],
+    screens: [{ key: "storage", label: "Configuracion > Storage" }],
     runtimeVisible: false,
   },
   intelligence: {
@@ -94,7 +126,7 @@ export const PRODUCT_SERVICE_DEFINITIONS: Record<ProductServiceCode, ProductServ
     description: "Capacidad parcial del producto: modelos, prompts y configuracion de inteligencia del tenant activo.",
     status: "partial",
     assignable: true,
-    modules: ["Configuracion > IA"],
+    screens: [{ key: "ia", label: "Configuracion > IA" }],
     runtimeVisible: false,
   },
   access_control: {
@@ -104,7 +136,14 @@ export const PRODUCT_SERVICE_DEFINITIONS: Record<ProductServiceCode, ProductServ
     description: "Modulo scaffold/WIP del producto: ya existe en menu, rutas y pantallas, pero todavia no tiene backend ni flujos operativos cerrados.",
     status: "wip",
     assignable: true,
-    modules: ["Resumen", "Inventario", "Fichas tecnicas", "Mantenimiento", "Incidentes", "Reportes"],
+    screens: [
+      { key: "ac-overview", label: "Resumen" },
+      { key: "ac-inventory", label: "Inventario" },
+      { key: "ac-tech-sheets", label: "Fichas tecnicas" },
+      { key: "ac-maintenance", label: "Mantenimiento" },
+      { key: "ac-incidents", label: "Incidentes" },
+      { key: "ac-reports", label: "Reportes" },
+    ],
     runtimeVisible: true,
   },
   networking: {
@@ -114,41 +153,55 @@ export const PRODUCT_SERVICE_DEFINITIONS: Record<ProductServiceCode, ProductServ
     description: "Modulo scaffold/WIP del producto: ya existe en menu, rutas y pantallas base, pero todavia no tiene backend ni flujos operativos cerrados.",
     status: "wip",
     assignable: true,
-    modules: ["Resumen", "Inventario", "Fichas tecnicas", "Mantenimiento", "Incidentes", "Reportes"],
+    screens: [
+      { key: "net-overview", label: "Resumen" },
+      { key: "net-inventory", label: "Inventario" },
+      { key: "net-tech-sheets", label: "Fichas tecnicas" },
+      { key: "net-maintenance", label: "Mantenimiento" },
+      { key: "net-incidents", label: "Incidentes" },
+      { key: "net-reports", label: "Reportes" },
+    ],
     runtimeVisible: true,
   },
 };
 
 export const ASSIGNABLE_SERVICE_CODES: AssignableServiceCode[] = [
   "cctv",
+  "operations",
   "access_control",
   "networking",
   "storage",
   "intelligence",
 ];
-export const RUNTIME_VISIBLE_SERVICE_CODES: ProductServiceCode[] = ["cctv", "access_control", "networking"];
+export const RUNTIME_VISIBLE_SERVICE_CODES: ProductServiceCode[] = ["cctv", "operations", "access_control", "networking"];
 export const PARTIAL_SERVICE_CODES: ProductServiceCode[] = ["storage", "intelligence"];
 export const FUTURE_SERVICE_CODES: ProductServiceCode[] = [];
-export const LEGACY_DEFAULT_ENABLED_SERVICES: ProductServiceCode[] = ["cctv", "storage", "intelligence"];
+export const LEGACY_DEFAULT_ENABLED_SERVICES: ProductServiceCode[] = ["cctv", "operations", "storage", "intelligence"];
 
 export const COMMERCIAL_PLAN_PRESETS: Record<CommercialPlanCode, CommercialPlanPreset> = {
   basic: {
     code: "basic",
     label: "Basic",
-    description: "Base operativa enfocada en CCTV.",
-    suggestedServices: ["cctv"],
+    description: "Base operativa enfocada en CCTV y Operaciones.",
+    suggestedServices: ["cctv", "operations"],
   },
   professional: {
     code: "professional",
     label: "Professional",
-    description: "CCTV mas Control de Acceso como dominio visible en construccion.",
-    suggestedServices: ["cctv", "access_control"],
+    description: "CCTV, Operaciones mas Control de Acceso como dominio visible en construccion.",
+    suggestedServices: ["cctv", "operations", "access_control"],
   },
   enterprise: {
     code: "enterprise",
     label: "Enterprise",
-    description: "Stack multi-dominio: CCTV, Control de Acceso, Redes y capacidades parciales de storage e IA.",
-    suggestedServices: ["cctv", "access_control", "networking", "storage", "intelligence"],
+    description: "Stack multi-dominio: CCTV, Operaciones, Control de Acceso, Redes y capacidades parciales de storage e IA.",
+    suggestedServices: ["cctv", "operations", "access_control", "networking", "storage", "intelligence"],
+  },
+  custom: {
+    code: "custom",
+    label: "Personalizado",
+    description: "Selecciona manualmente los modulos y pantallas que necesita esta empresa.",
+    suggestedServices: [],
   },
 };
 
@@ -160,7 +213,11 @@ const ROUTE_SERVICE_REQUIREMENTS: Partial<Record<string, ProductServiceCode>> = 
   "/floor-plans": "cctv",
   "/map": "cctv",
   "/imports": "cctv",
-  "/capex": "cctv",
+  "/capex": "operations",
+  "/tickets": "operations",
+  "/clients": "operations",
+  "/policies": "operations",
+  "/sla": "operations",
   "/access-control": "access_control",
   "/access-control/inventory": "access_control",
   "/access-control/technical-sheets": "access_control",
@@ -281,6 +338,22 @@ export function parseTenantOnboarding(
   };
 }
 
+export function parseDisabledScreens(
+  settings?: Record<string, unknown> | null,
+): Partial<Record<ProductServiceCode, string[]>> {
+  if (!isRecord(settings)) return {};
+  const raw = settings.disabled_screens;
+  if (!isRecord(raw)) return {};
+  const result: Partial<Record<ProductServiceCode, string[]>> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (isKnownServiceCode(key)) {
+      const screens = readStringArray(value);
+      if (screens.length) result[key] = screens;
+    }
+  }
+  return result;
+}
+
 export function parseTenantProductProfile(
   entity:
     | Pick<Tenant, "subscription_plan" | "settings">
@@ -290,12 +363,14 @@ export function parseTenantProductProfile(
 ): TenantProductProfile {
   const packageProfile = parsePackageProfile(entity?.subscription_plan, entity?.settings);
   const explicitServices = parseEnabledServices(entity?.settings);
+  const settingsRecord = isRecord(entity?.settings) ? entity!.settings : null;
 
   return {
     packageProfile,
     enabledServices: explicitServices ?? LEGACY_DEFAULT_ENABLED_SERVICES,
+    disabledScreens: parseDisabledScreens(settingsRecord),
     source: explicitServices ? "explicit" : "legacy_default",
-    onboarding: parseTenantOnboarding(entity?.settings),
+    onboarding: parseTenantOnboarding(settingsRecord),
   };
 }
 
@@ -303,12 +378,26 @@ export function buildTenantSettings(params: {
   existingSettings?: Record<string, unknown> | null;
   packageProfile: CommercialPlanCode;
   enabledServices: ProductServiceCode[];
+  disabledScreens?: Partial<Record<ProductServiceCode, string[]>>;
   onboarding?: TenantOnboardingSnapshot;
 }): Record<string, unknown> {
   const nextSettings = isRecord(params.existingSettings) ? { ...params.existingSettings } : {};
 
   nextSettings.package_profile = params.packageProfile;
   nextSettings.enabled_services = dedupeServices(params.enabledServices);
+
+  // Pantallas deshabilitadas por servicio (control granular)
+  if (params.disabledScreens) {
+    const cleanScreens: Record<string, string[]> = {};
+    for (const [svc, screens] of Object.entries(params.disabledScreens)) {
+      if (screens && screens.length > 0) cleanScreens[svc] = screens;
+    }
+    if (Object.keys(cleanScreens).length > 0) {
+      nextSettings.disabled_screens = cleanScreens;
+    } else {
+      delete nextSettings.disabled_screens;
+    }
+  }
 
   if (params.onboarding) {
     nextSettings.onboarding = {
@@ -366,6 +455,18 @@ export function isSettingsTabEnabledForServices(tabKey: string, enabledServices:
   const requiredService = SETTINGS_TAB_SERVICE_REQUIREMENTS[tabKey];
   if (!requiredService) return true;
   return enabledServices.includes(requiredService);
+}
+
+/** Verifica si una pantalla especifica esta habilitada (no en la lista de deshabilitadas) */
+export function isScreenEnabled(
+  screenKey: string,
+  serviceCode: ProductServiceCode,
+  disabledScreens?: Partial<Record<ProductServiceCode, string[]>>,
+): boolean {
+  if (!disabledScreens) return true;
+  const disabled = disabledScreens[serviceCode];
+  if (!disabled || disabled.length === 0) return true;
+  return !disabled.includes(screenKey);
 }
 
 export function getOnboardingStatusMeta(status: TenantOnboardingStatus): {

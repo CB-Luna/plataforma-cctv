@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SyMTickets CCTV",
-  description: "Sistema de gestión de infraestructura CCTV multi-tenant",
+  title: "INFRAIX",
+  description: "Plataforma multi-tenant de infraestructura CCTV",
 };
 
 export default function RootLayout({

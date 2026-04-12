@@ -156,7 +156,7 @@ export function getWorkspaceExperience(params: {
     hasPlatformWorkspace,
     shellRootLabel: "Plataforma",
     shellBadgeLabel: "Plataforma",
-    shellTitle: "SyMTickets CCTV",
+    shellTitle: "INFRAIX",
     shellDescription: "Gobierno de empresas, servicios, plantillas y monitoreo de onboarding desde la plataforma global.",
     dashboardLabel: "Dashboard",
     settingsLabel: "Configuracion",

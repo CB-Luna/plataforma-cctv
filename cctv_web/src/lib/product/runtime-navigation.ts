@@ -1,6 +1,7 @@
 import { getRouteAccessRule } from "@/lib/auth/access-control";
 import {
   isRouteEnabledForServices,
+  isScreenEnabled,
   isServiceRuntimeVisible,
   type ProductServiceCode,
 } from "@/lib/product/service-catalog";
@@ -12,6 +13,7 @@ export interface RuntimeMenuLinkItem {
   route: string;
   permissions?: string[];
   service?: ProductServiceCode;
+  screenKey?: string;
 }
 
 export interface RuntimeMenuSection {
@@ -54,6 +56,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
   {
     id: "cctv",
     label: "CCTV",
+    service: "cctv",
     items: [
       {
         id: "nav-inventory",
@@ -62,6 +65,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/inventory",
         permissions: getRouteAccessRule("/inventory")?.anyOf,
         service: "cctv",
+        screenKey: "inventory",
       },
       {
         id: "nav-sites",
@@ -69,6 +73,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         icon: "location_on",
         route: "/sites",
         service: "cctv",
+        screenKey: "sites",
       },
       // Ocultas temporalmente — el inventario ya incluye camaras y NVRs
       // {
@@ -78,6 +83,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
       //   route: "/cameras",
       //   permissions: getRouteAccessRule("/cameras")?.anyOf,
       //   service: "cctv",
+      //   screenKey: "cameras",
       // },
       {
         id: "nav-camera-models",
@@ -86,6 +92,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/camera-models",
         permissions: getRouteAccessRule("/camera-models")?.anyOf,
         service: "cctv",
+        screenKey: "camera-models",
       },
       // Oculta temporalmente — el inventario ya incluye NVRs
       // {
@@ -95,6 +102,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
       //   route: "/nvrs",
       //   permissions: getRouteAccessRule("/nvrs")?.anyOf,
       //   service: "cctv",
+      //   screenKey: "nvrs",
       // },
       {
         id: "nav-floor-plans",
@@ -103,6 +111,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/floor-plans",
         permissions: getRouteAccessRule("/floor-plans")?.anyOf,
         service: "cctv",
+        screenKey: "floor-plans",
       },
       {
         id: "nav-map",
@@ -111,6 +120,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/map",
         permissions: getRouteAccessRule("/map")?.anyOf,
         service: "cctv",
+        screenKey: "map",
       },
       {
         id: "nav-imports",
@@ -119,12 +129,14 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/imports",
         permissions: getRouteAccessRule("/imports")?.anyOf,
         service: "cctv",
+        screenKey: "imports",
       },
     ],
   },
   {
     id: "ops",
     label: "Operaciones",
+    service: "operations",
     items: [
       {
         id: "nav-tickets",
@@ -132,6 +144,8 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         icon: "assignment",
         route: "/tickets",
         permissions: getRouteAccessRule("/tickets")?.anyOf,
+        service: "operations",
+        screenKey: "tickets",
       },
       {
         id: "nav-clients",
@@ -139,6 +153,8 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         icon: "business",
         route: "/clients",
         permissions: getRouteAccessRule("/clients")?.anyOf,
+        service: "operations",
+        screenKey: "clients",
       },
       {
         id: "nav-policies",
@@ -146,6 +162,8 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         icon: "description",
         route: "/policies",
         permissions: getRouteAccessRule("/policies")?.anyOf,
+        service: "operations",
+        screenKey: "policies",
       },
       {
         id: "nav-sla",
@@ -153,6 +171,8 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         icon: "assessment",
         route: "/sla",
         permissions: getRouteAccessRule("/sla")?.anyOf,
+        service: "operations",
+        screenKey: "sla",
       },
       {
         id: "nav-capex",
@@ -160,6 +180,8 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         icon: "verified_user",
         route: "/capex",
         permissions: getRouteAccessRule("/capex")?.anyOf,
+        service: "operations",
+        screenKey: "capex",
       },
     ],
   },
@@ -175,6 +197,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/access-control",
         permissions: getRouteAccessRule("/access-control")?.anyOf,
         service: "access_control",
+        screenKey: "ac-overview",
       },
       {
         id: "nav-access-control-inventory",
@@ -183,6 +206,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/access-control/inventory",
         permissions: getRouteAccessRule("/access-control/inventory")?.anyOf,
         service: "access_control",
+        screenKey: "ac-inventory",
       },
       {
         id: "nav-access-control-tech-sheets",
@@ -191,6 +215,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/access-control/technical-sheets",
         permissions: getRouteAccessRule("/access-control/technical-sheets")?.anyOf,
         service: "access_control",
+        screenKey: "ac-tech-sheets",
       },
       {
         id: "nav-access-control-maintenance",
@@ -199,6 +224,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/access-control/maintenance",
         permissions: getRouteAccessRule("/access-control/maintenance")?.anyOf,
         service: "access_control",
+        screenKey: "ac-maintenance",
       },
       {
         id: "nav-access-control-incidents",
@@ -207,6 +233,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/access-control/incidents",
         permissions: getRouteAccessRule("/access-control/incidents")?.anyOf,
         service: "access_control",
+        screenKey: "ac-incidents",
       },
       {
         id: "nav-access-control-reports",
@@ -215,6 +242,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/access-control/reports",
         permissions: getRouteAccessRule("/access-control/reports")?.anyOf,
         service: "access_control",
+        screenKey: "ac-reports",
       },
     ],
   },
@@ -230,6 +258,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/networking",
         permissions: getRouteAccessRule("/networking")?.anyOf,
         service: "networking",
+        screenKey: "net-overview",
       },
       {
         id: "nav-networking-inventory",
@@ -238,6 +267,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/networking/inventory",
         permissions: getRouteAccessRule("/networking/inventory")?.anyOf,
         service: "networking",
+        screenKey: "net-inventory",
       },
       {
         id: "nav-networking-tech-sheets",
@@ -246,6 +276,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/networking/technical-sheets",
         permissions: getRouteAccessRule("/networking/technical-sheets")?.anyOf,
         service: "networking",
+        screenKey: "net-tech-sheets",
       },
       {
         id: "nav-networking-maintenance",
@@ -254,6 +285,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/networking/maintenance",
         permissions: getRouteAccessRule("/networking/maintenance")?.anyOf,
         service: "networking",
+        screenKey: "net-maintenance",
       },
       {
         id: "nav-networking-incidents",
@@ -262,6 +294,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/networking/incidents",
         permissions: getRouteAccessRule("/networking/incidents")?.anyOf,
         service: "networking",
+        screenKey: "net-incidents",
       },
       {
         id: "nav-networking-reports",
@@ -270,6 +303,7 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         route: "/networking/reports",
         permissions: getRouteAccessRule("/networking/reports")?.anyOf,
         service: "networking",
+        screenKey: "net-reports",
       },
     ],
   },
@@ -281,8 +315,9 @@ export function filterVisibleRuntimeLinks(params: {
   enabledServices: ProductServiceCode[];
   hasRoleContext: boolean;
   ignorePermissions?: boolean;
+  disabledScreens?: Partial<Record<ProductServiceCode, string[]>>;
 }): RuntimeMenuLinkItem[] {
-  const { items, hasAnyPermission, enabledServices, hasRoleContext, ignorePermissions = false } = params;
+  const { items, hasAnyPermission, enabledServices, hasRoleContext, ignorePermissions = false, disabledScreens } = params;
 
   return items.filter((item) => {
     if (!ignorePermissions && item.permissions && hasAnyPermission && !hasAnyPermission(...item.permissions)) {
@@ -293,7 +328,18 @@ export function filterVisibleRuntimeLinks(params: {
       return true;
     }
 
-    return isRouteEnabledForServices(item.route, enabledServices, { hasRoleContext });
+    if (!isRouteEnabledForServices(item.route, enabledServices, { hasRoleContext })) {
+      return false;
+    }
+
+    // Control granular: verificar si la pantalla esta deshabilitada
+    if (item.screenKey && item.service && disabledScreens) {
+      if (!isScreenEnabled(item.screenKey, item.service, disabledScreens)) {
+        return false;
+      }
+    }
+
+    return true;
   });
 }
 
@@ -302,6 +348,7 @@ export function getVisibleRuntimeMenu(params: {
   hasRoleContext: boolean;
   hasAnyPermission?: (...permissions: string[]) => boolean;
   ignorePermissions?: boolean;
+  disabledScreens?: Partial<Record<ProductServiceCode, string[]>>;
 }): RuntimeMenuSection[] {
   return RUNTIME_MENU_SECTIONS.map((section) => ({
     ...section,
@@ -311,6 +358,7 @@ export function getVisibleRuntimeMenu(params: {
       enabledServices: params.enabledServices,
       hasRoleContext: params.hasRoleContext,
       ignorePermissions: params.ignorePermissions,
+      disabledScreens: params.disabledScreens,
     }),
   })).filter((section) => {
     if (!section.items.length) {

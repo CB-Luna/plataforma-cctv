@@ -55,6 +55,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const me = await getMe();
         setProfile(me.user, me.companies, me.roles, me.permissions);
 
+        // Admin del sistema (rol is_system): NO auto-seleccionar empresa.
+        // Inicia en modo plataforma global; puede elegir empresa desde CompanySelector.
+        const hasPlatformRoles = me.roles.some(
+          (r) => r.is_system && r.name !== "tenant_admin",
+        );
+
+        if (hasPlatformRoles) {
+          // Modo plataforma: sin empresa activa por defecto
+          setIsHydrating(false);
+          return;
+        }
+
         const activeCompany = me.companies[0];
         if (!activeCompany) {
           clearAuth();
