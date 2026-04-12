@@ -14,6 +14,7 @@ import { getCameraStats } from "@/lib/api/cameras";
 import { getNvrStats } from "@/lib/api/nvrs";
 import { parseTenantProductProfile } from "@/lib/product/service-catalog";
 import { ServiceBadges } from "@/components/product/service-badges";
+import { isPlatformTenant } from "@/lib/platform";
 import { useSiteStore } from "@/stores/site-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import {
@@ -70,11 +71,14 @@ export default function DashboardPage() {
     enabled: experience.mode === "hybrid_backoffice",
   });
 
-  const { data: allTenants = [] } = useQuery({
+  const { data: rawAllTenants = [] } = useQuery({
     queryKey: ["tenants", "dashboard-recent"],
     queryFn: () => listTenants(),
     enabled: experience.mode === "hybrid_backoffice",
   });
+
+  // Filtrar tenant plataforma — no es empresa real
+  const allTenants = rawAllTenants.filter((t) => !isPlatformTenant(t.id));
 
   const { data: ticketStats } = useQuery({
     queryKey: ["dashboard-ticket-stats"],
@@ -199,8 +203,8 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Toggle de seccion operativa — solo si existe empresa activa */}
-          {currentCompany ? (
+          {/* Toggle de seccion operativa — solo si existe empresa real activa (no __PLATFORM__) */}
+          {currentCompany && !isPlatformTenant(currentCompany.id) ? (
             <Button
               variant="outline"
               className="w-full justify-between gap-2 border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
@@ -229,8 +233,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Contenido operativo: siempre visible en portal, colapsable en backoffice solo si hay empresa */}
-      {(experience.mode !== "hybrid_backoffice" || (showTenantOps && currentCompany)) && (
+      {/* Contenido operativo: siempre visible en portal, colapsable en backoffice solo si hay empresa real */}
+      {(experience.mode !== "hybrid_backoffice" || (showTenantOps && currentCompany && !isPlatformTenant(currentCompany.id))) && (
       <>
       {/* Enterprise Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

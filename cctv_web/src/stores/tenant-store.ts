@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Company } from "@/types/api";
+import { PLATFORM_TENANT_ID } from "@/lib/platform";
 
 const TENANT_ID_STORAGE_KEY = "tenant_id";
 const TENANT_SNAPSHOT_STORAGE_KEY = "tenant_snapshot";
@@ -11,7 +12,14 @@ function loadStoredCompany(): Company | null {
   if (!storedSnapshot) return null;
 
   try {
-    return JSON.parse(storedSnapshot) as Company;
+    const company = JSON.parse(storedSnapshot) as Company;
+    // Nunca restaurar __PLATFORM__ como empresa activa — es tenant oculto
+    if (company.id === PLATFORM_TENANT_ID) {
+      localStorage.removeItem(TENANT_SNAPSHOT_STORAGE_KEY);
+      localStorage.removeItem(TENANT_ID_STORAGE_KEY);
+      return null;
+    }
+    return company;
   } catch {
     localStorage.removeItem(TENANT_SNAPSHOT_STORAGE_KEY);
     localStorage.removeItem(TENANT_ID_STORAGE_KEY);

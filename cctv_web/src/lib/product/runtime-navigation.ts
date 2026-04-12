@@ -75,16 +75,15 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         service: "cctv",
         screenKey: "sites",
       },
-      // Ocultas temporalmente — el inventario ya incluye camaras y NVRs
-      // {
-      //   id: "nav-cameras",
-      //   label: "Camaras",
-      //   icon: "videocam",
-      //   route: "/cameras",
-      //   permissions: getRouteAccessRule("/cameras")?.anyOf,
-      //   service: "cctv",
-      //   screenKey: "cameras",
-      // },
+      {
+        id: "nav-cameras",
+        label: "Camaras",
+        icon: "videocam",
+        route: "/cameras",
+        permissions: getRouteAccessRule("/cameras")?.anyOf,
+        service: "cctv",
+        screenKey: "cameras",
+      },
       {
         id: "nav-camera-models",
         label: "Fichas tecnicas",
@@ -94,16 +93,15 @@ export const RUNTIME_MENU_SECTIONS: RuntimeMenuSection[] = [
         service: "cctv",
         screenKey: "camera-models",
       },
-      // Oculta temporalmente — el inventario ya incluye NVRs
-      // {
-      //   id: "nav-nvrs",
-      //   label: "Servidores NVR",
-      //   icon: "storage",
-      //   route: "/nvrs",
-      //   permissions: getRouteAccessRule("/nvrs")?.anyOf,
-      //   service: "cctv",
-      //   screenKey: "nvrs",
-      // },
+      {
+        id: "nav-nvrs",
+        label: "Servidores NVR",
+        icon: "storage",
+        route: "/nvrs",
+        permissions: getRouteAccessRule("/nvrs")?.anyOf,
+        service: "cctv",
+        screenKey: "nvrs",
+      },
       {
         id: "nav-floor-plans",
         label: "Planos",

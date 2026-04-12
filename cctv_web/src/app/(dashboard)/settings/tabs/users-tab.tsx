@@ -12,6 +12,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { registerTenantUser } from "@/lib/api/auth";
 import { listRoles } from "@/lib/api/roles";
 import { assignRole, changePassword, deactivateUser, listUsers, removeRole, updateUser } from "@/lib/api/users";
+import { isPlatformTenant, PLATFORM_TENANT_ID } from "@/lib/platform";
 import { useTenantStore } from "@/stores/tenant-store";
 import { getColumns } from "../../users/columns";
 import {
@@ -26,7 +27,7 @@ import {
 
 export function UsersTab() {
   const queryClient = useQueryClient();
-  const { canAny } = usePermissions();
+  const { canAny, isSystemAdmin } = usePermissions();
   const currentCompany = useTenantStore((s) => s.currentCompany);
 
   const [editUser, setEditUser] = useState<UserAdmin | null>(null);
@@ -43,10 +44,15 @@ export function UsersTab() {
   const canManageRoles = canAny("roles.assign", "roles.update", "roles:update:own", "roles:update:all");
   const canDeactivateUser = canAny("users.delete", "users:delete:own", "users:delete:all");
 
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: listUsers,
+  // Admin del sistema: ver solo usuarios del sistema (tenant plataforma)
+  // Tenant admin: el backend filtra automaticamente por el JWT
+  const { data: rawUsers = [], isLoading } = useQuery({
+    queryKey: ["users", isSystemAdmin ? PLATFORM_TENANT_ID : "current"],
+    queryFn: () => listUsers(isSystemAdmin ? PLATFORM_TENANT_ID : undefined),
   });
+
+  // Filtrar para no mostrar el tenant plataforma como "empresa" en la UI
+  const users = rawUsers;
 
   const { data: roles = [] } = useQuery({
     queryKey: ["roles"],

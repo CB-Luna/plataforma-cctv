@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Download, FileSpreadsheet, Upload, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Info, Upload, X } from "lucide-react";
 import { saveLocalCameras, saveLocalNvrs } from "@/lib/inventory/local-store";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,164 +28,96 @@ interface QuickInventoryImportDialogProps {
   siteId: string | null | undefined;
   siteLabel: string;
   onImported: (type: "cameras" | "nvrs", count: number) => void;
+  /** Si se pasa, el dialogo arranca con ese tipo pre-seleccionado */
+  defaultType?: "cameras" | "nvrs";
 }
 
 type TargetType = "cameras" | "nvrs";
 
-function generateDemoCamerasExcel(): void {
-  // Genera y descarga un Excel de demo con datos de camaras
-  import("xlsx").then((XLSX) => {
-    const rows = [
-      {
-        nombre: "CAM-001",
-        codigo: "C001",
-        tipo: "dome",
-        modelo: "Hikvision DS-2CD2143G2",
-        generacion: "Gen3",
-        ip: "192.168.1.101",
-        mac: "AA:BB:CC:DD:EE:01",
-        resolucion: "4MP",
-        megapixeles: 4,
-        area: "Acceso Principal",
-        zona: "Norte",
-        ubicacion: "Entrada principal edificio A",
-        serie: "SN-20240101-001",
-        estado: "active",
-        notas: "",
-      },
-      {
-        nombre: "CAM-002",
-        codigo: "C002",
-        tipo: "bullet",
-        modelo: "Dahua IPC-HFW2831T",
-        generacion: "Gen2",
-        ip: "192.168.1.102",
-        mac: "AA:BB:CC:DD:EE:02",
-        resolucion: "8MP",
-        megapixeles: 8,
-        area: "Estacionamiento",
-        zona: "Sur",
-        ubicacion: "Nivel 1 estacionamiento zona A",
-        serie: "SN-20240101-002",
-        estado: "active",
-        notas: "",
-      },
-      {
-        nombre: "CAM-003",
-        codigo: "C003",
-        tipo: "ptz",
-        modelo: "Axis P3245-V",
-        generacion: "Gen4",
-        ip: "192.168.1.103",
-        mac: "AA:BB:CC:DD:EE:03",
-        resolucion: "2MP",
-        megapixeles: 2,
-        area: "Almacen",
-        zona: "Este",
-        ubicacion: "Almacen central techo",
-        serie: "SN-20240101-003",
-        estado: "active",
-        notas: "Camara PTZ con zoom optico x20",
-      },
-      {
-        nombre: "CAM-004",
-        codigo: "C004",
-        tipo: "dome",
-        modelo: "Hikvision DS-2CD2183G2",
-        generacion: "Gen3",
-        ip: "192.168.1.104",
-        mac: "AA:BB:CC:DD:EE:04",
-        resolucion: "8MP",
-        megapixeles: 8,
-        area: "Oficinas",
-        zona: "Norte",
-        ubicacion: "Pasillo oficinas piso 2",
-        serie: "SN-20240101-004",
-        estado: "active",
-        notas: "",
-      },
-      {
-        nombre: "CAM-005",
-        codigo: "C005",
-        tipo: "fisheye",
-        modelo: "Dahua IPC-EBW81242P",
-        generacion: "Gen3",
-        ip: "192.168.1.105",
-        mac: "AA:BB:CC:DD:EE:05",
-        resolucion: "12MP",
-        megapixeles: 12,
-        area: "Lobby",
-        zona: "Centro",
-        ubicacion: "Lobby central techo ojo de pez",
-        serie: "SN-20240101-005",
-        estado: "active",
-        notas: "Cobertura 360 grados",
-      },
-      {
-        nombre: "CAM-006",
-        codigo: "C006",
-        tipo: "bullet",
-        modelo: "Hikvision DS-2CD2T47G2",
-        generacion: "Gen4",
-        ip: "192.168.1.106",
-        mac: "AA:BB:CC:DD:EE:06",
-        resolucion: "4MP",
-        megapixeles: 4,
-        area: "Perimetro",
-        zona: "Exterior",
-        ubicacion: "Barda perimetral norte",
-        serie: "SN-20240101-006",
-        estado: "inactive",
-        notas: "Pendiente revision tecnica",
-      },
-    ];
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Camaras");
-    XLSX.writeFile(wb, "demo-inventario-camaras.xlsx");
-  });
+/* ── Columnas reconocidas por tipo ── */
+
+const CAMERA_COLUMNS: Record<string, string> = {
+  nombre: "nombre", name: "nombre",
+  codigo: "codigo", code: "codigo",
+  tipo: "tipo", camera_type: "tipo",
+  modelo: "modelo", camera_model_name: "modelo",
+  generacion: "generacion", generation: "generacion",
+  ip: "ip", ip_address: "ip",
+  mac: "mac", mac_address: "mac",
+  resolucion: "resolucion", resolution: "resolucion",
+  megapixeles: "megapixeles", megapixels: "megapixeles",
+  area: "area",
+  zona: "zona", zone: "zona",
+  ubicacion: "ubicacion", location_description: "ubicacion",
+  serie: "serie", serial_number: "serie",
+  estado: "estado", status: "estado",
+  notas: "notas", notes: "notas",
+};
+
+const NVR_COLUMNS: Record<string, string> = {
+  nombre: "nombre", name: "nombre",
+  codigo: "codigo", code: "codigo",
+  modelo: "modelo", model: "modelo",
+  ip: "ip", ip_address: "ip",
+  mac: "mac", mac_address: "mac",
+  canales_camara: "canales_camara", channels: "canales_camara",
+  almacenamiento_tb: "almacenamiento_tb", storage_tb: "almacenamiento_tb",
+  dias_grabacion: "dias_grabacion", recording_days: "dias_grabacion",
+  procesador: "procesador", processor: "procesador",
+  ram_gb: "ram_gb", ram: "ram_gb",
+  sistema_operativo: "sistema_operativo", os: "sistema_operativo",
+  service_tag: "service_tag",
+  estado: "estado", status: "estado",
+  notas: "notas", notes: "notas",
+};
+
+const CAMERA_DISPLAY_COLUMNS = [
+  "nombre", "codigo", "tipo", "modelo", "generacion", "ip", "mac",
+  "resolucion", "megapixeles", "area", "zona", "ubicacion", "serie", "estado", "notas",
+];
+const NVR_DISPLAY_COLUMNS = [
+  "nombre", "codigo", "modelo", "ip", "mac", "canales_camara",
+  "almacenamiento_tb", "dias_grabacion", "procesador", "ram_gb",
+  "sistema_operativo", "service_tag", "estado", "notas",
+];
+
+function getExpectedColumns(type: TargetType) {
+  return type === "cameras" ? CAMERA_COLUMNS : NVR_COLUMNS;
 }
 
-function generateDemoNvrsExcel(): void {
+function getDisplayColumns(type: TargetType) {
+  return type === "cameras" ? CAMERA_DISPLAY_COLUMNS : NVR_DISPLAY_COLUMNS;
+}
+
+/** Valida columnas del Excel contra las esperadas. Retorna matched y unmatched. */
+function validateColumns(headers: string[], type: TargetType) {
+  const expected = getExpectedColumns(type);
+  const matched: string[] = [];
+  const unmatched: string[] = [];
+
+  for (const h of headers) {
+    const normalized = h.toLowerCase().trim();
+    if (expected[normalized]) {
+      matched.push(h);
+    } else {
+      unmatched.push(h);
+    }
+  }
+  return { matched, unmatched };
+}
+
+function generateTemplateExcel(type: TargetType): void {
   import("xlsx").then((XLSX) => {
-    const rows = [
-      {
-        nombre: "NVR-PRINCIPAL-01",
-        codigo: "NVR01",
-        modelo: "Hikvision DS-9632NXI-I8",
-        ip: "192.168.1.10",
-        mac: "BB:CC:DD:EE:FF:01",
-        canales_camara: 32,
-        almacenamiento_tb: 24,
-        dias_grabacion: 30,
-        procesador: "Intel Core i5-8400",
-        ram_gb: 8,
-        sistema_operativo: "Windows 10 IoT",
-        service_tag: "HKVST-20240101-01",
-        estado: "active",
-        notas: "Servidor principal sala de monitoreo",
-      },
-      {
-        nombre: "NVR-BACKUP-01",
-        codigo: "NVR02",
-        modelo: "Dahua NVR5832-16P-I",
-        ip: "192.168.1.11",
-        mac: "BB:CC:DD:EE:FF:02",
-        canales_camara: 16,
-        almacenamiento_tb: 12,
-        dias_grabacion: 15,
-        procesador: "ARM Cortex-A55",
-        ram_gb: 4,
-        sistema_operativo: "Linux embebido",
-        service_tag: "DAHT-20240101-02",
-        estado: "active",
-        notas: "NVR de respaldo para camaras perimetrales",
-      },
-    ];
-    const ws = XLSX.utils.json_to_sheet(rows);
+    const cols = getDisplayColumns(type);
+    // Crear hoja con una fila vacia que solo tenga los encabezados
+    const ws = XLSX.utils.aoa_to_sheet([cols]);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "NVR Servers");
-    XLSX.writeFile(wb, "demo-inventario-nvr.xlsx");
+    const sheetName = type === "cameras" ? "Camaras" : "NVR Servers";
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    const fileName = type === "cameras"
+      ? "plantilla-camaras.xlsx"
+      : "plantilla-nvr.xlsx";
+    XLSX.writeFile(wb, fileName);
   });
 }
 
@@ -196,12 +128,19 @@ export function QuickInventoryImportDialog({
   siteId,
   siteLabel,
   onImported,
+  defaultType,
 }: QuickInventoryImportDialogProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [targetType, setTargetType] = useState<TargetType>("cameras");
+  const [targetType, setTargetType] = useState<TargetType>(defaultType ?? "cameras");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isParsing, setIsParsing] = useState(false);
-  const [preview, setPreview] = useState<{ headers: string[]; count: number } | null>(null);
+  const [preview, setPreview] = useState<{
+    headers: string[];
+    count: number;
+    matched: string[];
+    unmatched: string[];
+    sampleRows: Record<string, unknown>[];
+  } | null>(null);
 
   const reset = useCallback(() => {
     setSelectedFile(null);
@@ -212,8 +151,9 @@ export function QuickInventoryImportDialog({
 
   const handleClose = useCallback(() => {
     reset();
+    setTargetType(defaultType ?? "cameras");
     onOpenChange(false);
-  }, [reset, onOpenChange]);
+  }, [reset, onOpenChange, defaultType]);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,7 +179,18 @@ export function QuickInventoryImportDialog({
           raw: false,
         });
         const headers = rows.length > 0 ? Object.keys(rows[0] ?? {}) : [];
-        setPreview({ headers, count: rows.length });
+        const { matched, unmatched } = validateColumns(headers, targetType);
+
+        if (matched.length === 0) {
+          toast.error(
+            `Ninguna columna del archivo coincide con las esperadas para ${targetType === "cameras" ? "camaras" : "NVR"}. Revisa los encabezados.`,
+          );
+          reset();
+          return;
+        }
+
+        const sampleRows = rows.slice(0, 5);
+        setPreview({ headers, count: rows.length, matched, unmatched, sampleRows });
       } catch {
         toast.error("No se pudo leer el archivo. Verifica que sea un Excel o CSV valido.");
         reset();
@@ -247,7 +198,7 @@ export function QuickInventoryImportDialog({
         setIsParsing(false);
       }
     },
-    [reset],
+    [reset, targetType],
   );
 
   const handleImport = useCallback(async () => {
@@ -286,11 +237,14 @@ export function QuickInventoryImportDialog({
     }
   }, [selectedFile, preview, targetType, tenantId, siteId, siteLabel, onImported, handleClose]);
 
+  const displayCols = getDisplayColumns(targetType);
+  const typeLabel = targetType === "cameras" ? "camaras" : "servidores NVR";
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Importar inventario desde Excel</DialogTitle>
+          <DialogTitle>Importar {typeLabel} desde Excel</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -299,7 +253,10 @@ export function QuickInventoryImportDialog({
             <Label>Tipo de inventario</Label>
             <Select
               value={targetType}
-              onValueChange={(v) => setTargetType(v as TargetType)}
+              onValueChange={(v) => {
+                setTargetType(v as TargetType);
+                reset(); // limpiar preview al cambiar tipo
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -311,29 +268,28 @@ export function QuickInventoryImportDialog({
             </Select>
           </div>
 
-          {/* Descarga de plantilla */}
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={generateDemoCamerasExcel}
-            >
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              Plantilla camaras
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="text-xs"
-              onClick={generateDemoNvrsExcel}
-            >
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              Plantilla NVR
-            </Button>
+          {/* Columnas esperadas */}
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+            <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-blue-700 dark:text-blue-400">
+              <Info className="h-3.5 w-3.5" />
+              Columnas esperadas para {typeLabel}
+            </div>
+            <p className="text-xs text-blue-600 dark:text-blue-300">
+              {displayCols.join(", ")}
+            </p>
           </div>
+
+          {/* Descarga de plantilla (solo la relevante) */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            onClick={() => generateTemplateExcel(targetType)}
+          >
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+            Descargar plantilla {typeLabel}
+          </Button>
 
           {/* Area de carga */}
           <div
@@ -347,7 +303,7 @@ export function QuickInventoryImportDialog({
                   <p className="text-sm font-medium">{selectedFile.name}</p>
                   {preview && (
                     <p className="text-xs text-muted-foreground">
-                      {preview.count} filas detectadas — {preview.headers.length} columnas
+                      {preview.count} filas detectadas — {preview.matched.length} columnas reconocidas
                     </p>
                   )}
                 </div>
@@ -378,6 +334,50 @@ export function QuickInventoryImportDialog({
             className="hidden"
             onChange={handleFileChange}
           />
+
+          {/* Resultado de validacion de columnas */}
+          {preview && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {preview.matched.length} columnas reconocidas: {preview.matched.join(", ")}
+              </div>
+              {preview.unmatched.length > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  {preview.unmatched.length} columnas ignoradas: {preview.unmatched.join(", ")}
+                </div>
+              )}
+              {/* Preview de filas */}
+              {preview.sampleRows.length > 0 && (
+                <div className="max-h-32 overflow-auto rounded border text-xs">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        {preview.matched.map((h) => (
+                          <th key={h} className="px-2 py-1 text-left font-medium">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.sampleRows.slice(0, 3).map((row, i) => (
+                        <tr key={i} className="border-t">
+                          {preview.matched.map((h) => (
+                            <td key={h} className="max-w-[120px] truncate px-2 py-1">
+                              {String(row[h] ?? "—")}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {preview.count > 3 && (
+                    <p className="px-2 py-1 text-muted-foreground">... y {preview.count - 3} filas mas</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Contexto */}
           {siteLabel && (

@@ -6,8 +6,10 @@ import type {
   RoleAdmin,
 } from "@/types/api";
 
-export async function listUsers(): Promise<UserAdmin[]> {
-  return api.get("users").json<UserAdmin[]>();
+export async function listUsers(tenantId?: string): Promise<UserAdmin[]> {
+  const searchParams: Record<string, string> = {};
+  if (tenantId) searchParams.tenant_id = tenantId;
+  return api.get("users", { searchParams }).json<UserAdmin[]>();
 }
 
 export async function getUser(id: string): Promise<UserAdmin> {

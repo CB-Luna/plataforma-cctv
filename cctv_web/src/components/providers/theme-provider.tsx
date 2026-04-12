@@ -249,10 +249,33 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    if (userPresetColors) {
-      applyCoreColors(userPresetColors[0], userPresetColors[1], userPresetColors[2]);
+    // Prioridad: 1) Colores de empresa (branding), 2) Tema completo del configurador, 3) Preset de usuario
+    if (currentCompany) {
+      // 1) Colores de branding de la empresa (fuente: /settings?tab=empresas)
+      const { primary_color, secondary_color, tertiary_color } = currentCompany;
+      if (primary_color && secondary_color && tertiary_color) {
+        applyCoreColors(primary_color, secondary_color, tertiary_color);
+      } else {
+        // Aplicacion parcial si no estan los 3
+        if (primary_color) {
+          root.style.setProperty("--tenant-primary", primary_color);
+          root.style.setProperty("--sidebar-nav-indicator", primary_color);
+          root.style.setProperty("--primary", hexToOklch(primary_color));
+          root.style.setProperty("--primary-foreground", contrastForeground(primary_color));
+          root.style.setProperty("--ring", hexToOklch(primary_color));
+          appliedVars.push("--tenant-primary", "--sidebar-nav-indicator", "--primary", "--primary-foreground", "--ring");
+        }
+        if (secondary_color) {
+          root.style.setProperty("--tenant-secondary", secondary_color);
+          appliedVars.push("--tenant-secondary");
+        }
+        if (tertiary_color) {
+          root.style.setProperty("--tenant-tertiary", tertiary_color);
+          appliedVars.push("--tenant-tertiary");
+        }
+      }
     } else {
-      // 2) Intentar leer tema completo del configurador local
+      // Sin empresa activa: intentar tema completo del configurador local
       let fullTheme: Record<string, string> | null = null;
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
       if (stored) {
@@ -282,30 +305,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (p && s && a) {
           applyCoreColors(p, s, a);
         }
-      } else if (currentCompany) {
-        // 3) Fallback: solo los 3 colores del backend
-        const { primary_color, secondary_color, tertiary_color } = currentCompany;
-        if (primary_color && secondary_color && tertiary_color) {
-          applyCoreColors(primary_color, secondary_color, tertiary_color);
-        } else {
-          // Aplicacion parcial si no estan los 3
-          if (primary_color) {
-            root.style.setProperty("--tenant-primary", primary_color);
-            root.style.setProperty("--sidebar-nav-indicator", primary_color);
-            root.style.setProperty("--primary", hexToOklch(primary_color));
-            root.style.setProperty("--primary-foreground", contrastForeground(primary_color));
-            root.style.setProperty("--ring", hexToOklch(primary_color));
-            appliedVars.push("--tenant-primary", "--sidebar-nav-indicator", "--primary", "--primary-foreground", "--ring");
-          }
-          if (secondary_color) {
-            root.style.setProperty("--tenant-secondary", secondary_color);
-            appliedVars.push("--tenant-secondary");
-          }
-          if (tertiary_color) {
-            root.style.setProperty("--tenant-tertiary", tertiary_color);
-            appliedVars.push("--tenant-tertiary");
-          }
-        }
+      } else if (userPresetColors) {
+        // Fallback: preset de usuario (fuente: /settings?tab=usuarios)
+        applyCoreColors(userPresetColors[0], userPresetColors[1], userPresetColors[2]);
       }
     }
 

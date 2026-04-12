@@ -5,6 +5,7 @@ import { Building2, ChevronDown, Check } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -15,6 +16,7 @@ import { useTenantStore } from "@/stores/tenant-store";
 import { useSiteStore } from "@/stores/site-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { listTenants } from "@/lib/api/tenants";
+import { isPlatformTenant } from "@/lib/platform";
 import type { Tenant, Company } from "@/types/api";
 
 /**
@@ -26,6 +28,7 @@ export function CompanySelector() {
   const authCompanies = useAuthStore((s) => s.companies);
   const currentCompany = useTenantStore((s) => s.currentCompany);
   const setCompany = useTenantStore((s) => s.setCompany);
+  const clearCompany = useTenantStore((s) => s.clearCompany);
   const clearSite = useSiteStore((s) => s.clearSite);
   const queryClient = useQueryClient();
   const { isSystemAdmin } = usePermissions();
@@ -40,28 +43,44 @@ export function CompanySelector() {
   });
 
   // Para admins del sistema, usar empresas del API; para tenant admin, las del auth store
-  const companies: Company[] = isSystemAdmin && apiTenants
-    ? apiTenants.map((t) => ({
-        id: t.id,
-        name: t.name,
-        slug: t.slug ?? t.name.toLowerCase().replace(/\s+/g, "-"),
-        primary_color: t.primary_color ?? undefined,
-        secondary_color: t.secondary_color ?? undefined,
-        tertiary_color: t.tertiary_color ?? undefined,
-        logo_url: t.logo_url ?? null,
-        is_active: t.is_active,
-      }))
-    : authCompanies;
+  // Filtrar tenant plataforma — no es empresa real
+  const companies: Company[] = (isSystemAdmin && apiTenants
+    ? apiTenants
+        .filter((t) => !isPlatformTenant(t.id))
+        .map((t) => ({
+          id: t.id,
+          name: t.name,
+          slug: t.slug ?? t.name.toLowerCase().replace(/\s+/g, "-"),
+          primary_color: t.primary_color ?? undefined,
+          secondary_color: t.secondary_color ?? undefined,
+          tertiary_color: t.tertiary_color ?? undefined,
+          logo_url: t.logo_url ?? null,
+          is_active: t.is_active,
+        }))
+    : authCompanies
+  ).filter((c) => !isPlatformTenant(c.id));
 
-  // Si solo hay una empresa, el contexto es fijo — no mostrar selector
-  if (companies.length <= 1) return null;
+  // Admin del sistema siempre ve el selector (puede no tener empresa seleccionada)
+  // Tenant admin con 1 sola empresa: no mostrar selector
+  if (!isSystemAdmin && companies.length <= 1) return null;
 
+  // Admin del sistema puede deseleccionar empresa para volver a modo plataforma
   function handleSelect(company: typeof companies[0]) {
-    if (company.id === currentCompany?.id) return;
+    if (company.id === currentCompany?.id) {
+      // Click en la misma empresa: deseleccionar (volver a modo plataforma)
+      if (isSystemAdmin) {
+        clearCompany();
+        clearSite();
+        void queryClient.invalidateQueries({ queryKey: ["sites"] });
+        void queryClient.invalidateQueries({ queryKey: ["cameras"] });
+        void queryClient.invalidateQueries({ queryKey: ["nvrs"] });
+        void queryClient.invalidateQueries({ queryKey: ["inventory"] });
+        void queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      }
+      return;
+    }
     setCompany(company);
-    // Limpiar sucursal activa al cambiar de empresa
     clearSite();
-    // Invalidar queries que dependen del contexto de tenant
     void queryClient.invalidateQueries({ queryKey: ["sites"] });
     void queryClient.invalidateQueries({ queryKey: ["cameras"] });
     void queryClient.invalidateQueries({ queryKey: ["nvrs"] });
@@ -84,10 +103,12 @@ export function CompanySelector() {
         <ChevronDown className="h-3 w-3 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel>Empresas disponibles</DropdownMenuLabel>
-        <p className="px-2 pb-2 text-xs text-muted-foreground">
-          Selecciona una empresa para inspeccionar sus datos, sucursales y configuracion.
-        </p>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Empresas disponibles</DropdownMenuLabel>
+          <p className="px-2 pb-2 text-xs text-muted-foreground">
+            Selecciona una empresa para inspeccionar sus datos, sucursales y configuracion.
+          </p>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {companies.map((company) => {
           const isSelected = company.id === currentCompany?.id;

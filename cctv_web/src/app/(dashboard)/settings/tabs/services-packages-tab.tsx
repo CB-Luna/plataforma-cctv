@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { StatsCard } from "@/components/ui/stats-card";
 import { listTenants, updateTenant } from "@/lib/api/tenants";
+import { isPlatformTenant } from "@/lib/platform";
 import {
   type CommercialPlanCode,
   type ProductServiceCode,
@@ -37,10 +38,13 @@ export function ServicesPackagesTab() {
   const { canAny } = usePermissions();
   const canEdit = canAny("tenants:update:all", "tenants.update");
 
-  const { data: tenants = [] } = useQuery({
+  const { data: rawTenants = [] } = useQuery({
     queryKey: ["tenants", "services-packages"],
     queryFn: () => listTenants(),
   });
+
+  // Filtrar tenant plataforma
+  const tenants = rawTenants.filter((t: { id: string }) => !isPlatformTenant(t.id));
 
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   // Overrides locales del usuario: solo se guardan cuando hay edicion pendiente

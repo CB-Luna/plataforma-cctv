@@ -38,6 +38,7 @@ import {
   type TenantOnboardingSnapshot,
 } from "@/lib/product/service-catalog";
 import { useTenantStore } from "@/stores/tenant-store";
+import { isPlatformTenant } from "@/lib/platform";
 import { getTenantColumns } from "../../tenants/columns";
 import { TenantDialog, type TenantFormValues } from "../../tenants/tenant-dialog";
 import {
@@ -63,10 +64,13 @@ export function TenantsTab() {
   const canToggleTenant = canEditTenant;
   const canUploadBranding = canEditTenant;
 
-  const { data: tenants = [], isLoading } = useQuery({
+  const { data: rawTenants = [], isLoading } = useQuery({
     queryKey: ["tenants"],
     queryFn: () => listTenants(),
   });
+
+  // Filtrar tenant plataforma — no es empresa real
+  const tenants = rawTenants.filter((t) => !isPlatformTenant(t.id));
 
   const { data: stats } = useQuery({
     queryKey: ["tenants", "stats"],
@@ -194,11 +198,11 @@ export function TenantsTab() {
 
       {stats ? (
         <div className="grid gap-4 md:grid-cols-3">
-          <StatsCard title="Total empresas" value={stats.total_tenants} icon={Building2} color="blue" />
-          <StatsCard title="Activas" value={stats.active_tenants} icon={CheckCircle} color="green" />
+          <StatsCard title="Total empresas" value={tenants.length} icon={Building2} color="blue" />
+          <StatsCard title="Activas" value={tenants.filter((t) => t.is_active).length} icon={CheckCircle} color="green" />
           <StatsCard
             title="Inactivas"
-            value={stats.total_tenants - stats.active_tenants}
+            value={tenants.filter((t) => !t.is_active).length}
             icon={Building2}
             color="red"
           />

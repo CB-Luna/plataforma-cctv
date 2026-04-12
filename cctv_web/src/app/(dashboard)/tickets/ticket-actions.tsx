@@ -33,7 +33,7 @@ export function AssignDialog({ open, onOpenChange, onAssign, isLoading }: Assign
   const [technicianId, setTechnicianId] = useState("");
   const { data: users = [] } = useQuery({
     queryKey: ["users", "ticket-assign"],
-    queryFn: listUsers,
+    queryFn: () => listUsers(),
     staleTime: 5 * 60 * 1000,
   });
   const { data: workload = [] } = useQuery({

@@ -9,6 +9,7 @@ import { Camera, Shield, Monitor, Eye, EyeOff, Loader2 } from "lucide-react";
 import { login, getMe } from "@/lib/api/auth";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTenantStore } from "@/stores/tenant-store";
+import { isPlatformTenant } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,11 +23,11 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 const demoUsers = [
-  { name: "Admin", email: "admin@demo.com", password: "Password123!", role: "Super Admin", color: "from-sky-500 to-blue-600", bg: "bg-sky-50 dark:bg-sky-950/30", border: "border-sky-500", ring: "ring-sky-200 dark:ring-sky-800" },
+  { name: "Mario (Admin)", email: "mario_super_admin@gmail.com", password: "Password123!", role: "Super Admin", color: "from-sky-500 to-blue-600", bg: "bg-sky-50 dark:bg-sky-950/30", border: "border-sky-500", ring: "ring-sky-200 dark:ring-sky-800" },
+  { name: "Yuna (Admin)", email: "yuns_super_admin@gmail.com", password: "Password123!", role: "Super Admin", color: "from-violet-500 to-purple-600", bg: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-500", ring: "ring-violet-200 dark:ring-violet-800" },
+  { name: "Bimbo", email: "admin.bimbo@demo.com", password: "Password123!", role: "Tenant Admin", color: "from-amber-500 to-orange-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-500", ring: "ring-amber-200 dark:ring-amber-800" },
   { name: "Calimax", email: "calimax@gmail.com", password: "empresa_calimax", role: "Tenant Admin", color: "from-red-500 to-rose-600", bg: "bg-red-50 dark:bg-red-950/30", border: "border-red-500", ring: "ring-red-200 dark:ring-red-800" },
-  { name: "Operador", email: "operator@demo.com", password: "Password123!", role: "Operador", color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-800" },
-  { name: "Técnico", email: "tech@demo.com", password: "Password123!", role: "Técnico", color: "from-amber-500 to-orange-600", bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-500", ring: "ring-amber-200 dark:ring-amber-800" },
-  { name: "Viewer", email: "viewer@demo.com", password: "Password123!", role: "Solo Lectura", color: "from-violet-500 to-purple-600", bg: "bg-violet-50 dark:bg-violet-950/30", border: "border-violet-500", ring: "ring-violet-200 dark:ring-violet-800" },
+  { name: "Soriana", email: "marisol_soriana_admin@gmail.com", password: "Password123!", role: "Tenant Admin", color: "from-emerald-500 to-teal-600", bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-500", ring: "ring-emerald-200 dark:ring-emerald-800" },
 ];
 
 const features = [
@@ -64,10 +65,10 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    if (isAuthenticated && currentCompany) {
+    if (isAuthenticated) {
       router.replace(redirectTo);
     }
-  }, [currentCompany, isAuthenticated, redirectTo, router]);
+  }, [isAuthenticated, redirectTo, router]);
 
   async function onSubmit(data: LoginForm) {
     setError(null);
@@ -75,19 +76,17 @@ export default function LoginPage() {
     try {
       const res = await login(data.email, data.password);
 
-      if (res.companies.length > 1) {
+      // Filtrar tenant plataforma — no es empresa real
+      const realCompanies = res.companies.filter((c) => !isPlatformTenant(c.id));
+
+      if (realCompanies.length > 1) {
         setPendingTenantSelection({
           email: data.email,
           password: data.password,
-          companies: res.companies,
+          companies: realCompanies,
           redirectTo,
         });
         router.push(`/select-company?redirect=${encodeURIComponent(redirectTo)}`);
-        return;
-      }
-
-      if (res.companies.length === 0) {
-        setError("El usuario no tiene una empresa activa disponible para iniciar sesión");
         return;
       }
 
@@ -96,7 +95,15 @@ export default function LoginPage() {
 
       const me = await getMe();
       setProfile(me.user, me.companies, me.roles, me.permissions);
-      setCompany(me.companies[0] ?? res.companies[0]);
+
+      // Si hay empresa real, usarla; si no (super_admin puro), no setear company
+      const realMeCompanies = me.companies.filter((c) => !isPlatformTenant(c.id));
+      if (realMeCompanies.length > 0) {
+        setCompany(realMeCompanies[0]);
+      } else if (realCompanies.length > 0) {
+        setCompany(realCompanies[0]);
+      }
+      // Super admin sin empresa real: no setear currentCompany (queda null = modo plataforma)
       router.push(redirectTo);
     } catch {
       setError("Credenciales inválidas o servidor no disponible");

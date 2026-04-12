@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMe, login } from "@/lib/api/auth";
 import { getOnboardingStatusMeta, parseTenantProductProfile } from "@/lib/product/service-catalog";
+import { isPlatformTenant } from "@/lib/platform";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTenantStore } from "@/stores/tenant-store";
 
@@ -23,7 +24,10 @@ export default function SelectCompanyPage() {
   const currentCompany = useTenantStore((state) => state.currentCompany);
   const [submittingCompanyId, setSubmittingCompanyId] = useState<string | null>(null);
 
-  const companies = pendingTenantSelection?.companies ?? [];
+  // Filtrar el tenant oculto __PLATFORM__ de la lista de empresas
+  const companies = (pendingTenantSelection?.companies ?? []).filter(
+    (c) => !isPlatformTenant(c.id),
+  );
   const redirectTo = useMemo(() => {
     const requestedRedirect =
       typeof window === "undefined"

@@ -1,27 +1,58 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Building2, Camera, ChevronLeft, ChevronRight, Download, Plus, RefreshCw, Search, Server, Trash2, Upload } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  Building2,
+  Camera,
+  Eye,
+  HardDrive,
+  Plus,
+  RefreshCw,
+  Search,
+  Server,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { toast } from "sonner";
 import type { Camera as CameraType, NvrServer, SiteListItem, Tenant } from "@/types/api";
-import { listCameras } from "@/lib/api/cameras";
-import { listNvrs } from "@/lib/api/nvrs";
+import {
+  listCameras,
+  createCamera,
+  updateCamera,
+  deleteCamera,
+  getCameraStats,
+} from "@/lib/api/cameras";
+import {
+  listNvrs,
+  createNvr,
+  updateNvr,
+  deleteNvr,
+  getNvrStats,
+} from "@/lib/api/nvrs";
 import { listSites } from "@/lib/api/sites";
 import { listTenants } from "@/lib/api/tenants";
 import { useTenantStore } from "@/stores/tenant-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
+import { isPlatformTenant } from "@/lib/platform";
 import {
   clearLocalInventory,
   getLocalInventory,
-  type LocalCamera,
-  type LocalNvr,
 } from "@/lib/inventory/local-store";
+import { safeString, safeStatus } from "@/lib/safe-field";
 import { QuickInventoryImportDialog } from "./quick-import-dialog";
+import { getColumns as getCameraColumns } from "../cameras/columns";
+import { getColumns as getNvrColumns } from "../nvrs/columns";
+import { CameraDialog, type CameraFormValues } from "../cameras/camera-dialog";
+import { NvrDialog, type NvrFormValues } from "../nvrs/nvr-dialog";
+import { DataTable } from "@/components/data-table";
+import { ExportButton } from "@/components/shared/export-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -29,461 +60,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { safeString, safeStatus } from "@/lib/safe-field";
-
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
-
-// ---------- helpers ---------------------------------------------------------
-
-function statusBadge(status: unknown, isActive: boolean) {
-  const s = safeStatus(status, isActive);
-  const active = s === "active";
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-gray-400"}`} />
-      <span className={`text-xs font-medium ${active ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"}`}>
-        {active ? "Activo" : "Inactivo"}
-      </span>
-    </div>
-  );
-}
-
-/** Badge de tipo con color segun categoria */
-function typeBadge(type: unknown) {
-  const t = safeString(type);
-  if (!t || t === "\u2014") return <span className="text-muted-foreground">\u2014</span>;
-  const colorMap: Record<string, string> = {
-    dome: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
-    bullet: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
-    ptz: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
-    turret: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800",
-    fisheye: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800",
-    box: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800",
-  };
-  const lower = t.toLowerCase();
-  const colors = colorMap[lower] ?? "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700";
-  return (
-    <Badge variant="outline" className={`text-xs ${colors}`}>
-      {t}
-    </Badge>
-  );
-}
-
-/** Exportar datos a CSV con BOM UTF-8 */
-function downloadCSV(filename: string, headers: string[], rows: string[][]) {
-  const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function localBadge(isLocal: boolean) {
-  if (!isLocal) return null;
-  return (
-    <Badge variant="outline" className="ml-1 border-amber-400 text-xs text-amber-600">
-      importado
-    </Badge>
-  );
-}
-
-/** Componente de paginacion reutilizable */
-function Pagination({
-  page, totalPages, pageSize, totalItems, onPageChange, onPageSizeChange,
-}: {
-  page: number; totalPages: number; pageSize: number; totalItems: number;
-  onPageChange: (p: number) => void; onPageSizeChange: (s: number) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-2 pt-3">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span>Mostrar</span>
-        <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v ?? pageSize))}>
-          <SelectTrigger className="h-7 w-17.5 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAGE_SIZE_OPTIONS.map((s) => (
-              <SelectItem key={s} value={String(s)}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span>de {totalItems}</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <Button variant="outline" size="icon" className="h-7 w-7" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="px-2 text-xs text-muted-foreground">
-          {page} / {totalPages || 1}
-        </span>
-        <Button variant="outline" size="icon" className="h-7 w-7" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ---------- sub-tablas -------------------------------------------------------
-
-function CamerasTable({ cameras }: { cameras: (CameraType | LocalCamera)[] }) {
-  const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState<string>("__all__");
-  const [filterStatus, setFilterStatus] = useState<string>("__all__");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  // Opciones unicas de tipo de camara
-  const typeOptions = useMemo(() => {
-    const types = new Set<string>();
-    for (const cam of cameras) {
-      const t = safeString(cam.camera_type);
-      if (t && t !== "—") types.add(t);
-    }
-    return Array.from(types).sort();
-  }, [cameras]);
-
-  // Filtrado
-  const filtered = useMemo(() => {
-    let result = cameras;
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (c) =>
-          c.name?.toLowerCase().includes(q) ||
-          c.code?.toLowerCase().includes(q) ||
-          c.ip_address?.toLowerCase().includes(q) ||
-          c.camera_model_name?.toLowerCase().includes(q),
-      );
-    }
-    if (filterType !== "__all__") {
-      result = result.filter((c) => safeString(c.camera_type) === filterType);
-    }
-    if (filterStatus !== "__all__") {
-      result = result.filter((c) => {
-        const s = safeStatus(c.status, c.is_active);
-        return s === filterStatus;
-      });
-    }
-    return result;
-  }, [cameras, search, filterType, filterStatus]);
-
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page, pageSize]);
-
-  // Resetear pagina al cambiar filtros
-  const handleSearch = useCallback((v: string) => { setSearch(v); setPage(1); }, []);
-  const handleType = useCallback((v: string | null) => { setFilterType(v ?? "__all__"); setPage(1); }, []);
-  const handleStatus = useCallback((v: string | null) => { setFilterStatus(v ?? "__all__"); setPage(1); }, []);
-  const handlePageSize = useCallback((s: number) => { setPageSize(s); setPage(1); }, []);
-
-  if (cameras.length === 0) {
-    return (
-      <div className="py-12 text-center text-sm text-muted-foreground">
-        Sin camaras en este contexto. Usa el boton <strong>Importar Excel</strong> para agregar datos.
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-3">
-      {/* Barra de filtros */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre, codigo, IP, modelo..."
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="h-9 pl-9 text-sm"
-          />
-        </div>
-        <Select value={filterType} onValueChange={handleType}>
-          <SelectTrigger className="h-9 w-40 text-sm">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">Todos los tipos</SelectItem>
-            {typeOptions.map((t) => (
-              <SelectItem key={t} value={t}>{t}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={handleStatus}>
-          <SelectTrigger className="h-9 w-36 text-sm">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">Todos</SelectItem>
-            <SelectItem value="active">Activo</SelectItem>
-            <SelectItem value="inactive">Inactivo</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9"
-          onClick={() => {
-            const rows = filtered.map((c) => [
-              c.name ?? "", c.code ?? "", safeString(c.camera_type),
-              c.camera_model_name ?? "", c.ip_address ?? "",
-              c.resolution ?? (c.megapixels ? `${c.megapixels}MP` : ""),
-              c.area ?? "", c.zone ?? "",
-              safeStatus(c.status, c.is_active) === "active" ? "Activo" : "Inactivo",
-            ]);
-            downloadCSV("camaras.csv", ["Nombre","Codigo","Tipo","Modelo","IP","Resolucion","Area","Zona","Estado"], rows);
-          }}
-        >
-          <Download className="mr-1.5 h-3.5 w-3.5" />
-          Exportar
-        </Button>
-      </div>
-
-      <div className="max-h-125 overflow-auto rounded-lg border">
-        <Table>
-          <TableHeader className="sticky top-0 z-10 bg-background">
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Modelo</TableHead>
-              <TableHead>IP</TableHead>
-              <TableHead>Resolucion</TableHead>
-              <TableHead>Area / Zona</TableHead>
-              <TableHead>Estado</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
-                  No se encontraron camaras con los filtros aplicados.
-                </TableCell>
-              </TableRow>
-            ) : (
-              paged.map((cam) => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const isLocal = (cam as any).source === "local";
-                return (
-                  <TableRow key={cam.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
-                          <Camera className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            {cam.name}
-                            {localBadge(isLocal)}
-                          </div>
-                          {cam.code && <div className="text-xs text-muted-foreground">{cam.code}</div>}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{typeBadge(cam.camera_type)}</TableCell>
-                    <TableCell>{cam.camera_model_name ?? "—"}</TableCell>
-                    <TableCell>
-                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{cam.ip_address ?? "—"}</code>
-                    </TableCell>
-                    <TableCell>{cam.resolution ?? (cam.megapixels ? `${cam.megapixels}MP` : "—")}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">{cam.area ?? "—"}</div>
-                      {cam.zone && <div className="text-xs text-muted-foreground">{cam.zone}</div>}
-                    </TableCell>
-                    <TableCell>{statusBadge(cam.status, cam.is_active)}</TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <Pagination
-        page={page} totalPages={totalPages} pageSize={pageSize} totalItems={filtered.length}
-        onPageChange={setPage} onPageSizeChange={handlePageSize}
-      />
-    </div>
-  );
-}
-
-function NvrsTable({ nvrs }: { nvrs: (NvrServer | LocalNvr)[] }) {
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("__all__");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  const filtered = useMemo(() => {
-    let result = nvrs;
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (n) =>
-          n.name?.toLowerCase().includes(q) ||
-          n.code?.toLowerCase().includes(q) ||
-          n.ip_address?.toLowerCase().includes(q) ||
-          n.model?.toLowerCase().includes(q),
-      );
-    }
-    if (filterStatus !== "__all__") {
-      result = result.filter((n) => {
-        const s = safeStatus(n.status, n.is_active);
-        return s === filterStatus;
-      });
-    }
-    return result;
-  }, [nvrs, search, filterStatus]);
-
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page, pageSize]);
-
-  const handleSearch = useCallback((v: string) => { setSearch(v); setPage(1); }, []);
-  const handleStatus = useCallback((v: string | null) => { setFilterStatus(v ?? "__all__"); setPage(1); }, []);
-  const handlePageSize = useCallback((s: number) => { setPageSize(s); setPage(1); }, []);
-
-  if (nvrs.length === 0) {
-    return (
-      <div className="py-12 text-center text-sm text-muted-foreground">
-        Sin servidores NVR en este contexto. Usa el boton <strong>Importar Excel</strong> para agregar datos.
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-3">
-      {/* Barra de filtros */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre, codigo, IP, modelo..."
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="h-9 pl-9 text-sm"
-          />
-        </div>
-        <Select value={filterStatus} onValueChange={handleStatus}>
-          <SelectTrigger className="h-9 w-36 text-sm">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">Todos</SelectItem>
-            <SelectItem value="active">Activo</SelectItem>
-            <SelectItem value="inactive">Inactivo</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9"
-          onClick={() => {
-            const rows = filtered.map((n) => [
-              n.name ?? "", n.code ?? "", n.model ?? "", n.ip_address ?? "",
-              String(n.camera_channels ?? ""), n.total_storage_tb != null ? `${n.total_storage_tb}` : "",
-              String(n.recording_days ?? ""),
-              safeStatus(n.status, n.is_active) === "active" ? "Activo" : "Inactivo",
-            ]);
-            downloadCSV("nvrs.csv", ["Nombre","Codigo","Modelo","IP","Canales","Storage TB","Dias Grab.","Estado"], rows);
-          }}
-        >
-          <Download className="mr-1.5 h-3.5 w-3.5" />
-          Exportar
-        </Button>
-      </div>
-
-      <div className="max-h-125 overflow-auto rounded-lg border">
-        <Table>
-          <TableHeader className="sticky top-0 z-10 bg-background">
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Modelo</TableHead>
-              <TableHead>IP</TableHead>
-              <TableHead>Canales</TableHead>
-              <TableHead>Storage</TableHead>
-              <TableHead>Dias Grab.</TableHead>
-              <TableHead>Estado</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
-                  No se encontraron NVRs con los filtros aplicados.
-                </TableCell>
-              </TableRow>
-            ) : (
-              paged.map((nvr) => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const isLocal = (nvr as any).source === "local";
-                return (
-                  <TableRow key={nvr.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
-                          <Server className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            {nvr.name}
-                            {localBadge(isLocal)}
-                          </div>
-                          {nvr.code && <div className="text-xs text-muted-foreground">{nvr.code}</div>}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{nvr.model ?? "—"}</TableCell>
-                    <TableCell>
-                      <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{nvr.ip_address ?? "—"}</code>
-                    </TableCell>
-                    <TableCell>{nvr.camera_channels ?? "—"}</TableCell>
-                    <TableCell>{nvr.total_storage_tb != null ? `${nvr.total_storage_tb} TB` : "—"}</TableCell>
-                    <TableCell>{nvr.recording_days ?? "—"}</TableCell>
-                    <TableCell>{statusBadge(nvr.status, nvr.is_active)}</TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <Pagination
-        page={page} totalPages={totalPages} pageSize={pageSize} totalItems={filtered.length}
-        onPageChange={setPage} onPageSizeChange={handlePageSize}
-      />
-    </div>
-  );
-}
-
-// ---------- pagina -----------------------------------------------------------
 
 export default function InventoryPage() {
+  const queryClient = useQueryClient();
   const currentCompany = useTenantStore((s) => s.currentCompany);
   const { permissions, roles } = usePermissions();
   const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";
 
-  // Para Admin del Sistema: empresa seleccionada localmente
-  const [localTenantId, setLocalTenantId] = useState<string>("");
-  const [localSiteId, setLocalSiteId] = useState<string>("");
+  // Estado local de UI — sincronizar con empresa seleccionada en header
+  const [localTenantId, setLocalTenantId] = useState(
+    () => (currentCompany && !isPlatformTenant(currentCompany.id) ? currentCompany.id : ""),
+  );
+  const [localSiteId, setLocalSiteId] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<"cameras" | "nvrs">("cameras");
+  const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+  const [editingCamera, setEditingCamera] = useState<CameraType | null>(null);
+  const [nvrDialogOpen, setNvrDialogOpen] = useState(false);
+  const [editingNvr, setEditingNvr] = useState<NvrServer | null>(null);
 
   const effectiveTenantId = isPlatformAdmin ? localTenantId : (currentCompany?.id ?? "");
   const effectiveSiteId = localSiteId;
+  const hasContext = !isPlatformAdmin || !!effectiveTenantId;
 
-  // Tenants para Admin del Sistema
-  const { data: tenants = [] } = useQuery<Tenant[]>({
+  // ──── Queries ────────────────────────────────────────────────────────
+
+  const { data: rawTenants = [] } = useQuery<Tenant[]>({
     queryKey: ["tenants", "inventory"],
     queryFn: () => listTenants(200),
     enabled: isPlatformAdmin,
@@ -491,41 +96,130 @@ export default function InventoryPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Sitios
+  // Filtrar tenant plataforma del dropdown
+  const tenants = rawTenants.filter((t) => !isPlatformTenant(t.id));
+
   const { data: sites = [], isLoading: sitesLoading } = useQuery<SiteListItem[]>({
     queryKey: ["sites-for-inventory", effectiveTenantId],
     queryFn: listSites,
-    enabled: isPlatformAdmin ? !!effectiveTenantId : true,
+    enabled: hasContext,
     retry: false,
     staleTime: 2 * 60 * 1000,
   });
 
-  // Camaras
   const { data: apiCameras = [], isLoading: camsLoading } = useQuery<CameraType[]>({
-    queryKey: ["inventory-cameras", effectiveSiteId, refreshKey],
+    queryKey: ["inventory-cameras", effectiveTenantId, refreshKey],
     queryFn: () => listCameras({ limit: 500 }),
-    enabled: isPlatformAdmin ? !!effectiveTenantId : true,
+    enabled: hasContext,
     retry: false,
     staleTime: 2 * 60 * 1000,
   });
 
-  // NVRs
+  const { data: cameraStats } = useQuery({
+    queryKey: ["inventory-cameras-stats", effectiveTenantId],
+    queryFn: getCameraStats,
+    enabled: hasContext,
+  });
+
   const { data: apiNvrs = [], isLoading: nvrsLoading } = useQuery<NvrServer[]>({
-    queryKey: ["inventory-nvrs", effectiveSiteId, refreshKey],
+    queryKey: ["inventory-nvrs", effectiveTenantId, refreshKey],
     queryFn: listNvrs,
-    enabled: isPlatformAdmin ? !!effectiveTenantId : true,
+    enabled: hasContext,
     retry: false,
     staleTime: 2 * 60 * 1000,
   });
 
-  // Datos locales desde localStorage
+  const { data: nvrStats } = useQuery({
+    queryKey: ["inventory-nvrs-stats", effectiveTenantId],
+    queryFn: getNvrStats,
+    enabled: hasContext,
+  });
+
+  // ──── Mutations: Camaras ─────────────────────────────────────────────
+
+  const createCameraMut = useMutation({
+    mutationFn: createCamera,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory-cameras"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-cameras-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["cameras"] });
+      toast.success("Camara creada correctamente");
+      setCameraDialogOpen(false);
+    },
+    onError: () => toast.error("No se pudo crear la camara"),
+  });
+
+  const updateCameraMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CameraFormValues }) =>
+      updateCamera(id, data as Parameters<typeof updateCamera>[1]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory-cameras"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-cameras-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["cameras"] });
+      toast.success("Camara actualizada");
+      setCameraDialogOpen(false);
+      setEditingCamera(null);
+    },
+    onError: () => toast.error("No se pudo actualizar la camara"),
+  });
+
+  const deleteCameraMut = useMutation({
+    mutationFn: deleteCamera,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory-cameras"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-cameras-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["cameras"] });
+      toast.success("Camara eliminada");
+    },
+    onError: () => toast.error("No se pudo eliminar la camara"),
+  });
+
+  // ──── Mutations: NVRs ────────────────────────────────────────────────
+
+  const createNvrMut = useMutation({
+    mutationFn: createNvr,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory-nvrs"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-nvrs-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["nvrs"] });
+      toast.success("NVR creado correctamente");
+      setNvrDialogOpen(false);
+    },
+    onError: () => toast.error("No se pudo crear el NVR"),
+  });
+
+  const updateNvrMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: NvrFormValues }) =>
+      updateNvr(id, data as Parameters<typeof updateNvr>[1]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory-nvrs"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-nvrs-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["nvrs"] });
+      toast.success("NVR actualizado");
+      setNvrDialogOpen(false);
+      setEditingNvr(null);
+    },
+    onError: () => toast.error("No se pudo actualizar el NVR"),
+  });
+
+  const deleteNvrMut = useMutation({
+    mutationFn: deleteNvr,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory-nvrs"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-nvrs-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["nvrs"] });
+      toast.success("NVR eliminado");
+    },
+    onError: () => toast.error("No se pudo eliminar el NVR"),
+  });
+
+  // ──── Datos derivados ────────────────────────────────────────────────
+
   const localData = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _r = refreshKey;
+    void refreshKey; // dependencia para forzar refresh
     return getLocalInventory(effectiveTenantId || null, effectiveSiteId || null);
   }, [effectiveTenantId, effectiveSiteId, refreshKey]);
 
-  // Filtrar por sitio
   const filteredCameras = useMemo(() => {
     if (!effectiveSiteId) return apiCameras;
     return apiCameras.filter((c) => !c.site_id || c.site_id === effectiveSiteId);
@@ -536,28 +230,110 @@ export default function InventoryPage() {
     return apiNvrs.filter((n) => !n.site_id || n.site_id === effectiveSiteId);
   }, [apiNvrs, effectiveSiteId]);
 
-  // Merge API + localStorage
   const allCameras = useMemo(
-    () => [...filteredCameras, ...(localData?.cameras ?? [])],
+    () => [...filteredCameras, ...(localData?.cameras ?? [])] as CameraType[],
     [filteredCameras, localData],
   );
   const allNvrs = useMemo(
-    () => [...filteredNvrs, ...(localData?.nvrs ?? [])],
+    () => [...filteredNvrs, ...(localData?.nvrs ?? [])] as NvrServer[],
     [filteredNvrs, localData],
   );
 
-  // Etiqueta legible de contexto
-  const siteLabel = useMemo(() => {
-    const siteName = sites.find((s) => s.id === effectiveSiteId)?.name ?? "";
-    const tenantName = isPlatformAdmin
-      ? (tenants.find((t) => t.id === effectiveTenantId)?.name ?? "")
-      : (currentCompany?.name ?? "");
-    if (siteName) return `${tenantName} — ${siteName}`.trim();
-    return tenantName.trim() || "Inventario local";
-  }, [sites, effectiveSiteId, effectiveTenantId, tenants, isPlatformAdmin, currentCompany]);
+  const siteNames = useMemo(
+    () => new Map(sites.map((s) => [s.id, s.name])),
+    [sites],
+  );
 
-  const isLoading = camsLoading || nvrsLoading;
-  const hasLocalData = localData && (localData.cameras.length > 0 || localData.nvrs.length > 0);
+  const nvrNames = useMemo(
+    () => new Map(apiNvrs.map((n) => [n.id, n.name])),
+    [apiNvrs],
+  );
+
+  // KPI derivadas cuando hay filtro por sitio
+  const displayCameraStats = useMemo(() => {
+    if (!effectiveSiteId) return cameraStats;
+    const active = filteredCameras.filter((c) => safeStatus(c.status, c.is_active) === "active");
+    return {
+      total_cameras: filteredCameras.length,
+      active_cameras: active.length,
+      inactive_cameras: filteredCameras.length - active.length,
+      dome_cameras: filteredCameras.filter((c) => safeString(c.camera_type, "").toLowerCase().includes("dome")).length,
+      bullet_cameras: filteredCameras.filter((c) => safeString(c.camera_type, "").toLowerCase().includes("bullet")).length,
+      ptz_cameras: filteredCameras.filter((c) => safeString(c.camera_type, "").toLowerCase().includes("ptz")).length,
+      counting_enabled: filteredCameras.filter((c) => c.counting_enabled).length,
+    };
+  }, [effectiveSiteId, filteredCameras, cameraStats]);
+
+  const displayNvrStats = useMemo(() => {
+    if (!effectiveSiteId) return nvrStats;
+    const active = filteredNvrs.filter((n) => safeStatus(n.status, n.is_active) === "active");
+    return {
+      total_servers: filteredNvrs.length,
+      active_servers: active.length,
+      inactive_servers: filteredNvrs.length - active.length,
+      total_cameras: filteredNvrs.reduce((acc, n) => acc + (n.camera_channels ?? 0), 0),
+      total_storage_tb: filteredNvrs.reduce((acc, n) => acc + (n.total_storage_tb ?? 0), 0),
+    };
+  }, [effectiveSiteId, filteredNvrs, nvrStats]);
+
+  // Export rows
+  const cameraExportRows = useMemo(() => allCameras.map((cam) => ({
+    ...cam,
+    site_name: cam.site_id ? siteNames.get(cam.site_id) ?? "Sitio asignado" : "Sin sitio",
+    nvr_name: cam.nvr_server_id ? nvrNames.get(cam.nvr_server_id) ?? "NVR asignado" : "Sin NVR",
+  })), [allCameras, siteNames, nvrNames]);
+
+  const nvrExportRows = useMemo(() => allNvrs.map((nvr) => ({
+    ...nvr,
+    site_name: nvr.site_id ? siteNames.get(nvr.site_id) ?? "Sitio asignado" : "Sin sitio",
+  })), [allNvrs, siteNames]);
+
+  // ──── Columns ────────────────────────────────────────────────────────
+
+  const cameraColumns = useMemo(() => getCameraColumns({
+    onDelete: (camera) => {
+      if (confirm(`Eliminar la camara "${camera.name}"?`)) {
+        deleteCameraMut.mutate(camera.id);
+      }
+    },
+    onView: (camera) => {
+      setEditingCamera(camera);
+      setCameraDialogOpen(true);
+    },
+    siteNames,
+    nvrNames,
+  }), [deleteCameraMut, siteNames, nvrNames]);
+
+  const nvrColumns = useMemo(() => getNvrColumns({
+    onDelete: (nvr) => {
+      if (confirm(`Eliminar el NVR "${nvr.name}"?`)) {
+        deleteNvrMut.mutate(nvr.id);
+      }
+    },
+    onOpen: (nvr) => {
+      setEditingNvr(nvr);
+      setNvrDialogOpen(true);
+    },
+    siteNames,
+  }), [deleteNvrMut, siteNames]);
+
+  // ──── Handlers ───────────────────────────────────────────────────────
+
+  async function handleCameraSubmit(data: CameraFormValues) {
+    if (editingCamera) {
+      await updateCameraMut.mutateAsync({ id: editingCamera.id, data });
+      return;
+    }
+    await createCameraMut.mutateAsync(data as Parameters<typeof createCamera>[0]);
+  }
+
+  async function handleNvrSubmit(data: NvrFormValues) {
+    if (editingNvr) {
+      await updateNvrMut.mutateAsync({ id: editingNvr.id, data });
+      return;
+    }
+    await createNvrMut.mutateAsync(data as Parameters<typeof createNvr>[0]);
+  }
 
   const handleImported = useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -568,6 +344,22 @@ export default function InventoryPage() {
     setRefreshKey((k) => k + 1);
   }, [effectiveTenantId, effectiveSiteId]);
 
+  // ──── Misc ───────────────────────────────────────────────────────────
+
+  const siteLabel = useMemo(() => {
+    const siteName = sites.find((s) => s.id === effectiveSiteId)?.name ?? "";
+    const tenantName = isPlatformAdmin
+      ? (tenants.find((t) => t.id === effectiveTenantId)?.name ?? "")
+      : (currentCompany?.name ?? "");
+    if (siteName) return `${tenantName} — ${siteName}`.trim();
+    return tenantName.trim() || "";
+  }, [sites, effectiveSiteId, effectiveTenantId, tenants, isPlatformAdmin, currentCompany]);
+
+  const isLoading = camsLoading || nvrsLoading;
+  const hasLocalData = localData && (localData.cameras.length > 0 || localData.nvrs.length > 0);
+
+  // ──── Render ─────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-5">
       {/* Encabezado */}
@@ -575,7 +367,7 @@ export default function InventoryPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Inventario CCTV</h1>
           <p className="text-sm text-muted-foreground">
-            Equipos registrados por sucursal. Los datos importados desde Excel se guardan localmente.
+            Gestion unificada de camaras y servidores NVR por empresa y sucursal.
           </p>
         </div>
         <div className="flex gap-2">
@@ -583,10 +375,27 @@ export default function InventoryPage() {
             <RefreshCw className={`mr-1.5 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             Actualizar
           </Button>
-          <Button size="sm" onClick={() => setImportOpen(true)}>
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="mr-1.5 h-4 w-4" />
-            Importar Excel
+            Importar
           </Button>
+          {hasContext && (
+            <Button
+              size="sm"
+              onClick={() => {
+                if (activeTab === "cameras") {
+                  setEditingCamera(null);
+                  setCameraDialogOpen(true);
+                } else {
+                  setEditingNvr(null);
+                  setNvrDialogOpen(true);
+                }
+              }}
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              {activeTab === "cameras" ? "Nueva camara" : "Nuevo NVR"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -658,7 +467,7 @@ export default function InventoryPage() {
         </CardContent>
       </Card>
 
-      {/* Estado vacio para Admin del Sistema sin empresa seleccionada */}
+      {/* Estado vacio para Admin del Sistema sin empresa */}
       {isPlatformAdmin && !localTenantId && (
         <div className="rounded-lg border border-dashed py-16 text-center">
           <Building2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
@@ -666,18 +475,14 @@ export default function InventoryPage() {
             Selecciona una empresa para ver su inventario CCTV
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            O importa un Excel directamente — los datos quedaran guardados
+            Desde ahi podras crear camaras, NVRs o importar datos de Excel.
           </p>
-          <Button size="sm" variant="outline" className="mt-4" onClick={() => setImportOpen(true)}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Importar Excel de todas formas
-          </Button>
         </div>
       )}
 
-      {/* Tabla de inventario */}
-      {(!isPlatformAdmin || localTenantId) && (
-        <Tabs defaultValue="cameras">
+      {/* Contenido principal con tabs */}
+      {hasContext && (
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "cameras" | "nvrs")}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <TabsList>
               <TabsTrigger value="cameras">
@@ -702,25 +507,183 @@ export default function InventoryPage() {
             )}
           </div>
 
-          <TabsContent value="cameras" className="mt-4">
-            {isLoading ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">Cargando inventario...</div>
-            ) : (
-              <CamerasTable cameras={allCameras} />
+          {/* ── Tab: Camaras ── */}
+          <TabsContent value="cameras" className="mt-4 space-y-4">
+            {displayCameraStats && (
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total camaras</CardTitle>
+                    <Camera className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{displayCameraStats.total_cameras}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Activas</CardTitle>
+                    <Eye className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{displayCameraStats.active_cameras}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Tipos</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <span>Domo: {displayCameraStats.dome_cameras}</span>
+                      <span>Bullet: {displayCameraStats.bullet_cameras}</span>
+                      <span>PTZ: {displayCameraStats.ptz_cameras}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Conteo habilitado</CardTitle>
+                    <Search className="h-4 w-4 text-blue-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{displayCameraStats.counting_enabled}</div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
+
+            <DataTable
+              columns={cameraColumns}
+              data={allCameras}
+              isLoading={isLoading}
+              searchKey="name"
+              searchPlaceholder="Filtrar camaras por nombre..."
+              emptyState={(
+                <EmptyState
+                  icon={Camera}
+                  title="No hay camaras registradas"
+                  description="Importa desde Excel o crea una camara manual para comenzar."
+                  action={{ label: "Nueva camara", onClick: () => { setEditingCamera(null); setCameraDialogOpen(true); } }}
+                />
+              )}
+              toolbar={(
+                <ExportButton
+                  data={cameraExportRows as unknown as Record<string, unknown>[]}
+                  columns={[
+                    { header: "Nombre", accessorKey: "name" },
+                    { header: "Codigo", accessorKey: "code" },
+                    { header: "Sitio", accessorKey: "site_name" },
+                    { header: "NVR", accessorKey: "nvr_name" },
+                    { header: "Modelo", accessorKey: "camera_model_name" },
+                    { header: "Estado", accessorKey: "status" },
+                  ]}
+                  filename="camaras-inventario"
+                />
+              )}
+            />
           </TabsContent>
 
-          <TabsContent value="nvrs" className="mt-4">
-            {isLoading ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">Cargando inventario...</div>
-            ) : (
-              <NvrsTable nvrs={allNvrs} />
+          {/* ── Tab: NVRs ── */}
+          <TabsContent value="nvrs" className="mt-4 space-y-4">
+            {displayNvrStats && (
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total servidores</CardTitle>
+                    <Server className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{displayNvrStats.total_servers}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Activos</CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-green-600" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{displayNvrStats.active_servers}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Canales declarados</CardTitle>
+                    <Server className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{displayNvrStats.total_cameras}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Almacenamiento</CardTitle>
+                    <HardDrive className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{displayNvrStats.total_storage_tb} TB</div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
+
+            <DataTable
+              columns={nvrColumns}
+              data={allNvrs}
+              isLoading={isLoading}
+              searchKey="name"
+              searchPlaceholder="Filtrar NVR por nombre..."
+              emptyState={(
+                <EmptyState
+                  icon={Server}
+                  title="No hay servidores NVR"
+                  description="Importa desde Excel o registra tu primer servidor."
+                  action={{ label: "Nuevo NVR", onClick: () => { setEditingNvr(null); setNvrDialogOpen(true); } }}
+                />
+              )}
+              toolbar={(
+                <ExportButton
+                  data={nvrExportRows as unknown as Record<string, unknown>[]}
+                  columns={[
+                    { header: "Nombre", accessorKey: "name" },
+                    { header: "Sitio", accessorKey: "site_name" },
+                    { header: "Modelo", accessorKey: "model" },
+                    { header: "Edicion", accessorKey: "edition" },
+                    { header: "Canales", accessorKey: "camera_channels" },
+                    { header: "Estado", accessorKey: "status" },
+                  ]}
+                  filename="nvrs-inventario"
+                />
+              )}
+            />
           </TabsContent>
         </Tabs>
       )}
 
-      {/* Dialogo de importacion rapida */}
+      {/* ── Dialogos ── */}
+      <CameraDialog
+        open={cameraDialogOpen}
+        onOpenChange={(v) => {
+          setCameraDialogOpen(v);
+          if (!v) setEditingCamera(null);
+        }}
+        camera={editingCamera}
+        onSubmit={handleCameraSubmit}
+        isSubmitting={createCameraMut.isPending || updateCameraMut.isPending}
+      />
+
+      <NvrDialog
+        open={nvrDialogOpen}
+        onOpenChange={(v) => {
+          setNvrDialogOpen(v);
+          if (!v) setEditingNvr(null);
+        }}
+        nvr={editingNvr}
+        onSubmit={handleNvrSubmit}
+        isSubmitting={createNvrMut.isPending || updateNvrMut.isPending}
+      />
+
       <QuickInventoryImportDialog
         open={importOpen}
         onOpenChange={setImportOpen}
@@ -728,6 +691,7 @@ export default function InventoryPage() {
         siteId={effectiveSiteId || null}
         siteLabel={siteLabel}
         onImported={handleImported}
+        defaultType={activeTab}
       />
     </div>
   );
