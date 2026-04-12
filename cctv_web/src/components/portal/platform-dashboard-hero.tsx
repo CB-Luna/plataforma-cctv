@@ -1,9 +1,10 @@
 "use client";
 
-import { Building2, Package2, LayoutTemplate } from "lucide-react";
+import { Building2, Package2, LayoutTemplate, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatsCard } from "@/components/ui/stats-card";
+import { ASSIGNABLE_SERVICE_CODES, PRODUCT_SERVICE_DEFINITIONS } from "@/lib/product/service-catalog";
 import type { TenantStats } from "@/types/api";
 
 export function PlatformDashboardHero({
@@ -13,6 +14,10 @@ export function PlatformDashboardHero({
   tenantStats?: TenantStats;
   roleLabel: string;
 }) {
+  const operationalServices = ASSIGNABLE_SERVICE_CODES.filter(
+    (c) => PRODUCT_SERVICE_DEFINITIONS[c]?.status === "operational",
+  ).length;
+
   return (
     <div className="space-y-6">
       {/* Encabezado de plataforma */}
@@ -26,7 +31,7 @@ export function PlatformDashboardHero({
 
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                SyMTickets CCTV
+                INFRAIX
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-slate-600 dark:text-slate-300">
                 Gobierno de empresas, servicios, plantillas y monitoreo de onboarding desde la plataforma global.
@@ -53,6 +58,13 @@ export function PlatformDashboardHero({
           color="teal"
         />
         <StatsCard
+          title="Servicios operativos"
+          value={operationalServices}
+          subtitle={`${ASSIGNABLE_SERVICE_CODES.length} disponibles en catalogo`}
+          icon={Activity}
+          color="green"
+        />
+        <StatsCard
           title="Servicios"
           value="—"
           subtitle="Catalogo vigente"
@@ -64,7 +76,7 @@ export function PlatformDashboardHero({
           value="—"
           subtitle="Templates de menu"
           icon={LayoutTemplate}
-          color="green"
+          color="purple"
         />
       </div>
     </div>

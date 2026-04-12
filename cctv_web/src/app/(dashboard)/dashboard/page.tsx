@@ -9,10 +9,11 @@ import { StatsCard } from "@/components/ui/stats-card";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { getDashboardSummary, getDashboardTicketStats, getTicketsTrend, getPolicyStats } from "@/lib/api/dashboard";
-import { getTenantStats } from "@/lib/api/tenants";
+import { getTenantStats, listTenants } from "@/lib/api/tenants";
 import { getCameraStats } from "@/lib/api/cameras";
 import { getNvrStats } from "@/lib/api/nvrs";
 import { parseTenantProductProfile } from "@/lib/product/service-catalog";
+import { ServiceBadges } from "@/components/product/service-badges";
 import { useSiteStore } from "@/stores/site-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import {
@@ -66,6 +67,12 @@ export default function DashboardPage() {
   const { data: tenantStats } = useQuery({
     queryKey: ["tenant-stats"],
     queryFn: getTenantStats,
+    enabled: experience.mode === "hybrid_backoffice",
+  });
+
+  const { data: allTenants = [] } = useQuery({
+    queryKey: ["tenants", "dashboard-recent"],
+    queryFn: () => listTenants(),
     enabled: experience.mode === "hybrid_backoffice",
   });
 
@@ -157,25 +164,65 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* Toggle de seccion operativa — solo si existe empresa activa en backoffice */}
-      {experience.mode === "hybrid_backoffice" && currentCompany ? (
-        <Button
-          variant="outline"
-          className="w-full justify-between gap-2 border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
-          onClick={() => setShowTenantOps((prev) => !prev)}
-          data-testid="toggle-tenant-ops"
-        >
-          <span>Operacion del tenant: {currentCompany.name}</span>
-          <ChevronDown className={cn("h-4 w-4 transition-transform", showTenantOps && "rotate-180")} />
-        </Button>
-      ) : (
+      {/* Contexto Admin del Sistema: empresas recientes + toggle operativo */}
+      {experience.mode === "hybrid_backoffice" && (
+        <>
+          {/* Lista de empresas registradas */}
+          <Card className="overflow-hidden rounded-2xl border-gray-200/80 shadow-sm dark:border-gray-800/80">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-200">Empresas registradas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {allTenants.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {allTenants.slice(0, 6).map((t) => {
+                    const profile = parseTenantProductProfile(t);
+                    return (
+                      <div key={t.id} className="flex items-start gap-3 rounded-xl border p-3 dark:border-slate-800">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-sm font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                          {t.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{t.name}</p>
+                          <p className="text-xs text-muted-foreground">{t.slug}</p>
+                          <div className="mt-1.5">
+                            <ServiceBadges services={profile.enabledServices} compact />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No hay empresas registradas aun.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Toggle de seccion operativa — solo si existe empresa activa */}
+          {currentCompany ? (
+            <Button
+              variant="outline"
+              className="w-full justify-between gap-2 border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+              onClick={() => setShowTenantOps((prev) => !prev)}
+              data-testid="toggle-tenant-ops"
+            >
+              <span>Operacion del tenant: {currentCompany.name}</span>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", showTenantOps && "rotate-180")} />
+            </Button>
+          ) : null}
+        </>
+      )}
+
+      {/* Encabezado operativo para Portal Tenant */}
+      {experience.mode !== "hybrid_backoffice" && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-              Operación CCTV
+              Operacion
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Panel de control e indicadores de operación
+              Panel de control e indicadores de operacion
             </p>
           </div>
           <span className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium tabular-nums text-gray-600 dark:bg-gray-800 dark:text-gray-300">{dateStr}</span>
