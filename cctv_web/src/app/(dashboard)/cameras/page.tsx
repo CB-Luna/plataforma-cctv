@@ -45,24 +45,27 @@ export default function CamerasPage() {
   const [searchResults, setSearchResults] = useState<Camera[] | null>(null);
 
   const { data: cameras = [], isLoading } = useQuery({
-    queryKey: ["cameras"],
+    queryKey: ["cameras", currentCompany?.id],
     queryFn: () => listCameras({ limit: 200 }),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: stats } = useQuery({
-    queryKey: ["cameras", "stats"],
+    queryKey: ["cameras", "stats", currentCompany?.id],
     queryFn: getCameraStats,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: sites = [] } = useQuery({
-    queryKey: ["sites"],
+    queryKey: ["sites", currentCompany?.id],
     queryFn: listSites,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: nvrs = [] } = useQuery({
-    queryKey: ["nvrs"],
+    queryKey: ["nvrs", currentCompany?.id],
     queryFn: listNvrs,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const createMutation = useMutation({

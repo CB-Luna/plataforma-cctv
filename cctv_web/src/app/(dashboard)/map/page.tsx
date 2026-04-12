@@ -34,7 +34,7 @@ export default function MapPage() {
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";
 
   const { data: apiSites = [] } = useQuery({
-    queryKey: ["sites"],
+    queryKey: ["sites", currentCompany?.id],
     queryFn: listSites,
     enabled: !isPlatformAdmin || !!currentCompany,
   });

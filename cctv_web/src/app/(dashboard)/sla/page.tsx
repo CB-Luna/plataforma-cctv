@@ -26,8 +26,9 @@ export default function SlaPage() {
   const [editSla, setEditSla] = useState<SlaPolicy | null>(null);
 
   const { data: slaPolicies = [], isLoading } = useQuery({
-    queryKey: ["sla-policies"],
+    queryKey: ["sla-policies", currentCompany?.id],
     queryFn: () => listSlaPolicies(),
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const createMut = useMutation({

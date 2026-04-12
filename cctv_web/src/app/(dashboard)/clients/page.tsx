@@ -25,8 +25,9 @@ export default function ClientsPage() {
   const canCreateClient = canAny("clients.create", "clients:create:own", "clients:create:all");
 
   const { data: clients = [], isLoading } = useQuery({
-    queryKey: ["clients"],
+    queryKey: ["clients", currentCompany?.id],
     queryFn: () => listClients(),
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const createMutation = useMutation({

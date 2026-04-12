@@ -36,19 +36,21 @@ export default function NvrsPage() {
   const [editingNvr, setEditingNvr] = useState<NvrServer | null>(null);
 
   const { data: nvrs = [], isLoading } = useQuery({
-    queryKey: ["nvrs"],
+    queryKey: ["nvrs", currentCompany?.id],
     queryFn: listNvrs,
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: stats } = useQuery({
-    queryKey: ["nvrs", "stats"],
+    queryKey: ["nvrs", "stats", currentCompany?.id],
     queryFn: getNvrStats,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: sites = [] } = useQuery({
-    queryKey: ["sites"],
+    queryKey: ["sites", currentCompany?.id],
     queryFn: listSites,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const createMutation = useMutation({

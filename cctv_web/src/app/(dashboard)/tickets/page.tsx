@@ -104,13 +104,15 @@ export default function TicketsPage() {
   const canDeleteTicket = canAny("tickets.delete", "tickets:delete:own", "tickets:delete:all");
 
   const { data: tickets = [], isLoading } = useQuery({
-    queryKey: ["tickets"],
+    queryKey: ["tickets", currentCompany?.id],
     queryFn: () => listTickets({ limit: 200 }),
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: stats } = useQuery({
-    queryKey: ["ticket-stats"],
+    queryKey: ["ticket-stats", currentCompany?.id],
     queryFn: getTicketStats,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const siteScopedTickets = useMemo(

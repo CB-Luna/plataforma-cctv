@@ -92,8 +92,9 @@ export default function PoliciesPage() {
   const [scopeFilter, setScopeFilter] = useState("__all__");
 
   const { data: policies = [], isLoading } = useQuery({
-    queryKey: ["policies"],
+    queryKey: ["policies", currentCompany?.id],
     queryFn: () => listPolicies(),
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const siteScopedPolicies = useMemo(

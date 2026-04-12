@@ -38,6 +38,9 @@ import {
 } from "@/components/ui/table";
 import { listNvrs } from "@/lib/api/nvrs";
 import { listCameras } from "@/lib/api/cameras";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useTenantStore } from "@/stores/tenant-store";
+import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 
 /* ── Types ── */
 interface EquipmentRow {
@@ -94,6 +97,11 @@ function SortIndicator({ field, active }: { field: SortField; active: SortField 
 }
 
 export default function CapexPage() {
+  const { permissions, roles } = usePermissions();
+  const currentCompany = useTenantStore((s) => s.currentCompany);
+  const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
+  const isPlatformAdmin = experience.mode === "hybrid_backoffice";
+
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [warrantyFilter, setWarrantyFilter] = useState<string>("all");
@@ -103,15 +111,17 @@ export default function CapexPage() {
   const [pageSize, setPageSize] = useState(10);
 
   const { data: nvrs = [], isLoading: nvrLoading, isError: nvrError } = useQuery({
-    queryKey: ["nvrs"],
+    queryKey: ["nvrs", currentCompany?.id],
     queryFn: listNvrs,
     retry: 1,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: cameras = [], isLoading: camLoading, isError: camError } = useQuery({
-    queryKey: ["cameras", "all"],
+    queryKey: ["cameras", "all", currentCompany?.id],
     queryFn: () => listCameras({ limit: 1000 }),
     retry: 1,
+    enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const isLoading = nvrLoading || camLoading;
@@ -208,6 +218,17 @@ export default function CapexPage() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginatedRows = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  // F9: guardia de contexto — Admin del Sistema sin empresa seleccionada
+  if (isPlatformAdmin && !currentCompany) {
+    return (
+      <EmptyState
+        icon={ShieldCheck}
+        title="Selecciona una empresa"
+        description="Este modulo muestra equipos CAPEX del tenant activo. Selecciona una empresa desde la barra de navegacion para continuar."
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
