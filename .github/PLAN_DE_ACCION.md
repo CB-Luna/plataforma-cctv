@@ -31,8 +31,9 @@ Al terminar cualquier fase:
 | F9 | Audit: identificar componentes que muestran UUID como texto | **Alta** | Pendiente |
 | F10 | Rediseno del tab Servicios y Paquetes (layout compacto) | **Media** | Pendiente |
 | F11 | Portal Tenant: logo de empresa en sidebar | **Media** | Pendiente |
-| F12 | Modulo Chatbot IA (icono en header + panel lateral) | **Media** | Pendiente |
-| F13 | Gemini Embedding 2 para analisis de inventario | **Baja** | Pendiente |
+| F12 | Chatbot IA: conectar endpoint real /intelligence/chat | **Media** | Pendiente |
+| F13 | Gemini Embedding: test de reindexacion + busqueda en settings | **Media** | Pendiente |
+| F14 | IA Avanzada: documentos por modelo, specs desde PDF, asistente tecnico | **Alta** | Pendiente |
 
 ---
 
@@ -146,17 +147,91 @@ Al terminar cualquier fase:
 
 ---
 
-## Fase 12 — Modulo Chatbot IA
+## Fase 12 — Chatbot IA: conectar endpoint real
 
-**Descripcion:** Icono en header con panel lateral de chat. Conecta con backend IA.
+**Estado actual:**
+- La UI de configuracion ya existe en `/settings?tab=ia` (proveedor, modelo, API key, temperatura, prompt)
+- El tab tiene una seccion "Prueba" con chat simulado — respuesta hardcoded en frontend
+- El backend tiene CRUD de `model_configs` y `prompt_templates` operativo
+- El backend tiene integracion REAL con Anthropic Claude para imports de inventario (`inventory_import_ai.go`)
+- **NO existe** endpoint `/api/v1/intelligence/chat` en el backend
+
+**Objetivo:**
+1. Crear endpoint backend `POST /intelligence/chat` que:
+   - Reciba `{ message, model_config_id?, conversation_history? }`
+   - Use la config activa del tenant (Gemini o Anthropic)
+   - Llame la API del proveedor con el prompt del sistema configurado
+   - Registre la llamada en `intelligence.api_calls`
+   - Retorne la respuesta real
+2. Conectar el chat de prueba del frontend al endpoint real
+3. Mostrar metricas de uso (tokens, latencia) en la UI
+
+**GAP backend:** Requiere crear handler `ChatWithModel` en `intelligence_handler.go`
 
 **Estado:** Pendiente
 
 ---
 
-## Fase 13 — Gemini Embedding 2 para analisis de inventario
+## Fase 13 — Gemini Embedding: test de reindexacion + busqueda en settings
 
-**Descripcion:** Embeddings semanticos para busqueda avanzada de inventario.
+**Estado actual:**
+- Backend tiene `CatalogEmbeddingService` que genera embeddings con `gemini-embedding-2-preview`
+- Tablas `embedding_documents` y `embedding_vectors` con pgvector (halfvec 3072D, indice HNSW)
+- Endpoints operativos: `POST /intelligence/embeddings/reindex/models` y `/reindex/model/{id}`
+- NO hay UI para ejecutar reindexacion ni para testear busqueda semantica
+
+**Objetivo:**
+1. Agregar seccion "Embeddings" en el tab IA de settings con:
+   - Boton "Reindexar catalogo" que llame al endpoint existente
+   - Indicador de progreso y resultado (modelos procesados, indexados, fallidos)
+   - Stats de la base vectorial (total documentos, total vectores)
+2. Agregar campo de busqueda de prueba:
+   - Input: "Buscar en catalogo: ¿que camara soporta PTZ con IR de 80m?"
+   - Resultado: top-N fichas mas relevantes con score de similitud
+   - Requiere endpoint backend de busqueda semantica (query → embedding → nearest neighbors)
+
+**GAP backend:** Falta endpoint `POST /intelligence/embeddings/search` para busqueda vectorial
+
+**Estado:** Pendiente
+
+---
+
+## Fase 14 — IA Avanzada: documentos por modelo, specs desde PDF, asistente tecnico
+
+**Descripcion:** Implementacion completa del flujo IA para inventario CCTV.
+
+**Capa 1 — Datos estructurados (BD relacional):**
+- Tabla `camera_models` con: brand, model_code, display_name, main_image_url, spec_summary_json
+- Tabla `camera_documents` con: model_id, type (datasheet/manual/quick_start), file_url, mime_type, gemini_file_id, embedding_status
+- Cada camara apunta a un `camera_model`
+- El detalle de camara muestra datos de inventario + specs del modelo + documentos vinculados
+
+**Capa 2 — Extraccion IA desde PDF:**
+- Admin sube PDF del fabricante (datasheet, manual de instalacion)
+- Se guarda en MinIO, se vincula al camera_model
+- Gemini procesa el PDF y extrae specs estructuradas:
+  - Resolucion, lente, zoom, PTZ, WDR, IR, proteccion IP, alimentacion, temperatura operativa
+- Se guardan normalizadas en `spec_summary_json`
+
+**Capa 3 — Embeddings + busqueda semantica:**
+- Documentos PDF se fragmentan en chunks
+- Gemini Embedding 2 genera vectores multimodales (texto + imagenes)
+- Se guardan en `embedding_vectors` con pgvector
+- Busqueda semantica: "¿que alcance IR tiene?" → nearest neighbors → respuesta contextualizada
+
+**UX del detalle de camara (tabs):**
+- Resumen: IP, tipo, NVR, sucursal, sitio, resolucion
+- Especificaciones: extraidas del PDF y guardadas estructuradamente
+- Documentos: datasheet PDF, manual, guia rapida
+- IA / Asistente tecnico: "Preguntale al manual", "Resume este modelo", comparacion entre modelos
+
+**Fases internas:**
+1. Tablas camera_models y camera_documents + CRUD basico
+2. Upload de PDF a MinIO + vinculacion a modelo
+3. Extraccion de specs con Gemini (guardadas en BD)
+4. Embedding de chunks de documentos
+5. UI de detalle enriquecida con tabs
+6. Asistente tecnico con preguntas semanticas sobre manuales
 
 **Estado:** Pendiente
 

@@ -150,7 +150,11 @@ export default function NvrsPage() {
 
   async function handleSubmit(data: NvrFormValues) {
     if (editingNvr) {
-      await updateMutation.mutateAsync({ id: editingNvr.id, data });
+      // Fusionar campos existentes con los del formulario para no borrar
+      // campos que el formulario no maneja (ip_address, brand_id, etc.)
+      const { id, tenant_id, is_active, created_at, updated_at, ...existingFields } = editingNvr;
+      const merged = { ...existingFields, ...data };
+      await updateMutation.mutateAsync({ id: editingNvr.id, data: merged as NvrFormValues });
       return;
     }
 

@@ -334,7 +334,11 @@ export default function InventoryPage() {
 
   async function handleCameraSubmit(data: CameraFormValues) {
     if (editingCamera) {
-      await updateCameraMut.mutateAsync({ id: editingCamera.id, data });
+      // Fusionar campos existentes con los del formulario para no borrar
+      // campos que el formulario no maneja (ip_address, mac_address, etc.)
+      const { id, tenant_id, is_active, created_at, updated_at, ...existingFields } = editingCamera;
+      const merged = { ...existingFields, ...data };
+      await updateCameraMut.mutateAsync({ id: editingCamera.id, data: merged as CameraFormValues });
       return;
     }
     await createCameraMut.mutateAsync(data as Parameters<typeof createCamera>[0]);
@@ -342,7 +346,11 @@ export default function InventoryPage() {
 
   async function handleNvrSubmit(data: NvrFormValues) {
     if (editingNvr) {
-      await updateNvrMut.mutateAsync({ id: editingNvr.id, data });
+      // Fusionar campos existentes con los del formulario para no borrar
+      // campos que el formulario no maneja (ip_address, brand_id, etc.)
+      const { id, tenant_id, is_active, created_at, updated_at, ...existingFields } = editingNvr;
+      const merged = { ...existingFields, ...data };
+      await updateNvrMut.mutateAsync({ id: editingNvr.id, data: merged as NvrFormValues });
       return;
     }
     await createNvrMut.mutateAsync(data as Parameters<typeof createNvr>[0]);
