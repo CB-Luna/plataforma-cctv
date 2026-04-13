@@ -177,6 +177,11 @@ lib/
 
 Reglas: BLoC para estado, DI centralizada en `core/di/`, red en `core/network/`.
 
+Antes de tocar `cctv_mobile`, revisar tambien:
+
+- `.github/instructions/cctv-mobile.instructions.md`
+- `.github/PLAN_APP_MOVIL.md`
+
 ---
 
 ## Estado real del producto visible (abril 2026)
