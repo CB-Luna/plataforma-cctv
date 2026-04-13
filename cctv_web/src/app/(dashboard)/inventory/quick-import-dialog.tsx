@@ -436,8 +436,8 @@ export function QuickInventoryImportDialog({
               )}
               {/* Preview de filas */}
               {preview.sampleRows.length > 0 && (
-                <div className="max-h-72 overflow-auto rounded border text-xs">
-                  <table className="w-full">
+                <div className="max-h-72 overflow-auto rounded border text-xs" style={{ maxWidth: "100%" }}>
+                  <table className="min-w-max">
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-muted/50">
                         {preview.matched.map((h) => (

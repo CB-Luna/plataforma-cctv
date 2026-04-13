@@ -139,6 +139,16 @@ interface FormState {
   promptSistema: string;
 }
 
+const DEFAULT_SYSTEM_PROMPT = `Eres el asistente tecnico de SyMTickets CCTV, una plataforma multi-tenant de gestion de sistemas de videovigilancia.
+
+Tu trabajo es responder preguntas sobre el inventario de camaras, NVRs, sucursales, tickets y configuracion del sistema del usuario.
+
+Reglas:
+- Responde SOLO con informacion que recibas en el contexto del sistema. Si no tienes datos suficientes, di que no tienes esa informacion disponible.
+- No inventes datos. Si el usuario pregunta algo que no esta en el contexto, indicale que consulte la seccion correspondiente del sistema.
+- Responde en espanol, de forma concisa y profesional.
+- Cuando menciones cantidades o listados, se claro y especifico.`;
+
 const DEFAULT_FORM: FormState = {
   nombre: "",
   provider: "google",
@@ -150,7 +160,7 @@ const DEFAULT_FORM: FormState = {
   chatbotActivo: true,
   modoAvanzado: false,
   maxPreguntasPorHora: 20,
-  promptSistema: "",
+  promptSistema: DEFAULT_SYSTEM_PROMPT,
 };
 
 // ── Utilidad: buscar config por module_key en settings ──
@@ -172,11 +182,16 @@ function findConfigForModule(
 
 function configToForm(config: ModelConfig): FormState {
   const settings = (config.settings ?? {}) as Record<string, unknown>;
+  // Recuperar API key de sessionStorage si existe (el backend no la devuelve por seguridad)
+  const moduleKey = (settings.module_key as string) ?? config.name;
+  const cachedKey = typeof window !== "undefined"
+    ? sessionStorage.getItem(`ia_api_key_${moduleKey}`) ?? ""
+    : "";
   return {
     nombre: config.name,
     provider: (config.provider as ProviderKey) || "google",
     modelo: config.model_name,
-    apiKey: "",
+    apiKey: cachedKey,
     temperatura: config.default_temperature ?? 0.7,
     maxTokens: config.default_max_tokens ?? 4096,
     activo: config.is_active,
@@ -289,6 +304,11 @@ export function IntelligenceTab() {
   async function handleSave() {
     setSaving(true);
     try {
+      // Persistir API key en sessionStorage para que sobreviva recargas de pagina
+      if (form.apiKey) {
+        sessionStorage.setItem(`ia_api_key_${selectedKey}`, form.apiKey);
+      }
+
       const moduleSettings: Record<string, unknown> = {
         module_key: selectedKey,
         prompt_sistema: form.promptSistema,
@@ -349,11 +369,11 @@ export function IntelligenceTab() {
     if (!chatInput.trim()) return;
     // Verificar que haya API key disponible (del form actual o ya guardada)
     if (!form.apiKey && !selectedConfig?.has_api_key) {
-      toast.error("Ingresa una clave API en la seccion Motor IA para probar el chat");
+      toast.error("Ingresa una clave API en la seccion Motor IA y presiona Guardar");
       return;
     }
     if (!form.apiKey) {
-      toast.error("Re-ingresa la clave API para probar — el servidor no la devuelve por seguridad");
+      toast.error("Ingresa la clave API arriba y presiona Guardar para habilitarla");
       return;
     }
 
@@ -364,6 +384,43 @@ export function IntelligenceTab() {
     setChatUsage(null);
 
     try {
+      // Obtener contexto real del sistema para inyectar en el prompt
+      let systemContext = "";
+      try {
+        const [camerasRes, nvrsRes, sitesRes] = await Promise.allSettled([
+          import("@/lib/api/cameras").then((m) => m.listCameras()),
+          import("@/lib/api/nvrs").then((m) => m.listNvrs()),
+          import("@/lib/api/sites").then((m) => m.listSites()),
+        ]);
+        const cameras = camerasRes.status === "fulfilled" ? camerasRes.value : [];
+        const nvrs = nvrsRes.status === "fulfilled" ? nvrsRes.value : [];
+        const sites = sitesRes.status === "fulfilled" ? sitesRes.value : [];
+
+        const camerasByType: Record<string, number> = {};
+        const camerasBySite: Record<string, number> = {};
+        // Mapa de site_id -> nombre para resolver nombres de sucursal
+        const siteMap = new Map(sites.map((s) => [s.id, s.name]));
+        for (const c of cameras) {
+          const t = c.camera_type || "sin_tipo";
+          camerasByType[t] = (camerasByType[t] || 0) + 1;
+          const sName = (c.site_id && siteMap.get(c.site_id)) || "Sin sucursal";
+          camerasBySite[sName] = (camerasBySite[sName] || 0) + 1;
+        }
+
+        systemContext = `\n\n--- CONTEXTO DEL SISTEMA (datos reales) ---
+Sucursales registradas (${sites.length}): ${sites.map((s) => s.name).join(", ") || "ninguna"}
+Camaras totales: ${cameras.length}
+Camaras por tipo: ${Object.entries(camerasByType).map(([k, v]) => `${k}: ${v}`).join(", ") || "sin datos"}
+Camaras por sucursal: ${Object.entries(camerasBySite).map(([k, v]) => `${k}: ${v}`).join(", ") || "sin datos"}
+NVRs totales: ${nvrs.length}
+${nvrs.length > 0 ? `NVRs: ${nvrs.map((n) => n.name || "sin nombre").join(", ")}` : ""}
+--- FIN CONTEXTO ---`;
+      } catch {
+        // Si falla obtener contexto, continuar sin el
+      }
+
+      const fullSystemPrompt = (form.promptSistema || DEFAULT_SYSTEM_PROMPT) + systemContext;
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -372,7 +429,7 @@ export function IntelligenceTab() {
           provider: form.provider,
           model: form.modelo,
           apiKey: form.apiKey,
-          systemPrompt: form.promptSistema || undefined,
+          systemPrompt: fullSystemPrompt,
           temperature: form.temperatura,
           maxTokens: form.maxTokens,
           history: chatMessages,
