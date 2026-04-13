@@ -29,7 +29,7 @@ Al terminar cualquier fase:
 | F7 | Dashboard: stats por empresa para super_admin | **Alta** | **Completada** |
 | F8 | Auditoria global de otros PUT que borren campos | **Alta** | **Completada** |
 | F9 | Audit: identificar componentes que muestran UUID como texto | **Alta** | **Completada** |
-| F10 | Rediseno del tab Servicios y Paquetes (layout compacto) | **Media** | Pendiente |
+| F10 | Rediseno del tab Servicios y Paquetes (layout compacto) | **Media** | **Completada** |
 | F11 | Portal Tenant: logo de empresa en sidebar | **Media** | Pendiente |
 | F12 | Chatbot IA: conectar endpoint real /intelligence/chat | **Media** | Pendiente |
 | F13 | Gemini Embedding: test de reindexacion + busqueda en settings | **Media** | Pendiente |
@@ -140,13 +140,17 @@ Al terminar cualquier fase:
 
 ---
 
-## Fase 10 — Rediseno del tab Servicios y Paquetes
+## Fase 10 — Rediseno del tab Servicios y Paquetes (Completada)
 
 **Problema:** Tab requiere demasiado scroll, paneles expandibles confusos.
 
-**Solucion propuesta:** Layout dos columnas, servicios por modulo colapsables, stats reducidos.
-
-**Estado:** Pendiente
+**Cambios:**
+- Stats: 4 StatsCards reemplazadas por barra inline compacta (1 linea)
+- Plan comercial: cards grandes reemplazadas por pills horizontales
+- Servicios: grid de 3 columnas reducido a 2, cards mas compactas con badge de estado inline
+- Matriz de referencia: colapsada por defecto, expandible bajo boton
+- Panel de tenants: padding y spacing reducidos, altura maxima dinamica
+- Encabezado: plan + header en misma card, boton Guardar mas compacto
 
 ---
 
