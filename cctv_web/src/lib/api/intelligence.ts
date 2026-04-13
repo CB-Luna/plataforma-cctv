@@ -7,6 +7,8 @@ import type {
   Analysis,
   UsageStats,
   EmbeddingReindexResult,
+  SemanticModelSearchResult,
+  CatalogModel,
 } from "@/types/api";
 
 export async function listModelConfigs(): Promise<ModelConfig[]> {
@@ -55,4 +57,21 @@ export async function reindexAllEmbeddings(): Promise<EmbeddingReindexResult[]> 
 
 export async function reindexModelEmbedding(modelId: string): Promise<EmbeddingReindexResult> {
   return api.post(`intelligence/embeddings/reindex/model/${modelId}`).json<EmbeddingReindexResult>();
+}
+
+// ── Busqueda semantica de modelos (catalogo global) ──
+
+export async function searchSemanticModels(query: string, limit = 10): Promise<SemanticModelSearchResult[]> {
+  const params = new URLSearchParams({ query, limit: String(limit) });
+  return api.get(`inventory/models/search/semantic?${params}`).json<SemanticModelSearchResult[]>();
+}
+
+// ── Catalogo global de modelos ──
+
+export async function listCatalogModels(): Promise<CatalogModel[]> {
+  return api.get("inventory/models").json<CatalogModel[]>();
+}
+
+export async function getCatalogModel(id: string): Promise<CatalogModel> {
+  return api.get(`inventory/models/${id}`).json<CatalogModel>();
 }

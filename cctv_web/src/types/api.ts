@@ -1079,6 +1079,69 @@ export interface EmbeddingReindexResult {
   errors?: string[];
 }
 
+// ──── Busqueda Semantica de Modelos (Catalogo Global) ────
+
+export interface SemanticModelSearchResult {
+  model_id: string;
+  brand_name: string;
+  model_name: string;
+  part_number: string;
+  datasheet_url?: string;
+  image_url?: string;
+  content_summary: string;
+  distance: number;
+  similarity_score: number;
+}
+
+export interface CatalogModel {
+  id: string;
+  brand_id: string;
+  equipment_type_id: string;
+  name: string;
+  part_number: string;
+  specifications: Record<string, unknown>;
+  datasheet_url?: string;
+  image_url?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+// ──── Analisis PDF con IA ────
+
+export interface PDFAnalysisResult {
+  content: string;
+  structured: PDFExtractedData | null;
+  fileName: string;
+  usage: { input_tokens: number; output_tokens: number };
+  latency_ms: number;
+}
+
+export interface PDFExtractedModel {
+  nombre: string;
+  part_number: string;
+  tipo: string;
+  resoluciones: string[];
+  sensor?: string;
+  lente?: string;
+  ir: boolean;
+  ir_distancia?: string;
+  wdr: boolean;
+  poe?: boolean;
+  ip_rating?: string;
+  temperatura_operativa?: string;
+  analiticas: string[];
+  certificaciones?: string[];
+  notas?: string;
+}
+
+export interface PDFExtractedData {
+  modelos: PDFExtractedModel[];
+  fabricante: string;
+  catalogo: string;
+  total_modelos: number;
+  resumen: string;
+}
+
 // ──── Floor Plans (Fase 6) ────
 
 export interface FloorPlanSite {
