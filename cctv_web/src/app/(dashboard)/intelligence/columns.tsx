@@ -4,14 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2, Star, Power } from "lucide-react";
 import type { ModelConfig } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
 
 interface ColumnActions {
   onEdit: (model: ModelConfig) => void;
@@ -87,38 +80,28 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
         const model = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {capabilities.canEdit && (
-                <DropdownMenuItem onClick={() => actions.onEdit(model)}>
-                  <Pencil className="mr-2 h-4 w-4" /> Editar
-                </DropdownMenuItem>
-              )}
-              {capabilities.canSetDefault && !model.is_default && (
-                <DropdownMenuItem onClick={() => actions.onSetDefault(model)}>
-                  <Star className="mr-2 h-4 w-4" /> Establecer predeterminado
-                </DropdownMenuItem>
-              )}
-              {capabilities.canToggleActive && (
-                <DropdownMenuItem onClick={() => actions.onToggleActive(model)}>
-                  <Power className="mr-2 h-4 w-4" /> {model.is_active ? "Desactivar" : "Activar"}
-                </DropdownMenuItem>
-              )}
-              {capabilities.canDelete && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive" onClick={() => actions.onDelete(model)}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ActionMenu trigger={<MoreHorizontal className="h-4 w-4" />}>
+            {capabilities.canEdit && (
+              <ActionMenuItem onClick={() => actions.onEdit(model)}>
+                <Pencil className="mr-2 h-4 w-4" /> Editar
+              </ActionMenuItem>
+            )}
+            {capabilities.canSetDefault && !model.is_default && (
+              <ActionMenuItem onClick={() => actions.onSetDefault(model)}>
+                <Star className="mr-2 h-4 w-4" /> Establecer predeterminado
+              </ActionMenuItem>
+            )}
+            {capabilities.canToggleActive && (
+              <ActionMenuItem onClick={() => actions.onToggleActive(model)}>
+                <Power className="mr-2 h-4 w-4" /> {model.is_active ? "Desactivar" : "Activar"}
+              </ActionMenuItem>
+            )}
+            {capabilities.canDelete && (
+              <ActionMenuItem variant="destructive" onClick={() => actions.onDelete(model)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+              </ActionMenuItem>
+            )}
+          </ActionMenu>
         );
       },
     });

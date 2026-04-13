@@ -5,12 +5,7 @@ import type { Camera } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
 import { safeString, safeStatus } from "@/lib/safe-field";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
 import { MoreHorizontal, Trash2, Eye } from "lucide-react";
 
 interface ColumnActions {
@@ -123,24 +118,19 @@ export function getColumns(actions: ColumnActions): ColumnDef<Camera>[] {
     {
       id: "actions",
       cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
-            <MoreHorizontal className="h-4 w-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => actions.onView(row.original)}>
-              <Eye className="mr-2 h-4 w-4" />
-              Ver detalle
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => actions.onDelete(row.original)}
-              className="text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Eliminar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ActionMenu trigger={<MoreHorizontal className="h-4 w-4" />}>
+          <ActionMenuItem onClick={() => actions.onView(row.original)}>
+            <Eye className="mr-2 h-4 w-4" />
+            Ver detalle
+          </ActionMenuItem>
+          <ActionMenuItem
+            onClick={() => actions.onDelete(row.original)}
+            variant="destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Eliminar
+          </ActionMenuItem>
+        </ActionMenu>
       ),
     },
   ];

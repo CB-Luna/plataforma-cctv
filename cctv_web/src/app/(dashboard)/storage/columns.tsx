@@ -4,13 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { StorageConfiguration } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
 
 interface ColumnActions {
   onEdit: (cfg: StorageConfiguration) => void;
@@ -68,25 +62,18 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
         const config = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+          <ActionMenu trigger={<MoreHorizontal className="h-4 w-4" />}>
               {capabilities.canEdit && (
-                <DropdownMenuItem onClick={() => actions.onEdit(config)}>
+                <ActionMenuItem onClick={() => actions.onEdit(config)}>
                   <Pencil className="mr-2 h-4 w-4" /> Editar
-                </DropdownMenuItem>
+                </ActionMenuItem>
               )}
               {capabilities.canDelete && (
-                <DropdownMenuItem className="text-destructive" onClick={() => actions.onDelete(config)}>
+                <ActionMenuItem variant="destructive" onClick={() => actions.onDelete(config)}>
                   <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                </DropdownMenuItem>
+                </ActionMenuItem>
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          </ActionMenu>
         );
       },
     });

@@ -7,12 +7,7 @@ import { DataTableColumnHeader } from "@/components/data-table";
 import { ServiceBadges } from "@/components/product/service-badges";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
 import { getTenantReadinessMeta, parseTenantProductProfile } from "@/lib/product/service-catalog";
 
 interface TenantColumnActions {
@@ -155,40 +150,35 @@ export function getTenantColumns(
         const tenant = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {capabilities.canEdit ? (
-                <DropdownMenuItem onClick={() => actions.onEdit(tenant)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Editar
-                </DropdownMenuItem>
-              ) : null}
-              {capabilities.canUploadLogo && actions.onUploadLogo ? (
-                <DropdownMenuItem onClick={() => actions.onUploadLogo?.(tenant)}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Logo / branding
-                </DropdownMenuItem>
-              ) : null}
-              {capabilities.canToggleActive ? (
-                <DropdownMenuItem onClick={() => actions.onToggleActive(tenant)}>
-                  {tenant.is_active ? (
-                    <>
-                      <PowerOff className="mr-2 h-4 w-4" />
-                      Desactivar
-                    </>
-                  ) : (
-                    <>
-                      <Power className="mr-2 h-4 w-4" />
-                      Activar
-                    </>
-                  )}
-                </DropdownMenuItem>
-              ) : null}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ActionMenu trigger={<MoreHorizontal className="h-4 w-4" />}>
+            {capabilities.canEdit ? (
+              <ActionMenuItem onClick={() => actions.onEdit(tenant)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </ActionMenuItem>
+            ) : null}
+            {capabilities.canUploadLogo && actions.onUploadLogo ? (
+              <ActionMenuItem onClick={() => actions.onUploadLogo?.(tenant)}>
+                <Upload className="mr-2 h-4 w-4" />
+                Logo / branding
+              </ActionMenuItem>
+            ) : null}
+            {capabilities.canToggleActive ? (
+              <ActionMenuItem onClick={() => actions.onToggleActive(tenant)}>
+                {tenant.is_active ? (
+                  <>
+                    <PowerOff className="mr-2 h-4 w-4" />
+                    Desactivar
+                  </>
+                ) : (
+                  <>
+                    <Power className="mr-2 h-4 w-4" />
+                    Activar
+                  </>
+                )}
+              </ActionMenuItem>
+            ) : null}
+          </ActionMenu>
         );
       },
     });

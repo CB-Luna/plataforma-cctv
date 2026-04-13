@@ -5,12 +5,7 @@ import { Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { Policy } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
 
 interface ColumnActions {
   onView: (policy: Policy) => void;
@@ -95,25 +90,20 @@ export function getColumns(actions: ColumnActions): ColumnDef<Policy>[] {
       cell: ({ row }) => {
         const policy = row.original;
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => actions.onView(policy)}>
-                <Eye className="mr-2 h-4 w-4" />
-                Ver detalle
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onEdit(policy)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => actions.onDelete(policy)} className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ActionMenu trigger={<MoreHorizontal className="h-4 w-4" />}>
+            <ActionMenuItem onClick={() => actions.onView(policy)}>
+              <Eye className="mr-2 h-4 w-4" />
+              Ver detalle
+            </ActionMenuItem>
+            <ActionMenuItem onClick={() => actions.onEdit(policy)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </ActionMenuItem>
+            <ActionMenuItem onClick={() => actions.onDelete(policy)} variant="destructive">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Eliminar
+            </ActionMenuItem>
+          </ActionMenu>
         );
       },
     },

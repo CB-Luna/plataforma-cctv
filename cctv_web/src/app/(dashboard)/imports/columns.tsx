@@ -4,12 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import type { ImportBatch } from "@/types/api";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
 import { MoreHorizontal, Play, XCircle, Trash2, Eye } from "lucide-react";
 
 interface ColumnActions {
@@ -117,36 +112,31 @@ export function getColumns(actions: ColumnActions): ColumnDef<ImportBatch>[] {
       cell: ({ row }) => {
         const batch = row.original;
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 p-0 rounded-md hover:bg-accent">
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => actions.onView(batch)}>
-                <Eye className="mr-2 h-4 w-4" />
-                Ver detalle
-              </DropdownMenuItem>
-              {batch.status === "pending" && (
-                <DropdownMenuItem onClick={() => actions.onProcess(batch)}>
-                  <Play className="mr-2 h-4 w-4" />
-                  Procesar
-                </DropdownMenuItem>
-              )}
-              {(batch.status === "pending" || batch.status === "processing") && (
-                <DropdownMenuItem onClick={() => actions.onCancel(batch)}>
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Cancelar
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={() => actions.onDelete(batch)}
-                className="text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ActionMenu trigger={<MoreHorizontal className="h-4 w-4" />}>
+            <ActionMenuItem onClick={() => actions.onView(batch)}>
+              <Eye className="mr-2 h-4 w-4" />
+              Ver detalle
+            </ActionMenuItem>
+            {batch.status === "pending" && (
+              <ActionMenuItem onClick={() => actions.onProcess(batch)}>
+                <Play className="mr-2 h-4 w-4" />
+                Procesar
+              </ActionMenuItem>
+            )}
+            {(batch.status === "pending" || batch.status === "processing") && (
+              <ActionMenuItem onClick={() => actions.onCancel(batch)}>
+                <XCircle className="mr-2 h-4 w-4" />
+                Cancelar
+              </ActionMenuItem>
+            )}
+            <ActionMenuItem
+              onClick={() => actions.onDelete(batch)}
+              variant="destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Eliminar
+            </ActionMenuItem>
+          </ActionMenu>
         );
       },
     },

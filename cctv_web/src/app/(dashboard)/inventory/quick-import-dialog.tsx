@@ -328,7 +328,7 @@ export function QuickInventoryImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Importar {typeLabel} desde Excel</DialogTitle>
         </DialogHeader>

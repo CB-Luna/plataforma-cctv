@@ -13,13 +13,7 @@ import type { Ticket } from "@/types/api";
 import { CoverageStatusBadge, SlaStatusBadge } from "@/components/contracts/status-badges";
 import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
 
 interface ColumnActions {
   onView: (ticket: Ticket) => void;
@@ -171,47 +165,39 @@ export function getColumns(
         const ticket = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => actions.onView(ticket)}>
-                <Eye className="mr-2 h-4 w-4" />
-                Ver detalle
-              </DropdownMenuItem>
-              {capabilities.canEdit && (
-                <DropdownMenuItem onClick={() => actions.onEdit(ticket)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Editar
-                </DropdownMenuItem>
-              )}
-              {capabilities.canAssign && (
-                <DropdownMenuItem onClick={() => actions.onAssign(ticket)}>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Asignar
-                </DropdownMenuItem>
-              )}
-              {capabilities.canChangeStatus && (
-                <DropdownMenuItem onClick={() => actions.onChangeStatus(ticket)}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Cambiar estado
-                </DropdownMenuItem>
-              )}
-              {capabilities.canDelete && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => actions.onDelete(ticket)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ActionMenu trigger={<MoreHorizontal className="h-4 w-4" />}>
+            <ActionMenuItem onClick={() => actions.onView(ticket)}>
+              <Eye className="mr-2 h-4 w-4" />
+              Ver detalle
+            </ActionMenuItem>
+            {capabilities.canEdit && (
+              <ActionMenuItem onClick={() => actions.onEdit(ticket)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </ActionMenuItem>
+            )}
+            {capabilities.canAssign && (
+              <ActionMenuItem onClick={() => actions.onAssign(ticket)}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                Asignar
+              </ActionMenuItem>
+            )}
+            {capabilities.canChangeStatus && (
+              <ActionMenuItem onClick={() => actions.onChangeStatus(ticket)}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Cambiar estado
+              </ActionMenuItem>
+            )}
+            {capabilities.canDelete && (
+              <ActionMenuItem
+                onClick={() => actions.onDelete(ticket)}
+                variant="destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Eliminar
+              </ActionMenuItem>
+            )}
+          </ActionMenu>
         );
       },
     });

@@ -4,13 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Shield, Trash2 } from "lucide-react";
 import type { RoleAdmin } from "@/types/api";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
 
 interface ColumnActions {
   onEdit: (role: RoleAdmin) => void;
@@ -62,33 +56,26 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
         const role = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+          <ActionMenu trigger={<MoreHorizontal className="h-4 w-4" />}>
               {capabilities.canEdit && (
-                <DropdownMenuItem onClick={() => actions.onEdit(role)}>
+                <ActionMenuItem onClick={() => actions.onEdit(role)}>
                   <Pencil className="mr-2 h-4 w-4" /> Editar
-                </DropdownMenuItem>
+                </ActionMenuItem>
               )}
               {capabilities.canManagePermissions && (
-                <DropdownMenuItem onClick={() => actions.onPermissions(role)}>
+                <ActionMenuItem onClick={() => actions.onPermissions(role)}>
                   <Shield className="mr-2 h-4 w-4" /> Permisos
-                </DropdownMenuItem>
+                </ActionMenuItem>
               )}
               {capabilities.canDelete && !role.is_system && (
-                <DropdownMenuItem
-                  className="text-destructive"
+                <ActionMenuItem
+                  variant="destructive"
                   onClick={() => actions.onDelete(role)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" /> Eliminar
-                </DropdownMenuItem>
+                </ActionMenuItem>
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          </ActionMenu>
         );
       },
     });

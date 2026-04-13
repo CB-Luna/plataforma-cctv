@@ -7,13 +7,7 @@ import { DataTableColumnHeader } from "@/components/data-table/column-header";
 import { Badge } from "@/components/ui/badge";
 import { ThemeBadge } from "@/components/theme-selector";
 import { getUserTheme, getUserAvatar } from "./user-dialogs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ActionMenu, ActionMenuItem } from "@/components/ui/action-menu";
 
 interface ColumnActions {
   onEdit: (user: UserAdmin) => void;
@@ -101,40 +95,32 @@ export function getColumns(actions: ColumnActions, capabilities: ColumnCapabilit
         const user = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md p-0 hover:bg-accent">
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {capabilities.canEdit && (
-                <DropdownMenuItem onClick={() => actions.onEdit(user)}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Editar
-                </DropdownMenuItem>
-              )}
-              {capabilities.canChangePassword && (
-                <DropdownMenuItem onClick={() => actions.onChangePassword(user)}>
-                  <Key className="mr-2 h-4 w-4" />
-                  Cambiar contraseña
-                </DropdownMenuItem>
-              )}
-              {capabilities.canManageRoles && (
-                <DropdownMenuItem onClick={() => actions.onManageRoles(user)}>
-                  <ShieldCheck className="mr-2 h-4 w-4" />
-                  Gestionar roles
-                </DropdownMenuItem>
-              )}
-              {capabilities.canDeactivate && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => actions.onDeactivate(user)} className="text-destructive">
-                    <UserX className="mr-2 h-4 w-4" />
-                    Desactivar
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <ActionMenu trigger={<MoreHorizontal className="h-4 w-4" />}>
+            {capabilities.canEdit && (
+              <ActionMenuItem onClick={() => actions.onEdit(user)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </ActionMenuItem>
+            )}
+            {capabilities.canChangePassword && (
+              <ActionMenuItem onClick={() => actions.onChangePassword(user)}>
+                <Key className="mr-2 h-4 w-4" />
+                Cambiar contraseña
+              </ActionMenuItem>
+            )}
+            {capabilities.canManageRoles && (
+              <ActionMenuItem onClick={() => actions.onManageRoles(user)}>
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                Gestionar roles
+              </ActionMenuItem>
+            )}
+            {capabilities.canDeactivate && (
+              <ActionMenuItem onClick={() => actions.onDeactivate(user)} variant="destructive">
+                <UserX className="mr-2 h-4 w-4" />
+                Desactivar
+              </ActionMenuItem>
+            )}
+          </ActionMenu>
         );
       },
     });
