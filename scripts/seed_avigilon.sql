@@ -3,8 +3,7 @@
 -- camera_ptz = f15c2110-84ca-456d-a009-c704aaa58782
 -- camera_thermal = b51f1fcc-087b-48b1-b22b-ef3936fef4de
 -- Calimax tenant = 7a55360c-232d-43ea-b3f9-830f9f06fcab
--- Site Centro = ca11aa00-0001-4000-8000-000000000001
--- Site Otay   = ca11aa00-0002-4000-8000-000000000002
+-- NOTA: site_id = NULL porque las sucursales se crean desde la UI (GAP-01)
 
 -- ============ MARCA AVIGILON ============
 INSERT INTO inventory.brands (id, name, created_at)
@@ -53,127 +52,126 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- ============ CAMARAS PARA CALIMAX ============
--- Sucursal Centro: 12 camaras
--- Sucursal Otay: 8 camaras
--- Total: 20 camaras distribuidas
+-- Total: 20 camaras sin sucursal asignada (site_id = NULL)
+-- Las sucursales se asignan despues desde la UI
 
 INSERT INTO inventory.cameras (
   id, tenant_id, site_id, model_id, name, camera_model_name, camera_type,
   ip_address, resolution, megapixels, area, status, installation_date,
   specifications, created_at
 ) VALUES
--- === SUCURSAL CENTRO (12 camaras) ===
+-- === CAMARAS 1-12 ===
 -- H6 Mini Dome -> micro_dome
-('ca000001-0001-4000-8000-000000000001', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-0001-4000-8000-000000000001', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0001-4000-8000-000000000001', 'CAM-CENTRO-001', 'H6 Mini Dome', 'micro_dome',
  '10.20.1.11', '2560x1920', 5, 'Entrada principal', 'active', '2024-06-15',
  '{"stream":"rtsp://10.20.1.11/live","ir":true}', NOW()),
 
-('ca000001-0002-4000-8000-000000000002', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-0002-4000-8000-000000000002', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0001-4000-8000-000000000001', 'CAM-CENTRO-002', 'H6 Mini Dome', 'micro_dome',
  '10.20.1.12', '2048x1536', 3, 'Pasillo central', 'active', '2024-06-15',
  '{"stream":"rtsp://10.20.1.12/live","ir":true}', NOW()),
 
 -- H5A Dome -> dome
-('ca000001-0003-4000-8000-000000000003', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-0003-4000-8000-000000000003', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0003-4000-8000-000000000003', 'CAM-CENTRO-003', 'H5A Dome', 'dome',
  '10.20.1.13', '3072x2048', 6, 'Cajas registradoras', 'active', '2024-06-15',
  '{"stream":"rtsp://10.20.1.13/live","analytics":"SLVA"}', NOW()),
 
 -- H5A Bullet -> bullet
-('ca000001-0004-4000-8000-000000000004', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-0004-4000-8000-000000000004', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0004-4000-8000-000000000004', 'CAM-CENTRO-004', 'H5A Bullet', 'bullet',
  '10.20.1.14', '2592x1944', 5, 'Estacionamiento norte', 'active', '2024-07-01',
  '{"stream":"rtsp://10.20.1.14/live","ir":true,"outdoor":true}', NOW()),
 
-('ca000001-0005-4000-8000-000000000005', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-0005-4000-8000-000000000005', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0004-4000-8000-000000000004', 'CAM-CENTRO-005', 'H5A Bullet', 'bullet',
  '10.20.1.15', '2592x1944', 5, 'Estacionamiento sur', 'active', '2024-07-01',
  '{"stream":"rtsp://10.20.1.15/live","ir":true,"outdoor":true}', NOW()),
 
 -- H5A Fisheye -> fisheye
-('ca000001-0006-4000-8000-000000000006', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-0006-4000-8000-000000000006', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0005-4000-8000-000000000005', 'CAM-CENTRO-006', 'H5A Fisheye', 'fisheye',
  '10.20.1.16', '4000x3000', 12, 'Piso de ventas central', 'active', '2024-07-01',
  '{"stream":"rtsp://10.20.1.16/live","panoramic":true}', NOW()),
 
 -- H5A PTZ -> ptz
-('ca000001-0007-4000-8000-000000000007', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-0007-4000-8000-000000000007', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0008-4000-8000-000000000008', 'CAM-CENTRO-007', 'H5A PTZ', 'ptz',
  '10.20.1.17', '3840x2160', 8, 'Perimetro', 'active', '2024-07-15',
  '{"stream":"rtsp://10.20.1.17/live","zoom":"36x","patrol":true}', NOW()),
 
 -- H5A Corner -> dome (esquina montaje tipo domo)
-('ca000001-0008-4000-8000-000000000008', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-0008-4000-8000-000000000008', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0006-4000-8000-000000000006', 'CAM-CENTRO-008', 'H5A Corner', 'dome',
  '10.20.1.18', '2592x1944', 5, 'Bodega esquina', 'active', '2024-07-15',
  '{"stream":"rtsp://10.20.1.18/live","antivandalica":true}', NOW()),
 
 -- H4 Multisensor -> multisensor
-('ca000001-0009-4000-8000-000000000009', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-0009-4000-8000-000000000009', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-000d-4000-8000-000000000d0d', 'CAM-CENTRO-009', 'H4 Multisensor', 'multisensor',
  '10.20.1.19', '7680x4320', 20, 'Vista panoramica tienda', 'active', '2024-08-01',
  '{"stream":"rtsp://10.20.1.19/live","sensors":4}', NOW()),
 
 -- H4 Thermal -> thermal
-('ca000001-000a-4000-8000-00000000000a', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-000a-4000-8000-00000000000a', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-000e-4000-8000-000000000e0e', 'CAM-CENTRO-010', 'H4 Thermal', 'thermal',
  '10.20.1.20', '640x512', 0, 'Perimetro norte', 'active', '2024-08-01',
  '{"stream":"rtsp://10.20.1.20/live","thermal":true}', NOW()),
 
 -- H4 LPC -> box
-('ca000001-000b-4000-8000-00000000000b', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-000b-4000-8000-00000000000b', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0011-4000-8000-000000001111', 'CAM-CENTRO-011', 'H4 LPC', 'box',
  '10.20.1.21', '2048x1536', 3, 'Acceso vehicular', 'active', '2024-08-01',
  '{"stream":"rtsp://10.20.1.21/live","lpr":true}', NOW()),
 
 -- H5SL -> dome
-('ca000001-000c-4000-8000-00000000000c', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0001-4000-8000-000000000001',
+('ca000001-000c-4000-8000-00000000000c', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-000b-4000-8000-00000000000b', 'CAM-CENTRO-012', 'H5SL', 'dome',
  '10.20.1.22', '2592x1944', 5, 'Oficinas', 'active', '2024-06-15',
  '{"stream":"rtsp://10.20.1.22/live","compact":true}', NOW()),
 
--- === SUCURSAL OTAY (8 camaras) ===
-('ca000002-0001-4000-8000-000000000001', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0002-4000-8000-000000000002',
+-- === CAMARAS 13-20 ===
+('ca000002-0001-4000-8000-000000000001', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0001-4000-8000-000000000001', 'CAM-OTAY-001', 'H6 Mini Dome', 'micro_dome',
  '10.30.1.11', '2560x1920', 5, 'Entrada principal', 'active', '2024-09-01',
  '{"stream":"rtsp://10.30.1.11/live","ir":true}', NOW()),
 
-('ca000002-0002-4000-8000-000000000002', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0002-4000-8000-000000000002',
+('ca000002-0002-4000-8000-000000000002', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0003-4000-8000-000000000003', 'CAM-OTAY-002', 'H5A Dome', 'dome',
  '10.30.1.12', '3072x2048', 6, 'Cajas', 'active', '2024-09-01',
  '{"stream":"rtsp://10.30.1.12/live","analytics":"SLVA"}', NOW()),
 
-('ca000002-0003-4000-8000-000000000003', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0002-4000-8000-000000000002',
+('ca000002-0003-4000-8000-000000000003', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0004-4000-8000-000000000004', 'CAM-OTAY-003', 'H5A Bullet', 'bullet',
  '10.30.1.13', '2592x1944', 5, 'Estacionamiento', 'active', '2024-09-01',
  '{"stream":"rtsp://10.30.1.13/live","ir":true,"outdoor":true}', NOW()),
 
 -- H5A IR PTZ -> ptz
-('ca000002-0004-4000-8000-000000000004', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0002-4000-8000-000000000002',
+('ca000002-0004-4000-8000-000000000004', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0009-4000-8000-000000000009', 'CAM-OTAY-004', 'H5A IR PTZ', 'ptz',
  '10.30.1.14', '3840x2160', 8, 'Perimetro', 'active', '2024-09-15',
  '{"stream":"rtsp://10.30.1.14/live","zoom":"36x","ir_distance":"200m"}', NOW()),
 
-('ca000002-0005-4000-8000-000000000005', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0002-4000-8000-000000000002',
+('ca000002-0005-4000-8000-000000000005', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0005-4000-8000-000000000005', 'CAM-OTAY-005', 'H5A Fisheye', 'fisheye',
  '10.30.1.15', '4000x3000', 12, 'Piso de ventas', 'active', '2024-09-15',
  '{"stream":"rtsp://10.30.1.15/live","panoramic":true}', NOW()),
 
 -- H5M -> dome
-('ca000002-0006-4000-8000-000000000006', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0002-4000-8000-000000000002',
+('ca000002-0006-4000-8000-000000000006', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-000c-4000-8000-00000000000c', 'CAM-OTAY-006', 'H5M', 'dome',
  '10.30.1.16', '2592x1944', 5, 'Acceso lateral', 'active', '2024-09-15',
  '{"stream":"rtsp://10.30.1.16/live","outdoor":true,"vandal_resistant":true}', NOW()),
 
 -- H5A Modular -> box
-('ca000002-0007-4000-8000-000000000007', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0002-4000-8000-000000000002',
+('ca000002-0007-4000-8000-000000000007', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0012-4000-8000-000000001212', 'CAM-OTAY-007', 'H5A Modular', 'box',
  '10.30.1.17', '2592x1944', 5, 'Bodega covert', 'active', '2024-10-01',
  '{"stream":"rtsp://10.30.1.17/live","covert":true}', NOW()),
 
 -- H5A Dual Head -> multisensor
-('ca000002-0008-4000-8000-000000000008', '7a55360c-232d-43ea-b3f9-830f9f06fcab', 'ca11aa00-0002-4000-8000-000000000002',
+('ca000002-0008-4000-8000-000000000008', '7a55360c-232d-43ea-b3f9-830f9f06fcab', NULL,
  'a1900001-0007-4000-8000-000000000007', 'CAM-OTAY-008', 'H5A Dual Head', 'multisensor',
  '10.30.1.18', '2592x1944', 5, 'Pasillo doble vista', 'active', '2024-10-01',
  '{"stream":"rtsp://10.30.1.18/live","dual_imager":true}', NOW())
