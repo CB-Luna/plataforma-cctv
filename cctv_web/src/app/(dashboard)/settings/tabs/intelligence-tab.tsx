@@ -209,6 +209,11 @@ export function IntelligenceTab() {
   >([]);
   const [chatInput, setChatInput] = useState("");
   const [chatTesting, setChatTesting] = useState(false);
+  const [chatUsage, setChatUsage] = useState<{
+    input_tokens: number;
+    output_tokens: number;
+    latency_ms: number;
+  } | null>(null);
 
   const { data: models = [], isLoading } = useQuery({
     queryKey: ["model-configs"],
@@ -330,25 +335,67 @@ export function IntelligenceTab() {
     setForm((f) => ({ ...f, activo: !f.activo }));
   }
 
-  // Prueba de chat (simulacion local — requiere endpoint backend)
+  // Prueba de chat — llama a /api/chat (Next.js API route → Gemini/Anthropic)
   async function handleChatTest() {
     if (!chatInput.trim()) return;
+    // Verificar que haya API key disponible (del form actual o ya guardada)
+    if (!form.apiKey && !selectedConfig?.has_api_key) {
+      toast.error("Ingresa una clave API en la seccion Motor IA para probar el chat");
+      return;
+    }
+    if (!form.apiKey) {
+      toast.error("Re-ingresa la clave API para probar — el servidor no la devuelve por seguridad");
+      return;
+    }
+
     const userMsg = chatInput.trim();
     setChatInput("");
     setChatMessages((m) => [...m, { role: "user", content: userMsg }]);
     setChatTesting(true);
-    // Simulacion — en produccion conectar a endpoint real
-    setTimeout(() => {
+    setChatUsage(null);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMsg,
+          provider: form.provider,
+          model: form.modelo,
+          apiKey: form.apiKey,
+          systemPrompt: form.promptSistema || undefined,
+          temperature: form.temperatura,
+          maxTokens: form.maxTokens,
+          history: chatMessages,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `Error ${res.status}`);
+      }
+
       setChatMessages((m) => [
         ...m,
-        {
-          role: "assistant",
-          content:
-            "Respuesta de prueba. Conecta el endpoint /api/v1/intelligence/chat para respuestas reales.",
-        },
+        { role: "assistant", content: data.content },
       ]);
+      if (data.usage) {
+        setChatUsage({
+          input_tokens: data.usage.input_tokens,
+          output_tokens: data.usage.output_tokens,
+          latency_ms: data.latency_ms ?? 0,
+        });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error desconocido";
+      setChatMessages((m) => [
+        ...m,
+        { role: "assistant", content: `Error: ${msg}` },
+      ]);
+      toast.error("Error al llamar al proveedor IA");
+    } finally {
       setChatTesting(false);
-    }, 1200);
+    }
   }
 
   const selectedProvider =
@@ -830,7 +877,12 @@ export function IntelligenceTab() {
             >
               <p className="mb-3 text-xs text-muted-foreground">
                 Envia un mensaje de prueba al asistente para verificar su
-                funcionamiento
+                funcionamiento.{" "}
+                {!form.apiKey && (
+                  <span className="text-amber-500">
+                    Ingresa la clave API arriba para habilitar la prueba.
+                  </span>
+                )}
               </p>
               <div className="rounded-lg border bg-muted/30">
                 {/* Mensajes */}
@@ -878,12 +930,20 @@ export function IntelligenceTab() {
                   <Button
                     size="icon"
                     onClick={handleChatTest}
-                    disabled={!chatInput.trim() || chatTesting}
+                    disabled={!chatInput.trim() || chatTesting || !form.apiKey}
                   >
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
+              {/* Metricas de uso */}
+              {chatUsage && (
+                <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                  <span>Tokens entrada: <strong className="text-foreground">{chatUsage.input_tokens}</strong></span>
+                  <span>Tokens salida: <strong className="text-foreground">{chatUsage.output_tokens}</strong></span>
+                  <span>Latencia: <strong className="text-foreground">{chatUsage.latency_ms}ms</strong></span>
+                </div>
+              )}
             </SectionToggle>
           )}
 
