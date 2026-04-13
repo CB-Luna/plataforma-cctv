@@ -145,8 +145,17 @@ export function ServicesPackagesTab() {
         disabledScreens: editedDisabledScreens,
         onboarding: profile.onboarding,
       });
+      // PUT reemplaza todo — preservar campos existentes del tenant (logo, colores, etc.)
       return updateTenant(selectedTenant.id, {
         name: selectedTenant.name,
+        logo_url: selectedTenant.logo_url ?? undefined,
+        primary_color: selectedTenant.primary_color ?? undefined,
+        secondary_color: selectedTenant.secondary_color ?? undefined,
+        tertiary_color: selectedTenant.tertiary_color ?? undefined,
+        domain: selectedTenant.domain ?? undefined,
+        subscription_plan: selectedTenant.subscription_plan ?? undefined,
+        max_users: selectedTenant.max_users ?? undefined,
+        max_clients: selectedTenant.max_clients ?? undefined,
         settings: newSettings,
       });
     },

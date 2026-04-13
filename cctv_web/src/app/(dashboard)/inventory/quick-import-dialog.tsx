@@ -242,7 +242,7 @@ export function QuickInventoryImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Importar {typeLabel} desde Excel</DialogTitle>
         </DialogHeader>
@@ -350,20 +350,20 @@ export function QuickInventoryImportDialog({
               )}
               {/* Preview de filas */}
               {preview.sampleRows.length > 0 && (
-                <div className="max-h-32 overflow-auto rounded border text-xs">
+                <div className="max-h-72 overflow-auto rounded border text-xs">
                   <table className="w-full">
-                    <thead>
+                    <thead className="sticky top-0 z-10">
                       <tr className="bg-muted/50">
                         {preview.matched.map((h) => (
-                          <th key={h} className="px-2 py-1 text-left font-medium">{h}</th>
+                          <th key={h} className="whitespace-nowrap px-3 py-1.5 text-left font-medium">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {preview.sampleRows.slice(0, 3).map((row, i) => (
+                      {preview.sampleRows.map((row, i) => (
                         <tr key={i} className="border-t">
                           {preview.matched.map((h) => (
-                            <td key={h} className="max-w-[120px] truncate px-2 py-1">
+                            <td key={h} className="whitespace-nowrap px-3 py-1.5">
                               {String(row[h] ?? "—")}
                             </td>
                           ))}
@@ -371,8 +371,8 @@ export function QuickInventoryImportDialog({
                       ))}
                     </tbody>
                   </table>
-                  {preview.count > 3 && (
-                    <p className="px-2 py-1 text-muted-foreground">... y {preview.count - 3} filas mas</p>
+                  {preview.count > preview.sampleRows.length && (
+                    <p className="px-3 py-1.5 text-muted-foreground">... y {preview.count - preview.sampleRows.length} filas mas</p>
                   )}
                 </div>
               )}

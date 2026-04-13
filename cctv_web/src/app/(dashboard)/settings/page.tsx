@@ -38,6 +38,7 @@ interface SettingsTabDefinition extends TabItem {
   access: string[];
   scope: SettingsScope;
   summary: string;
+  hidden?: boolean;
 }
 
 const tabs: SettingsTabDefinition[] = [
@@ -107,6 +108,7 @@ const tabs: SettingsTabDefinition[] = [
     scope: "platform",
     summary: "Templates de navegacion y asignacion por tenant.",
     access: ["menu:read:all", "menu.read"],
+    hidden: true, // Oculta temporalmente — genera conflicto con servicios y la UX no es clara
   },
   {
     key: "ia",
@@ -165,7 +167,7 @@ export default function SettingsPage() {
   const visibleTabs = useMemo(
     () =>
       tabs.filter(
-        (tab) => canAny(...tab.access) && isSettingsTabEnabledForServices(tab.key, enabledServices),
+        (tab) => !tab.hidden && canAny(...tab.access) && isSettingsTabEnabledForServices(tab.key, enabledServices),
       ),
     [canAny, enabledServices],
   );

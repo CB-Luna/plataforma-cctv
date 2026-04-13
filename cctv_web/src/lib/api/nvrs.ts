@@ -21,8 +21,10 @@ export async function deleteNvr(id: string): Promise<void> {
   await api.delete(`inventory/nvrs/${id}`);
 }
 
-export async function getNvrStats(): Promise<NvrStats> {
-  return api.get("inventory/nvrs/stats").json<NvrStats>();
+export async function getNvrStats(tenantId?: string | null): Promise<NvrStats> {
+  const searchParams: Record<string, string> = {};
+  if (tenantId) searchParams.tenant_id = tenantId;
+  return api.get("inventory/nvrs/stats", { searchParams }).json<NvrStats>();
 }
 
 export async function getNvrCameras(id: string): Promise<Camera[]> {

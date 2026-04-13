@@ -91,12 +91,20 @@ export function CompanySelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800">
-        <div
-          className="flex h-5 w-5 items-center justify-center rounded"
-          style={{ backgroundColor: currentCompany?.primary_color ?? "#6366f1" }}
-        >
-          <Building2 className="h-3 w-3 text-white" />
-        </div>
+        {currentCompany?.logo_url ? (
+          <img
+            src={currentCompany.logo_url}
+            alt={currentCompany.name}
+            className="h-5 w-5 rounded object-contain"
+          />
+        ) : (
+          <div
+            className="flex h-5 w-5 items-center justify-center rounded"
+            style={{ backgroundColor: currentCompany?.primary_color ?? "#6366f1" }}
+          >
+            <Building2 className="h-3 w-3 text-white" />
+          </div>
+        )}
         <span className="hidden max-w-[140px] truncate font-medium sm:inline">
           {currentCompany?.name ?? "Todas las empresas"}
         </span>
@@ -122,7 +130,15 @@ export function CompanySelector() {
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white"
                 style={{ backgroundColor: company.primary_color ?? "#6366f1" }}
               >
-                <Building2 className="h-3.5 w-3.5" />
+                {company.logo_url ? (
+                  <img
+                    src={company.logo_url}
+                    alt={company.name}
+                    className="h-7 w-7 rounded-md object-contain"
+                  />
+                ) : (
+                  <Building2 className="h-3.5 w-3.5" />
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{company.name}</p>

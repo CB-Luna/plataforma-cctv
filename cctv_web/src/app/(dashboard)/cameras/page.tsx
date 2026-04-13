@@ -15,6 +15,7 @@ import { useTenantStore } from "@/stores/tenant-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { filterByActiveSite } from "@/lib/site-context";
+import { getLocalInventory } from "@/lib/inventory/local-store";
 import { safeString, safeStatus } from "@/lib/safe-field";
 import { CameraDialog, type CameraFormValues } from "./camera-dialog";
 import { ImportDialog, type ImportSubmissionPayload } from "../imports/import-dialog";
@@ -52,7 +53,7 @@ export default function CamerasPage() {
 
   const { data: stats } = useQuery({
     queryKey: ["cameras", "stats", currentCompany?.id],
-    queryFn: getCameraStats,
+    queryFn: () => getCameraStats(),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
@@ -106,10 +107,19 @@ export default function CamerasPage() {
     [cameras, currentSite?.id],
   );
 
+  // Fusionar datos importados localmente (Excel) con datos del API
+  const localData = useMemo(() => {
+    const tenantId = currentCompany?.id || null;
+    const siteId = currentSite?.id || null;
+    return getLocalInventory(tenantId, siteId);
+  }, [currentCompany?.id, currentSite?.id]);
+
   const displayData = useMemo(() => {
     const baseData = searchResults ?? cameras;
-    return filterByActiveSite(baseData, currentSite?.id);
-  }, [cameras, currentSite?.id, searchResults]);
+    const filtered = filterByActiveSite(baseData, currentSite?.id);
+    const localCameras = (localData?.cameras ?? []) as Camera[];
+    return [...filtered, ...localCameras];
+  }, [cameras, currentSite?.id, searchResults, localData]);
 
   const displayStats = useMemo(() => {
     if (!currentSite) return stats;

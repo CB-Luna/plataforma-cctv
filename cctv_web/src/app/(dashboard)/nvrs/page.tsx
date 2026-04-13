@@ -12,6 +12,7 @@ import { useTenantStore } from "@/stores/tenant-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { filterByActiveSite } from "@/lib/site-context";
+import { getLocalInventory } from "@/lib/inventory/local-store";
 import { getColumns } from "./columns";
 import { safeStatus } from "@/lib/safe-field";
 import { NvrDialog, type NvrFormValues } from "./nvr-dialog";
@@ -43,7 +44,7 @@ export default function NvrsPage() {
 
   const { data: stats } = useQuery({
     queryKey: ["nvrs", "stats", currentCompany?.id],
-    queryFn: getNvrStats,
+    queryFn: () => getNvrStats(),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
@@ -100,6 +101,18 @@ export default function NvrsPage() {
     [currentSite?.id, nvrs],
   );
 
+  // Fusionar datos importados localmente (Excel) con datos del API
+  const localData = useMemo(() => {
+    const tenantId = currentCompany?.id || null;
+    const siteId = currentSite?.id || null;
+    return getLocalInventory(tenantId, siteId);
+  }, [currentCompany?.id, currentSite?.id]);
+
+  const allNvrs = useMemo(() => {
+    const localNvrs = (localData?.nvrs ?? []) as NvrServer[];
+    return [...scopedNvrs, ...localNvrs];
+  }, [scopedNvrs, localData]);
+
   const displayStats = useMemo(() => {
     if (!currentSite) return stats;
 
@@ -117,10 +130,10 @@ export default function NvrsPage() {
     };
   }, [currentSite, scopedNvrs, stats]);
 
-  const exportRows = useMemo(() => scopedNvrs.map((nvr) => ({
+  const exportRows = useMemo(() => allNvrs.map((nvr) => ({
     ...nvr,
     site_name: nvr.site_id ? siteNames.get(nvr.site_id) ?? "Sitio asignado" : "Sin sitio",
-  })), [scopedNvrs, siteNames]);
+  })), [allNvrs, siteNames]);
 
   const columns = useMemo(() => getColumns({
     onDelete: (nvr) => {
@@ -227,7 +240,7 @@ export default function NvrsPage() {
 
       <DataTable
         columns={columns}
-        data={scopedNvrs}
+        data={allNvrs}
         isLoading={isLoading}
         searchKey="name"
         searchPlaceholder="Buscar NVR..."

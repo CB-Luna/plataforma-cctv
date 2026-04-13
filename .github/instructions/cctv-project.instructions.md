@@ -277,4 +277,6 @@ Si una IA encuentra discrepancia entre codigo, docs antiguas, specs mockeados y 
 2. Contrato backend real
 3. Docs recientes de `docs/producto-visible/` y `.github/PLAN_DE_ACCION.md`
 
+cada vez que finalices lo ultimo que harás será ejecutar G:\TRABAJO\FLUTTER\sistema camaras\sistema-camaras-mono\scripts\docker-reset-frontend.ps1 para limpiar cache y levantar la instancia real sin interferencias de datos anteriores o mocks.
+
 **Nunca cerrar una fase solo porque existe codigo o documentacion. Solo si la experiencia visible en runtime lo confirma.**

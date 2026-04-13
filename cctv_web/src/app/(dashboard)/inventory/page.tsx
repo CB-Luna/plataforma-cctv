@@ -130,7 +130,7 @@ export default function InventoryPage() {
 
   const { data: cameraStats } = useQuery({
     queryKey: ["inventory-cameras-stats", effectiveTenantId],
-    queryFn: getCameraStats,
+    queryFn: () => getCameraStats(effectiveTenantId || undefined),
     enabled: hasContext,
   });
 
@@ -144,7 +144,7 @@ export default function InventoryPage() {
 
   const { data: nvrStats } = useQuery({
     queryKey: ["inventory-nvrs-stats", effectiveTenantId],
-    queryFn: getNvrStats,
+    queryFn: () => getNvrStats(effectiveTenantId || undefined),
     enabled: hasContext,
   });
 
@@ -424,7 +424,12 @@ export default function InventoryPage() {
                   onValueChange={(v) => { setLocalTenantId(v ?? ""); setLocalSiteId(""); }}
                 >
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Selecciona empresa..." />
+                    {/* Evitar mostrar UUID cuando los tenants aun no cargan */}
+                    <SelectValue placeholder="Selecciona empresa...">
+                      {tenants.find((t) => t.id === localTenantId)?.name
+                        ?? currentCompany?.name
+                        ?? "Selecciona empresa..."}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {tenants.map((t) => (

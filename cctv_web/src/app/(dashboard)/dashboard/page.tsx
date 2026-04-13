@@ -60,9 +60,17 @@ export default function DashboardPage() {
     company: currentCompany,
   });
   const tenantProfile = parseTenantProductProfile(currentCompany);
+
+  // Cuando el super_admin selecciona una empresa, pasar su ID al backend
+  // para que use GetEffectiveTenantID con override ?tenant_id=X
+  const overrideTenantId =
+    experience.mode === "hybrid_backoffice" && currentCompany && !isPlatformTenant(currentCompany.id)
+      ? currentCompany.id
+      : null;
+
   const { data: summary } = useQuery({
-    queryKey: ["dashboard-summary"],
-    queryFn: getDashboardSummary,
+    queryKey: ["dashboard-summary", overrideTenantId],
+    queryFn: () => getDashboardSummary(overrideTenantId),
   });
 
   const { data: tenantStats } = useQuery({
@@ -81,28 +89,28 @@ export default function DashboardPage() {
   const allTenants = rawAllTenants.filter((t) => !isPlatformTenant(t.id));
 
   const { data: ticketStats } = useQuery({
-    queryKey: ["dashboard-ticket-stats"],
-    queryFn: getDashboardTicketStats,
+    queryKey: ["dashboard-ticket-stats", overrideTenantId],
+    queryFn: () => getDashboardTicketStats(overrideTenantId),
   });
 
   const { data: trend = [] } = useQuery({
-    queryKey: ["dashboard-trend"],
-    queryFn: () => getTicketsTrend(30),
+    queryKey: ["dashboard-trend", overrideTenantId],
+    queryFn: () => getTicketsTrend(30, overrideTenantId),
   });
 
   const { data: policyStats } = useQuery({
-    queryKey: ["dashboard-policy-stats"],
-    queryFn: getPolicyStats,
+    queryKey: ["dashboard-policy-stats", overrideTenantId],
+    queryFn: () => getPolicyStats(overrideTenantId),
   });
 
   const { data: cameraStats } = useQuery({
-    queryKey: ["camera-stats"],
-    queryFn: getCameraStats,
+    queryKey: ["camera-stats", overrideTenantId],
+    queryFn: () => getCameraStats(overrideTenantId),
   });
 
   const { data: nvrStats } = useQuery({
-    queryKey: ["nvr-stats"],
-    queryFn: getNvrStats,
+    queryKey: ["nvr-stats", overrideTenantId],
+    queryFn: () => getNvrStats(overrideTenantId),
   });
 
   // NVR Health pie data

@@ -24,8 +24,10 @@ export async function deleteCamera(id: string): Promise<void> {
   await api.delete(`inventory/cameras/${id}`);
 }
 
-export async function getCameraStats(): Promise<CameraStats> {
-  return api.get("inventory/cameras/stats").json<CameraStats>();
+export async function getCameraStats(tenantId?: string | null): Promise<CameraStats> {
+  const searchParams: Record<string, string> = {};
+  if (tenantId) searchParams.tenant_id = tenantId;
+  return api.get("inventory/cameras/stats", { searchParams }).json<CameraStats>();
 }
 
 export async function searchCameras(q: string, params?: { limit?: number; offset?: number }): Promise<Camera[]> {
