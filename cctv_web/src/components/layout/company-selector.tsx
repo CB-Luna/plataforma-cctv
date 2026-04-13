@@ -98,7 +98,7 @@ export function CompanySelector() {
           <Building2 className="h-3 w-3 text-white" />
         </div>
         <span className="hidden max-w-[140px] truncate font-medium sm:inline">
-          {currentCompany?.name ?? "Seleccionar empresa"}
+          {currentCompany?.name ?? "Todas las empresas"}
         </span>
         <ChevronDown className="h-3 w-3 text-muted-foreground" />
       </DropdownMenuTrigger>

@@ -93,9 +93,11 @@ interface SiteDialogProps {
   initial?: SiteFormData;
   title: string;
   onSave: (data: SiteFormData) => void;
+  /** Si es false, el campo Cliente/Empresa se oculta (tenant admin ya tiene empresa fija) */
+  showClientField?: boolean;
 }
 
-function SiteDialog({ open, onOpenChange, initial, title, onSave }: SiteDialogProps) {
+function SiteDialog({ open, onOpenChange, initial, title, onSave, showClientField = true }: SiteDialogProps) {
   const [form, setForm] = useState<SiteFormData>(initial ?? EMPTY_FORM);
 
   // Sincronizar cuando cambia `initial`
@@ -133,15 +135,17 @@ function SiteDialog({ open, onOpenChange, initial, title, onSave }: SiteDialogPr
               />
             </div>
 
-            <div>
-              <Label>Cliente / Empresa</Label>
-              <Input
-                className="mt-1"
-                placeholder="Ej: Calimax"
-                value={form.client_name}
-                onChange={set("client_name")}
-              />
-            </div>
+            {showClientField && (
+              <div>
+                <Label>Cliente / Empresa</Label>
+                <Input
+                  className="mt-1"
+                  placeholder="Ej: Calimax"
+                  value={form.client_name}
+                  onChange={set("client_name")}
+                />
+              </div>
+            )}
 
             <div>
               <Label>Estado</Label>
@@ -263,9 +267,18 @@ export default function SitesPage() {
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
+  // Filtrar sitios API por empresa seleccionada en el header (el backend devuelve todos)
+  const companyFilteredApiSites = useMemo(() => {
+    if (!currentCompany) return apiSites;
+    const companyName = currentCompany.name.toLowerCase();
+    return apiSites.filter(
+      (s) => s.client_name?.toLowerCase() === companyName,
+    );
+  }, [apiSites, currentCompany]);
+
   const allSites = useMemo<CombinedSite[]>(() => {
-    return [...apiSites, ...localSites];
-  }, [apiSites, localSites]);
+    return [...companyFilteredApiSites, ...localSites];
+  }, [companyFilteredApiSites, localSites]);
 
   // Filtrado por busqueda
   const filtered = useMemo(() => {
@@ -620,6 +633,7 @@ export default function SitesPage() {
         onOpenChange={setCreateOpen}
         title="Nueva sucursal"
         onSave={handleCreate}
+        showClientField={isPlatformAdmin}
       />
 
       {/* Dialogo editar */}
@@ -629,6 +643,7 @@ export default function SitesPage() {
         initial={editInitial}
         title="Editar sucursal"
         onSave={handleUpdate}
+        showClientField={isPlatformAdmin}
       />
         </>
       )}

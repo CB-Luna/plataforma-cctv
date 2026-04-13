@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -34,6 +34,7 @@ import {
 import { listSites } from "@/lib/api/sites";
 import { listTenants } from "@/lib/api/tenants";
 import { useTenantStore } from "@/stores/tenant-store";
+import { useSiteStore } from "@/stores/site-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { isPlatformTenant } from "@/lib/platform";
@@ -65,6 +66,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function InventoryPage() {
   const queryClient = useQueryClient();
   const currentCompany = useTenantStore((s) => s.currentCompany);
+  const currentSite = useSiteStore((s) => s.currentSite);
   const { permissions, roles } = usePermissions();
   const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";
@@ -73,11 +75,22 @@ export default function InventoryPage() {
   const [localTenantId, setLocalTenantId] = useState(
     () => (currentCompany && !isPlatformTenant(currentCompany.id) ? currentCompany.id : ""),
   );
-  const [localSiteId, setLocalSiteId] = useState("");
+  const [localSiteId, setLocalSiteId] = useState(() => currentSite?.id ?? "");
   const [importOpen, setImportOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<"cameras" | "nvrs">("cameras");
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+
+  // Sincronizar con el filtro global del header
+  useEffect(() => {
+    const nextTenant = currentCompany && !isPlatformTenant(currentCompany.id)
+      ? currentCompany.id : "";
+    setLocalTenantId(nextTenant);
+  }, [currentCompany]);
+
+  useEffect(() => {
+    setLocalSiteId(currentSite?.id ?? "");
+  }, [currentSite]);
   const [editingCamera, setEditingCamera] = useState<CameraType | null>(null);
   const [nvrDialogOpen, setNvrDialogOpen] = useState(false);
   const [editingNvr, setEditingNvr] = useState<NvrServer | null>(null);

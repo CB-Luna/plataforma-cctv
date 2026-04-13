@@ -92,9 +92,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
 
+    // Admin del sistema con sesion previa: no forzar empresa
+    const isSystemUser = roles.some(
+      (r) => r.is_system && r.name !== "tenant_admin",
+    );
+    if (isSystemUser) {
+      // Sistema admin puede estar sin empresa seleccionada (modo plataforma)
+      setIsHydrating(false);
+      return;
+    }
+
     // Solo establecer empresa si no hay ninguna seleccionada,
     // o si la seleccionada ya no existe en la lista de empresas.
-    // Esto permite al Admin Sistema cambiar de empresa sin que se resetee.
     if (!currentCompany || !companies.some((c) => c.id === currentCompany.id)) {
       setCompany(companies[0]);
     }

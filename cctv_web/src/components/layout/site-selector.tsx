@@ -41,11 +41,20 @@ export function SiteSelector() {
     reconcileSite(sites);
   }, [reconcileSite, sites]);
 
-  // Agrupar sitios por empresa (client_name) para admin del sistema
+  // Cuando hay empresa seleccionada en el header, filtrar sitios por esa empresa
+  const companySites = useMemo(() => {
+    if (!currentCompany) return sites;
+    const companyName = currentCompany.name.toLowerCase();
+    return sites.filter(
+      (s) => s.client_name?.toLowerCase() === companyName,
+    );
+  }, [sites, currentCompany]);
+
+  // Agrupar sitios por empresa (client_name) para admin del sistema (solo si NO hay empresa seleccionada)
   const groupedByCompany = useMemo(() => {
-    if (!isPlatformAdmin) return null;
+    if (!isPlatformAdmin || currentCompany) return null;
     const groups = new Map<string, SiteListItem[]>();
-    for (const site of sites) {
+    for (const site of companySites) {
       const key = site.client_name?.trim() || "Sin empresa";
       const arr = groups.get(key) ?? [];
       arr.push(site);
@@ -53,20 +62,20 @@ export function SiteSelector() {
     }
     // Ordenar alfabeticamente
     return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [sites, isPlatformAdmin]);
+  }, [companySites, isPlatformAdmin, currentCompany]);
 
   // Filtrar por busqueda
   const filteredFlat = useMemo(() => {
-    if (!search.trim()) return sites;
+    if (!search.trim()) return companySites;
     const q = search.toLowerCase();
-    return sites.filter(
+    return companySites.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
         s.client_name?.toLowerCase().includes(q) ||
         s.city?.toLowerCase().includes(q) ||
         s.state?.toLowerCase().includes(q),
     );
-  }, [sites, search]);
+  }, [companySites, search]);
 
   const filteredGrouped = useMemo(() => {
     if (!groupedByCompany || !search.trim()) return groupedByCompany;
@@ -87,9 +96,9 @@ export function SiteSelector() {
       .filter(Boolean) as [string, SiteListItem[]][];
   }, [groupedByCompany, search]);
 
-  if (sites.length === 0) return null;
+  if (companySites.length === 0) return null;
 
-  const showSearch = sites.length > 5;
+  const showSearch = companySites.length > 5;
 
   function handleSiteClick(site: SiteListItem) {
     setSite(site);
