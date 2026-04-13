@@ -30,7 +30,7 @@ Al terminar cualquier fase:
 | F8 | Auditoria global de otros PUT que borren campos | **Alta** | **Completada** |
 | F9 | Audit: identificar componentes que muestran UUID como texto | **Alta** | **Completada** |
 | F10 | Rediseno del tab Servicios y Paquetes (layout compacto) | **Media** | **Completada** |
-| F11 | Portal Tenant: logo de empresa en sidebar | **Media** | Pendiente |
+| F11 | Portal Tenant: logo de empresa en sidebar | **Media** | **Completada** |
 | F12 | Chatbot IA: conectar endpoint real /intelligence/chat | **Media** | Pendiente |
 | F13 | Gemini Embedding: test de reindexacion + busqueda en settings | **Media** | Pendiente |
 | F14 | IA Avanzada: documentos por modelo, specs desde PDF, asistente tecnico | **Alta** | Pendiente |
@@ -154,11 +154,18 @@ Al terminar cualquier fase:
 
 ---
 
-## Fase 11 — Portal Tenant: logo de empresa en sidebar
+## Fase 11 — Portal Tenant: logo de empresa en sidebar (Completada)
 
 **Problema:** Logo asignado no se muestra en sidebar del tenant admin.
 
-**Estado:** Pendiente
+**Hallazgos:**
+- El backend SI devuelve `logo_url` en `getMe()` y `login` (CompanyResponse con URL absoluta a MinIO)
+- El sidebar ya tenia logica para renderizar el logo cuando `company.logo_url` existe
+- El problema real: (1) imagenes rotas de MinIO no tenian fallback, (2) sesiones existentes usaban datos de localStorage obsoletos
+
+**Solucion:**
+- Sidebar: `<img>` con `onError` fallback — si la imagen falla, muestra la inicial con color de empresa
+- Layout: refresco background de datos de empresa via `getMe()` para sesiones existentes (actualiza logo_url, colores, settings)
 
 ---
 

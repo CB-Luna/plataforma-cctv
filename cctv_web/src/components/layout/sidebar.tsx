@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2 } from "lucide-react";
@@ -193,6 +194,10 @@ function SidebarBranding({
   services?: ProductServiceCode[];
 }) {
   const isTenant = Boolean(company);
+  const [logoError, setLogoError] = useState(false);
+
+  // Reiniciar error cuando cambia la URL del logo
+  const logoUrl = company?.logo_url ?? null;
 
   return (
     <div
@@ -202,12 +207,13 @@ function SidebarBranding({
       )}
     >
       <div className={cn("flex items-center", collapsed ? "" : "gap-3")}>
-        {isTenant && company?.logo_url ? (
+        {isTenant && logoUrl && !logoError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={company.logo_url}
-            alt={company.name}
+            src={logoUrl}
+            alt={company?.name ?? ""}
             className="h-9 w-9 shrink-0 rounded-xl border border-white/10 object-cover"
+            onError={() => setLogoError(true)}
           />
         ) : isTenant && company ? (
           <div

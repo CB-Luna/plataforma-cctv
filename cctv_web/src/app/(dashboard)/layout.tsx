@@ -108,6 +108,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setCompany(companies[0]);
     }
 
+    // Refrescar datos de empresa en background para sesiones existentes
+    // (actualiza logo_url, colores, settings que pudieron cambiar desde otra sesion)
+    if (currentCompany) {
+      getMe()
+        .then((me) => {
+          const fresh = me.companies.find((c) => c.id === currentCompany.id);
+          if (fresh) setCompany(fresh);
+        })
+        .catch(() => { /* ignorar error de refresco silencioso */ });
+    }
+
     setIsHydrating(false);
   }, [clearAuth, companies, currentCompany, isAuthenticated, router, setCompany, setProfile, user]);
 
