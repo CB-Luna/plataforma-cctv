@@ -31,8 +31,8 @@ Al terminar cualquier fase:
 | F9 | Audit: identificar componentes que muestran UUID como texto | **Alta** | **Completada** |
 | F10 | Rediseno del tab Servicios y Paquetes (layout compacto) | **Media** | **Completada** |
 | F11 | Portal Tenant: logo de empresa en sidebar | **Media** | **Completada** |
-| F12 | Chatbot IA: conectar endpoint real /intelligence/chat | **Media** | Pendiente |
-| F13 | Gemini Embedding: test de reindexacion + busqueda en settings | **Media** | Pendiente |
+| F12 | Chatbot IA: conectar endpoint real /intelligence/chat | **Media** | **Completada** |
+| F13 | Gemini Embedding: test de reindexacion + busqueda en settings | **Media** | **Completada** |
 | F14 | IA Avanzada: documentos por modelo, specs desde PDF, asistente tecnico | **Alta** | Pendiente |
 
 ---
@@ -190,11 +190,22 @@ Al terminar cualquier fase:
 
 **GAP backend:** Requiere crear handler `ChatWithModel` en `intelligence_handler.go`
 
-**Estado:** Pendiente
+**Estado:** Completada
+
+**Solucion (backend inmutable — sin endpoint /intelligence/chat):**
+- Creada ruta API en Next.js `src/app/api/chat/route.ts` que actua como proxy a Gemini y Anthropic
+- Recibe `{ message, provider, model, apiKey, systemPrompt, temperature, maxTokens, history }`
+- El admin ingresa la API key en el formulario de Motor IA — esa misma clave se usa para el test
+- Frontend actualizado: `handleChatTest()` llama a `/api/chat` con la config del formulario
+- Se muestran metricas reales: tokens entrada, tokens salida, latencia en ms
+- Boton de enviar deshabilitado si no hay API key en el formulario
+- Mensaje informativo cuando la clave no esta disponible
+
+**Commit:** `424c958`
 
 ---
 
-## Fase 13 — Gemini Embedding: test de reindexacion + busqueda en settings
+## Fase 13 — Gemini Embedding: test de reindexacion + busqueda en settings (Completada)
 
 **Estado actual:**
 - Backend tiene `CatalogEmbeddingService` que genera embeddings con `gemini-embedding-2-preview`
@@ -214,7 +225,17 @@ Al terminar cualquier fase:
 
 **GAP backend:** Falta endpoint `POST /intelligence/embeddings/search` para busqueda vectorial
 
-**Estado:** Pendiente
+**Solucion:**
+- Agregada seccion "Embeddings del catalogo" al modulo camera_analyzer en el tab IA
+- Boton "Reindexar catalogo" llama al endpoint real `POST /intelligence/embeddings/reindex/models`
+- Resultados mostrados por proveedor/modelo: procesados, indexados, fallidos, errores
+- Indicador de progreso con animacion durante reindexacion
+- Nota informativa sobre GAP de busqueda semantica (endpoint de busqueda vectorial pendiente en backend)
+- Boton deshabilitado si el modulo no esta activo
+
+**Commit:** `67cb35d`
+
+**Estado:** Completada
 
 ---
 
