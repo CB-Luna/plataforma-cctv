@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronRight,
   Cpu,
+  Database,
   Eye,
   EyeOff,
   MessageCircle,
@@ -32,6 +33,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import {
   createModelConfig,
   listModelConfigs,
+  reindexAllEmbeddings,
   updateModelConfig,
 } from "@/lib/api/intelligence";
 
@@ -201,6 +203,7 @@ export function IntelligenceTab() {
     reglas: true,
     avanzado: false,
     prueba: false,
+    embeddings: false,
   });
 
   // Estado de prueba de chat
@@ -214,6 +217,12 @@ export function IntelligenceTab() {
     output_tokens: number;
     latency_ms: number;
   } | null>(null);
+
+  // Estado de embeddings
+  const [reindexing, setReindexing] = useState(false);
+  const [reindexResults, setReindexResults] = useState<
+    { provider: string; model_name: string; processed: number; indexed: number; failed: number; errors?: string[] }[] | null
+  >(null);
 
   const { data: models = [], isLoading } = useQuery({
     queryKey: ["model-configs"],
@@ -401,7 +410,29 @@ export function IntelligenceTab() {
   const selectedProvider =
     AI_PROVIDERS.find((p) => p.key === form.provider) ?? AI_PROVIDERS[0];
   const isChatModule = selectedKey === "chatbot_assistant";
+  const isEmbeddingModule = selectedKey === "camera_analyzer";
   const def = MODULE_DEFS[selectedKey];
+
+  // Reindexar embeddings del catalogo
+  async function handleReindex() {
+    setReindexing(true);
+    setReindexResults(null);
+    try {
+      const results = await reindexAllEmbeddings();
+      setReindexResults(results);
+      const totalIndexed = results.reduce((s, r) => s + r.indexed, 0);
+      const totalFailed = results.reduce((s, r) => s + r.failed, 0);
+      if (totalFailed > 0) {
+        toast.warning(`Reindexacion parcial: ${totalIndexed} indexados, ${totalFailed} fallidos`);
+      } else {
+        toast.success(`Reindexacion completada: ${totalIndexed} documentos indexados`);
+      }
+    } catch {
+      toast.error("Error al reindexar embeddings");
+    } finally {
+      setReindexing(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -944,6 +975,88 @@ export function IntelligenceTab() {
                   <span>Latencia: <strong className="text-foreground">{chatUsage.latency_ms}ms</strong></span>
                 </div>
               )}
+            </SectionToggle>
+          )}
+
+          {/* Embeddings (solo modulo camera_analyzer) */}
+          {isEmbeddingModule && (
+            <SectionToggle
+              title="Embeddings del catalogo"
+              icon={Database}
+              open={openSections.embeddings}
+              onToggle={() => toggleSection("embeddings")}
+            >
+              <p className="mb-3 text-xs text-muted-foreground">
+                Reindexar genera embeddings vectoriales de todos los modelos de
+                camaras y equipos en el catalogo, habilitando busqueda semantica.
+              </p>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handleReindex}
+                  disabled={reindexing || !selectedConfig?.is_active}
+                  variant="outline"
+                >
+                  {reindexing ? (
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Database className="mr-2 h-4 w-4" />
+                  )}
+                  {reindexing ? "Reindexando..." : "Reindexar catalogo"}
+                </Button>
+                {!selectedConfig?.is_active && (
+                  <span className="text-xs text-amber-500">
+                    Activa el modulo para reindexar
+                  </span>
+                )}
+              </div>
+
+              {/* Resultados de reindexacion */}
+              {reindexResults && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs font-medium">Resultados:</p>
+                  {reindexResults.map((r, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg border bg-muted/30 px-3 py-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">
+                          {r.provider} / {r.model_name}
+                        </span>
+                        <Badge variant={r.failed > 0 ? "destructive" : "default"}>
+                          {r.failed > 0 ? "Parcial" : "OK"}
+                        </Badge>
+                      </div>
+                      <div className="mt-1 flex gap-4 text-xs text-muted-foreground">
+                        <span>Procesados: <strong className="text-foreground">{r.processed}</strong></span>
+                        <span>Indexados: <strong className="text-foreground">{r.indexed}</strong></span>
+                        {r.failed > 0 && (
+                          <span>Fallidos: <strong className="text-destructive">{r.failed}</strong></span>
+                        )}
+                      </div>
+                      {r.errors && r.errors.length > 0 && (
+                        <div className="mt-1 text-xs text-destructive">
+                          {r.errors.slice(0, 3).map((e, j) => (
+                            <p key={j}>· {e}</p>
+                          ))}
+                          {r.errors.length > 3 && (
+                            <p>...y {r.errors.length - 3} errores mas</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Nota sobre busqueda semantica */}
+              <div className="mt-4 rounded-lg border border-dashed border-blue-300 bg-blue-50 p-3 dark:border-blue-700 dark:bg-blue-950">
+                <p className="text-xs text-blue-700 dark:text-blue-400">
+                  <strong>Busqueda semantica:</strong> Una vez reindexado el catalogo,
+                  la busqueda por similitud estara disponible cuando el backend implemente
+                  el endpoint de busqueda vectorial (GAP pendiente).
+                </p>
+              </div>
             </SectionToggle>
           )}
 
