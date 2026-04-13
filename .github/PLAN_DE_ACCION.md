@@ -27,8 +27,8 @@ Al terminar cualquier fase:
 | F5 | Logos de empresa en CompanySelector del header | **Media** | **Completada** |
 | F6 | Ocultar tab Plantillas de menu en Configuracion | **Media** | **Completada** |
 | F7 | Dashboard: stats por empresa para super_admin | **Alta** | **Completada** |
-| F8 | Auditoria global de otros PUT que borren campos | **Alta** | Pendiente |
-| F9 | Audit: identificar componentes que muestran UUID como texto | **Alta** | Pendiente |
+| F8 | Auditoria global de otros PUT que borren campos | **Alta** | **Completada** |
+| F9 | Audit: identificar componentes que muestran UUID como texto | **Alta** | **Completada** |
 | F10 | Rediseno del tab Servicios y Paquetes (layout compacto) | **Media** | Pendiente |
 | F11 | Portal Tenant: logo de empresa en sidebar | **Media** | Pendiente |
 | F12 | Chatbot IA: conectar endpoint real /intelligence/chat | **Media** | Pendiente |
@@ -113,19 +113,30 @@ Al terminar cualquier fase:
 
 ---
 
-## Fase 8 — Auditoria de otros PUT que borren campos
+## Fase 8 — Auditoria de otros PUT que borren campos (Completada)
 
 **Objetivo:** Buscar todos los usos de `updateTenant()` y verificar que ningun componente haga PUT parcial que borre campos. Auditar otros `api.put()` similares.
 
-**Estado:** Pendiente
+**Hallazgos:** 17 llamadas `api.put()` auditadas. 2 CRITICAS en cameras y NVRs: formularios capturaban subconjunto de campos, PUT enviaba solo datos del form, backend reemplazaba todo.
+
+**Solucion:** `inventory/page.tsx` y `nvrs/page.tsx` — destructurar entidad existente (quitar id, tenant_id, is_active, timestamps), spread campos existentes primero, superponer datos del form.
+
+**Commit:** `e9719ff`
 
 ---
 
-## Fase 9 — Componentes que muestran UUID como texto
+## Fase 9 — Componentes que muestran UUID como texto (Completada)
 
 **Objetivo:** Buscar instancias donde se renderiza UUID sin resolver a nombre legible en Selects, tablas, badges, breadcrumbs, etc.
 
-**Estado:** Pendiente
+**Hallazgos de auditoria:**
+- Todos los `<SelectItem>` usan UUID como `value` (invisible) y muestran nombre legible (correcto)
+- Columnas de tabla muestran `site_name`, `nvr_name`, `role.name` — no IDs crudos
+- El unico caso de UUID visible (Select empresa en inventario) ya fue corregido en F4
+- `general-tab.tsx` usa IDs mock ("CA-001") en preview de temas — no son UUIDs reales
+- `batch-detail-dialog.tsx` muestra JSON crudo de importacion — aceptable para vista de debug
+
+**Resultado:** Codebase limpio. No se requieren cambios adicionales.
 
 ---
 
