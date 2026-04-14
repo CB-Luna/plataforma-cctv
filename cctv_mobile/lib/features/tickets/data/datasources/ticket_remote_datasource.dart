@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import '../models/ticket_model.dart';
 import '../models/ticket_detail_model.dart';
+import '../models/ticket_model.dart';
 import '../models/ticket_stats_model.dart';
 
 abstract class TicketRemoteDataSource {
@@ -63,16 +63,22 @@ class TicketRemoteDataSourceImpl implements TicketRemoteDataSource {
   }) async {
     final queryParams = <String, dynamic>{'limit': limit, 'offset': offset};
 
-    if (status != null) queryParams['status'] = status;
-    if (type != null) queryParams['type'] = type;
-    if (priority != null) queryParams['priority'] = priority;
+    if (status != null) {
+      queryParams['status'] = status;
+    }
+    if (type != null) {
+      queryParams['type'] = type;
+    }
+    if (priority != null) {
+      queryParams['priority'] = priority;
+    }
 
     final response = await dio.get(
       '/api/v1/tickets',
       queryParameters: queryParams,
     );
 
-    final List<dynamic> data = response.data as List<dynamic>;
+    final data = response.data as List<dynamic>;
     return data
         .map((json) => TicketModel.fromJson(json as Map<String, dynamic>))
         .toList();
@@ -87,7 +93,7 @@ class TicketRemoteDataSourceImpl implements TicketRemoteDataSource {
   @override
   Future<List<TimelineEntryModel>> getTicketTimeline(String ticketId) async {
     final response = await dio.get('/api/v1/tickets/$ticketId/timeline');
-    final List<dynamic> data = response.data as List<dynamic>;
+    final data = response.data as List<dynamic>;
     return data
         .map(
           (json) => TimelineEntryModel.fromJson(json as Map<String, dynamic>),
@@ -98,7 +104,7 @@ class TicketRemoteDataSourceImpl implements TicketRemoteDataSource {
   @override
   Future<List<TicketCommentModel>> getTicketComments(String ticketId) async {
     final response = await dio.get('/api/v1/tickets/$ticketId/comments');
-    final List<dynamic> data = response.data as List<dynamic>;
+    final data = response.data as List<dynamic>;
     return data
         .map(
           (json) => TicketCommentModel.fromJson(json as Map<String, dynamic>),
@@ -125,10 +131,12 @@ class TicketRemoteDataSourceImpl implements TicketRemoteDataSource {
     String newStatus, {
     String? reason,
   }) async {
-    await dio.patch(
-      '/api/v1/tickets/$ticketId/status',
-      data: {'status': newStatus, 'reason': ?reason},
-    );
+    final payload = <String, dynamic>{'status': newStatus};
+    if (reason != null && reason.trim().isNotEmpty) {
+      payload['reason'] = reason;
+    }
+
+    await dio.patch('/api/v1/tickets/$ticketId/status', data: payload);
   }
 
   @override
@@ -143,14 +151,11 @@ class TicketRemoteDataSourceImpl implements TicketRemoteDataSource {
     List<String>? evidenceUrls,
     String? signatureUrl,
   }) async {
+    // The current backend status endpoint only persists the transition itself.
+    // Resolution, evidence and signature are handled from mobile as comments/uploads.
     await dio.patch(
       '/api/v1/tickets/$ticketId/status',
-      data: {
-        'status': 'resolved',
-        'resolution': resolution,
-        'evidence_urls': ?evidenceUrls,
-        'signature_url': ?signatureUrl,
-      },
+      data: const {'status': 'completed'},
     );
   }
 
@@ -169,12 +174,11 @@ class TicketRemoteDataSourceImpl implements TicketRemoteDataSource {
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(filePath),
       'category': category,
-      'related_entity_type': 'ticket',
+      'related_entity_type': 'tickets',
       'related_entity_id': ticketId,
     });
 
     final response = await dio.post('/api/v1/storage/upload', data: formData);
-
     final data = response.data as Map<String, dynamic>;
     return data['storage_url'] as String? ?? data['id'] as String;
   }

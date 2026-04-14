@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../entities/company_entity.dart';
 import '../entities/user_entity.dart';
 import '../entities/role_entity.dart';
 import '../entities/permission_entity.dart';
@@ -17,6 +18,7 @@ class GetCurrentUser {
         UserEntity user,
         List<RoleEntity> roles,
         List<PermissionEntity> permissions,
+        List<CompanyEntity> companies,
       })
     >
   >

@@ -8,12 +8,12 @@ abstract class AuthEvent extends Equatable {
 }
 
 class LoginRequested extends AuthEvent {
-  final String tenantId;
+  final String? tenantId;
   final String email;
   final String password;
 
   const LoginRequested({
-    required this.tenantId,
+    this.tenantId,
     required this.email,
     required this.password,
   });

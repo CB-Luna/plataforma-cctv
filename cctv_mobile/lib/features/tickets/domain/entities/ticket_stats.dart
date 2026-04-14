@@ -6,11 +6,11 @@ class TicketStats extends Equatable {
   final int assignedCount;
   final int inProgressCount;
   final int pendingPartsCount;
-  final int pendingClientCount;
+  final int pendingApprovalCount;
+  final int onHoldCount;
   final int completedCount;
-  final int closedCount;
   final int cancelledCount;
-  final int urgentCount;
+  final int criticalCount;
   final int highCount;
   final int preventiveCount;
   final int correctiveCount;
@@ -21,18 +21,18 @@ class TicketStats extends Equatable {
     required this.assignedCount,
     required this.inProgressCount,
     required this.pendingPartsCount,
-    required this.pendingClientCount,
+    required this.pendingApprovalCount,
+    required this.onHoldCount,
     required this.completedCount,
-    required this.closedCount,
     required this.cancelledCount,
-    required this.urgentCount,
+    required this.criticalCount,
     required this.highCount,
     required this.preventiveCount,
     required this.correctiveCount,
   });
 
   int get activeCount => openCount + assignedCount + inProgressCount;
-  int get pendingCount => pendingPartsCount + pendingClientCount;
+  int get pendingCount => pendingPartsCount + pendingApprovalCount + onHoldCount;
 
   @override
   List<Object?> get props => [
@@ -41,11 +41,11 @@ class TicketStats extends Equatable {
     assignedCount,
     inProgressCount,
     pendingPartsCount,
-    pendingClientCount,
+    pendingApprovalCount,
+    onHoldCount,
     completedCount,
-    closedCount,
     cancelledCount,
-    urgentCount,
+    criticalCount,
     highCount,
     preventiveCount,
     correctiveCount,

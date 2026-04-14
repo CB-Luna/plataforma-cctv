@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -16,6 +15,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final _tenantIdController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -27,6 +27,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   void dispose() {
+    _tenantIdController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
@@ -40,7 +41,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
         RegisterRequested(
-          tenantId: AppConstants.defaultTenantId,
+          tenantId: _tenantIdController.text.trim(),
           email: _emailController.text.trim(),
           password: _passwordController.text,
           firstName: _firstNameController.text.trim(),
@@ -100,12 +101,28 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Todos los campos marcados son obligatorios',
+                      'Usa el identificador de empresa que te proporcionó tu administrador.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 24),
+                    TextFormField(
+                      controller: _tenantIdController,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'ID de empresa *',
+                        hintText: 'UUID del tenant',
+                        prefixIcon: Icon(Icons.apartment_outlined),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingresa el ID de empresa';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(

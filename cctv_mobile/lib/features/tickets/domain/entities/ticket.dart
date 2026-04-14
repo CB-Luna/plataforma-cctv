@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'ticket_catalog.dart';
 
 class Ticket extends Equatable {
   final String id;
@@ -51,64 +52,16 @@ class Ticket extends Equatable {
     required this.updatedAt,
   });
 
-  bool get isUrgent => priority == 'urgent';
-  bool get isHighPriority => priority == 'high';
-  bool get isOpen => status == 'open';
-  bool get isInProgress => status == 'in_progress';
-  bool get isClosed => status == 'closed' || status == 'resolved';
+  bool get isUrgent => TicketCatalog.isUrgentPriority(priority);
+  bool get isHighPriority => TicketCatalog.isHighPriority(priority);
+  bool get isOpen => TicketCatalog.canonicalStatus(status) == 'open';
+  bool get isInProgress => TicketCatalog.canonicalStatus(status) == 'in_progress';
+  bool get isClosed => TicketCatalog.isClosedStatus(status);
 
-  String get priorityLabel {
-    switch (priority) {
-      case 'urgent':
-        return 'Urgente';
-      case 'high':
-        return 'Alta';
-      case 'medium':
-        return 'Media';
-      case 'low':
-        return 'Baja';
-      default:
-        return priority;
-    }
-  }
-
-  String get statusLabel {
-    switch (status) {
-      case 'open':
-        return 'Abierto';
-      case 'assigned':
-        return 'Asignado';
-      case 'in_progress':
-        return 'En Progreso';
-      case 'pending_parts':
-        return 'Esperando Partes';
-      case 'pending_client':
-        return 'Esperando Cliente';
-      case 'resolved':
-        return 'Resuelto';
-      case 'closed':
-        return 'Cerrado';
-      case 'cancelled':
-        return 'Cancelado';
-      default:
-        return status;
-    }
-  }
-
-  String get typeLabel {
-    switch (type) {
-      case 'corrective':
-        return 'Correctivo';
-      case 'preventive':
-        return 'Preventivo';
-      case 'installation':
-        return 'Instalación';
-      case 'consultation':
-        return 'Consulta';
-      default:
-        return type;
-    }
-  }
+  String get priorityLabel => TicketCatalog.priorityLabel(priority);
+  String get statusLabel => TicketCatalog.statusLabel(status);
+  String get typeLabel => TicketCatalog.typeLabel(type);
+  String get nextActionLabel => TicketCatalog.nextActionLabel(status);
 
   @override
   List<Object?> get props => [

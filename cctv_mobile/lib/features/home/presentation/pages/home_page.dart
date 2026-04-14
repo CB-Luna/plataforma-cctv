@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/domain/entities/company_entity.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../../tickets/domain/entities/ticket.dart';
+import '../../../tickets/domain/entities/ticket_catalog.dart';
 import '../../../tickets/presentation/bloc/tickets_bloc.dart';
 import '../../../tickets/presentation/bloc/tickets_event.dart';
 import '../../../tickets/presentation/bloc/tickets_state.dart';
@@ -36,42 +40,42 @@ class _HomePageState extends State<HomePage> {
           context.go('/login');
         }
       },
-      builder: (context, state) {
+      builder: (context, authState) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text('SymTickets CCTV'),
+            title: Text(authState.activeCompany?.name ?? AppConstants.appName),
             actions: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined),
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Notificaciones de campo en preparacion'),
+                    ),
+                  );
+                },
               ),
               IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () {
-                  _showLogoutDialog(context);
-                },
+                icon: const Icon(Icons.logout_outlined),
+                onPressed: () => _showLogoutDialog(context),
               ),
             ],
           ),
           body: IndexedStack(
             index: _currentIndex,
             children: [
-              _buildDashboard(context, state),
+              _buildOperationalHome(authState),
               _buildTicketsTab(),
-              _buildProfileSection(context, state),
+              _buildProfileSection(authState),
             ],
           ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _currentIndex,
-            onDestinationSelected: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
+            onDestinationSelected: (index) => setState(() => _currentIndex = index),
             destinations: const [
               NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                selectedIcon: Icon(Icons.dashboard),
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
                 label: 'Inicio',
               ),
               NavigationDestination(
@@ -80,7 +84,7 @@ class _HomePageState extends State<HomePage> {
                 label: 'Tickets',
               ),
               NavigationDestination(
-                icon: Icon(Icons.person_outlined),
+                icon: Icon(Icons.person_outline),
                 selectedIcon: Icon(Icons.person),
                 label: 'Perfil',
               ),
@@ -91,11 +95,12 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDashboard(BuildContext context, AuthState authState) {
+  Widget _buildOperationalHome(AuthState authState) {
     return BlocBuilder<TicketsBloc, TicketsState>(
       builder: (context, ticketsState) {
-        final stats = ticketsState.stats;
-        final recentTickets = ticketsState.tickets.take(3).toList();
+        final tickets = _relevantTickets(authState, ticketsState.tickets);
+        final nextTicket = _nextTicket(tickets);
+        final brandColor = _companyColor(authState.activeCompany);
 
         return RefreshIndicator(
           onRefresh: () async {
@@ -103,284 +108,277 @@ class _HomePageState extends State<HomePage> {
             context.read<TicketsBloc>().add(const LoadTicketStats());
             context.read<TicketsBloc>().add(const LoadTickets(refresh: true));
           },
-          child: SingleChildScrollView(
+          child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (authState.user != null)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [brandColor, brandColor.withValues(alpha: 0.78)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Colors.white.withValues(alpha: 0.18),
+                      child: Text(
+                        authState.activeCompany?.initials ?? 'TM',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundColor: AppColors.primary,
-                            child: Text(
-                              authState.user!.firstName[0].toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                          Text(
+                            authState.user != null
+                                ? 'Hola, ${authState.user!.firstName}'
+                                : 'Operacion de campo',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '¡Hola, ${authState.user!.firstName}!',
-                                  style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  authState.user!.email,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                ),
-                              ],
+                          const SizedBox(height: 4),
+                          Text(
+                            authState.activeCompany?.name ?? AppConstants.appName,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.88),
                             ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _headerPill(_technicianStatus(tickets)),
+                              _headerPill('${tickets.length} tickets visibles'),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  ),
-                const SizedBox(height: 24),
-                Text(
-                  'Resumen de Tickets',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.3,
-                  children: [
-                    _buildStatCard(
-                      context,
-                      icon: Icons.confirmation_number,
-                      title: 'Activos',
-                      value: stats?.activeCount.toString() ?? '0',
-                      color: AppColors.info,
-                      onTap: () => context.go('/tickets'),
-                    ),
-                    _buildStatCard(
-                      context,
-                      icon: Icons.warning_amber,
-                      title: 'Urgentes',
-                      value: stats?.urgentCount.toString() ?? '0',
-                      color: Colors.red,
-                      onTap: () => context.go('/tickets'),
-                    ),
-                    _buildStatCard(
-                      context,
-                      icon: Icons.play_circle,
-                      title: 'En Progreso',
-                      value: stats?.inProgressCount.toString() ?? '0',
-                      color: Colors.orange,
-                      onTap: () => context.go('/tickets'),
-                    ),
-                    _buildStatCard(
-                      context,
-                      icon: Icons.check_circle,
-                      title: 'Completados',
-                      value: stats?.completedCount.toString() ?? '0',
-                      color: AppColors.success,
-                      onTap: () => context.go('/tickets'),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Tickets Recientes',
+              ),
+              const SizedBox(height: 20),
+              _buildNextAction(context, ticketsState, nextTicket),
+              const SizedBox(height: 20),
+              _buildStatsGrid(context, ticketsState),
+              const SizedBox(height: 20),
+              Text(
+                'Accesos operativos',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.55,
+                children: [
+                  _actionCard(
+                    icon: Icons.confirmation_number_outlined,
+                    title: 'Mis tickets',
+                    subtitle: 'Abrir la cola operativa',
+                    onTap: () => setState(() => _currentIndex = 1),
+                  ),
+                  _actionCard(
+                    icon: Icons.route_outlined,
+                    title: 'Ruta',
+                    subtitle: nextTicket == null
+                        ? 'Sin visita prioritaria'
+                        : 'Abrir ticket prioritario',
+                    onTap: nextTicket == null
+                        ? null
+                        : () => context.push('/tickets/${nextTicket.id}'),
+                  ),
+                  _actionCard(
+                    icon: Icons.camera_alt_outlined,
+                    title: 'Evidencia',
+                    subtitle: nextTicket == null
+                        ? 'Sin ticket activo'
+                        : 'Ir a captura y cierre',
+                    onTap: nextTicket == null
+                        ? null
+                        : () => context.push('/tickets/${nextTicket.id}'),
+                  ),
+                  _actionCard(
+                    icon: Icons.person_outline,
+                    title: 'Perfil',
+                    subtitle: 'Revisar empresa y roles',
+                    onTap: () => setState(() => _currentIndex = 2),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Cola prioritaria',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () => context.go('/tickets'),
-                      child: const Text('Ver todos'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (ticketsState.status == TicketsStatus.loading &&
-                    recentTickets.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                else if (ticketsState.errorMessage != null &&
-                    recentTickets.isEmpty)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.cloud_off,
-                              size: 48,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              ticketsState.errorMessage!,
-                              style: TextStyle(color: AppColors.textSecondary),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            FilledButton.icon(
-                              onPressed: () {
-                                context.read<TicketsBloc>().add(
-                                  const LoadTickets(refresh: true),
-                                );
-                              },
-                              icon: const Icon(Icons.refresh),
-                              label: const Text('Reintentar'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                else if (recentTickets.isEmpty)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.inbox_outlined,
-                              size: 48,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No hay tickets asignados',
-                              style: TextStyle(color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  ...recentTickets.map(
-                    (ticket) => TicketCard(
-                      ticket: ticket,
-                      onTap: () => context.push('/tickets/${ticket.id}'),
                     ),
                   ),
-                const SizedBox(height: 24),
-                Text(
-                  'Acciones Rápidas',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  TextButton(
+                    onPressed: () => setState(() => _currentIndex = 1),
+                    child: const Text('Ver todo'),
+                  ),
+                ],
+              ),
+              if (ticketsState.status == TicketsStatus.loading && tickets.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (tickets.isEmpty)
+                _emptyCard(
+                  icon: Icons.task_alt_outlined,
+                  title: 'Sin tickets activos',
+                  message: 'Cuando te asignen trabajo aparecera aqui con prioridad y siguiente paso.',
+                )
+              else
+                ...tickets.take(4).map(
+                  (ticket) => TicketCard(
+                    ticket: ticket,
+                    onTap: () => context.push('/tickets/${ticket.id}'),
                   ),
                 ),
-                const SizedBox(height: 12),
-                _buildQuickAction(
-                  context,
-                  icon: Icons.list_alt,
-                  title: 'Ver Todos los Tickets',
-                  subtitle: 'Lista completa de tickets asignados',
-                  onTap: () => context.go('/tickets'),
-                ),
-                _buildQuickAction(
-                  context,
-                  icon: Icons.qr_code_scanner,
-                  title: 'Escanear Equipo',
-                  subtitle: 'Escanear código QR de equipo',
-                  onTap: () {},
-                ),
-              ],
-            ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-    VoidCallback? onTap,
-  }) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+  Widget _buildNextAction(
+    BuildContext context,
+    TicketsState ticketsState,
+    Ticket? nextTicket,
+  ) {
+    if (ticketsState.status == TicketsStatus.loading && nextTicket == null) {
+      return const Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          padding: EdgeInsets.all(24),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    if (nextTicket == null) {
+      return _emptyCard(
+        icon: Icons.flag_outlined,
+        title: 'Proxima accion',
+        message: 'No hay un ticket activo para atender por el momento.',
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.42,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Proxima accion',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Icon(icon, color: color, size: 28),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+              _metricChip(nextTicket.priorityLabel, _priorityColor(nextTicket.priority)),
+              _metricChip(nextTicket.statusLabel, _statusColor(nextTicket.status)),
+              if (nextTicket.slaStatus != null)
+                _metricChip(_slaLabel(nextTicket.slaStatus!), _slaColor(nextTicket.slaStatus!)),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+          Text(
+            nextTicket.title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            nextTicket.nextActionLabel,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('${nextTicket.clientName ?? "Sin cliente"} - ${nextTicket.siteName ?? "Sin sitio"}'),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => context.push('/tickets/${nextTicket.id}'),
+                  icon: const Icon(Icons.visibility_outlined),
+                  label: const Text('Ver detalle'),
+                ),
+              ),
+              if (TicketCatalog.canStartStatus(nextTicket.status)) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      context.read<TicketsBloc>().add(StartTicket(nextTicket.id));
+                      context.push('/tickets/${nextTicket.id}');
+                    },
+                    icon: const Icon(Icons.play_arrow_rounded),
+                    label: const Text('Iniciar'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildQuickAction(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          child: Icon(icon, color: AppColors.primary),
-        ),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      ),
+  Widget _buildStatsGrid(BuildContext context, TicketsState state) {
+    final stats = state.stats;
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.65,
+      children: [
+        _statCard(context, 'Activos', stats?.activeCount.toString() ?? '0', Colors.blue),
+        _statCard(context, 'Criticos', stats?.criticalCount.toString() ?? '0', Colors.red),
+        _statCard(context, 'En progreso', stats?.inProgressCount.toString() ?? '0', Colors.orange),
+        _statCard(context, 'En espera', stats?.pendingCount.toString() ?? '0', Colors.amber.shade800),
+      ],
     );
   }
 
@@ -391,63 +389,60 @@ class _HomePageState extends State<HomePage> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (state.tickets.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.inbox_outlined,
-                  size: 64,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No hay tickets asignados',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Los tickets aparecerán aquí cuando te sean asignados',
-                  style: TextStyle(color: AppColors.textSecondary),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: () {
-                    context.read<TicketsBloc>().add(
-                      const LoadTickets(refresh: true),
-                    );
-                  },
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Actualizar'),
-                ),
-              ],
-            ),
-          );
-        }
-
         return RefreshIndicator(
           onRefresh: () async {
             context.read<TicketsBloc>().add(const LoadTickets(refresh: true));
+            context.read<TicketsBloc>().add(const LoadTicketStats());
           },
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 80),
-            itemCount: state.tickets.length,
-            itemBuilder: (context, index) {
-              final ticket = state.tickets[index];
-              return TicketCard(
-                ticket: ticket,
-                onTap: () => context.push('/tickets/${ticket.id}'),
-              );
-            },
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+            children: [
+              Text(
+                'Tickets',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'La cola operativa del tenant vive aqui. Entra al detalle para estado, comentarios, evidencia y cierre.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _metricChip('${state.stats?.criticalCount ?? 0} criticos', Colors.red),
+                  _metricChip('${state.stats?.inProgressCount ?? 0} en progreso', Colors.orange),
+                  _metricChip('${state.stats?.pendingCount ?? 0} en espera', Colors.amber.shade800),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (state.tickets.isEmpty)
+                _emptyCard(
+                  icon: Icons.inbox_outlined,
+                  title: 'No hay tickets disponibles',
+                  message: 'Cuando existan tickets del tenant se mostraran aqui.',
+                )
+              else
+                ...state.tickets.map(
+                  (ticket) => TicketCard(
+                    ticket: ticket,
+                    onTap: () => context.push('/tickets/${ticket.id}'),
+                  ),
+                ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildProfileSection(BuildContext context, AuthState state) {
+  Widget _buildProfileSection(AuthState state) {
     if (state.user == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -458,13 +453,13 @@ class _HomePageState extends State<HomePage> {
         children: [
           const SizedBox(height: 20),
           CircleAvatar(
-            radius: 50,
+            radius: 48,
             backgroundColor: AppColors.primary,
             child: Text(
               state.user!.firstName[0].toUpperCase(),
               style: const TextStyle(
-                fontSize: 40,
-                fontWeight: FontWeight.bold,
+                fontSize: 36,
+                fontWeight: FontWeight.w800,
                 color: Colors.white,
               ),
             ),
@@ -472,94 +467,324 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 16),
           Text(
             state.user!.fullName,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             state.user!.email,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Card(
             child: Column(
               children: [
-                _buildProfileItem(
-                  icon: Icons.email_outlined,
-                  title: 'Correo',
-                  value: state.user!.email,
-                ),
+                _profileItem(Icons.apartment_outlined, 'Empresa', state.activeCompany?.name ?? 'N/A'),
                 const Divider(height: 1),
-                _buildProfileItem(
-                  icon: Icons.phone_outlined,
-                  title: 'Teléfono',
-                  value: state.user!.phone ?? 'No registrado',
-                ),
+                _profileItem(Icons.phone_outlined, 'Telefono', state.user!.phone ?? 'No registrado'),
                 const Divider(height: 1),
-                _buildProfileItem(
-                  icon: Icons.verified_outlined,
-                  title: 'Estado',
-                  value: state.user!.isActive ? 'Activo' : 'Inactivo',
-                  valueColor: state.user!.isActive
-                      ? AppColors.success
-                      : AppColors.error,
+                _profileItem(
+                  Icons.verified_outlined,
+                  'Estado',
+                  state.user!.isActive ? 'Activo' : 'Inactivo',
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          if (state.roles.isNotEmpty)
-            Card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'Roles',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ...state.roles.map(
-                    (role) => ListTile(
-                      leading: const Icon(Icons.badge_outlined),
-                      title: Text(role.name),
-                      subtitle: role.description != null
-                          ? Text(role.description!)
-                          : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
   }
 
-  Widget _buildProfileItem({
+  Widget _statCard(BuildContext context, String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.45,
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Icon(Icons.insights_outlined, color: color),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionCard({
     required IconData icon,
     required String title,
-    required String value,
-    Color? valueColor,
+    required String subtitle,
+    required VoidCallback? onTap,
   }) {
+    return Card(
+      elevation: 0,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                child: Icon(icon, color: AppColors.primary),
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyCard({
+    required IconData icon,
+    required String title,
+    required String message,
+  }) {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Icon(icon, size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _profileItem(IconData icon, String title, String value) {
     return ListTile(
       leading: Icon(icon, color: AppColors.textSecondary),
       title: Text(title),
       trailing: Text(
         value,
-        style: TextStyle(
-          color: valueColor ?? AppColors.textPrimary,
-          fontWeight: FontWeight.w500,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _headerPill(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
         ),
       ),
     );
+  }
+
+  Widget _metricChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  List<Ticket> _relevantTickets(AuthState authState, List<Ticket> tickets) {
+    final userId = authState.user?.id;
+    final scoped = userId == null
+        ? tickets
+        : tickets.where((ticket) => ticket.assignedTo == userId).toList();
+    final source = scoped.isEmpty ? tickets : scoped;
+    final sorted = [...source];
+    sorted.sort((a, b) {
+      final priority = _priorityRank(a.priority).compareTo(_priorityRank(b.priority));
+      if (priority != 0) return priority;
+      return b.updatedAt.compareTo(a.updatedAt);
+    });
+    return sorted;
+  }
+
+  Ticket? _nextTicket(List<Ticket> tickets) {
+    for (final ticket in tickets) {
+      if (!ticket.isClosed) {
+        return ticket;
+      }
+    }
+    return tickets.isNotEmpty ? tickets.first : null;
+  }
+
+  int _priorityRank(String priority) {
+    switch (TicketCatalog.canonicalPriority(priority)) {
+      case 'critical':
+        return 0;
+      case 'high':
+        return 1;
+      case 'medium':
+        return 2;
+      case 'low':
+        return 3;
+      default:
+        return 4;
+    }
+  }
+
+  String _technicianStatus(List<Ticket> tickets) {
+    if (tickets.any((ticket) => TicketCatalog.canonicalStatus(ticket.status) == 'in_progress')) {
+      return 'En sitio';
+    }
+    if (tickets.any((ticket) => const {
+          'pending_parts',
+          'pending_approval',
+          'pending_client',
+          'on_hold',
+        }.contains(TicketCatalog.canonicalStatus(ticket.status)))) {
+      return 'En espera';
+    }
+    if (tickets.isNotEmpty) {
+      return 'Disponible con tickets';
+    }
+    return 'Disponible';
+  }
+
+  Color _priorityColor(String value) {
+    switch (TicketCatalog.canonicalPriority(value)) {
+      case 'critical':
+        return Colors.red;
+      case 'high':
+        return Colors.deepOrange;
+      case 'medium':
+        return Colors.blue;
+      case 'low':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _statusColor(String value) {
+    switch (TicketCatalog.canonicalStatus(value)) {
+      case 'open':
+        return Colors.blue;
+      case 'assigned':
+        return Colors.indigo;
+      case 'in_progress':
+        return Colors.orange;
+      case 'pending_parts':
+      case 'pending_approval':
+      case 'pending_client':
+      case 'on_hold':
+        return Colors.amber.shade800;
+      case 'completed':
+      case 'closed':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _slaLabel(String value) {
+    switch (value) {
+      case 'ok':
+        return 'SLA OK';
+      case 'at_risk':
+        return 'SLA Riesgo';
+      case 'breached':
+        return 'SLA Vencido';
+      default:
+        return 'SLA';
+    }
+  }
+
+  Color _slaColor(String value) {
+    switch (value) {
+      case 'ok':
+        return Colors.green;
+      case 'at_risk':
+        return Colors.orange;
+      case 'breached':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Color _companyColor(CompanyEntity? company) {
+    final raw = company?.primaryColor;
+    if (raw == null || raw.isEmpty) return AppColors.primary;
+    final sanitized = raw.replaceAll('#', '');
+    final normalized = sanitized.length == 6 ? 'FF$sanitized' : sanitized;
+    final value = int.tryParse(normalized, radix: 16);
+    return value == null ? AppColors.primary : Color(value);
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -567,8 +792,8 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Cerrar Sesión'),
-        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+        title: const Text('Cerrar sesion'),
+        content: const Text('Se cerrara la sesion actual en este dispositivo.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -580,7 +805,7 @@ class _HomePageState extends State<HomePage> {
               authBloc.add(const LogoutRequested());
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Cerrar Sesión'),
+            child: const Text('Cerrar sesion'),
           ),
         ],
       ),

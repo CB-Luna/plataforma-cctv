@@ -14,6 +14,7 @@ import '../../features/auth/domain/usecases/get_current_user.dart';
 import '../../features/auth/domain/usecases/login.dart';
 import '../../features/auth/domain/usecases/logout.dart';
 import '../../features/auth/domain/usecases/register.dart';
+import '../../features/auth/domain/usecases/save_session.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/tickets/data/datasources/ticket_remote_datasource.dart';
 import '../../features/tickets/data/repositories/ticket_repository_impl.dart';
@@ -51,6 +52,7 @@ Future<void> init() async {
 
   // Use cases
   sl.registerLazySingleton(() => Login(sl()));
+  sl.registerLazySingleton(() => SaveSession(sl()));
   sl.registerLazySingleton(() => Register(sl()));
   sl.registerLazySingleton(() => Logout(sl()));
   sl.registerLazySingleton(() => GetCurrentUser(sl()));
@@ -59,6 +61,7 @@ Future<void> init() async {
   sl.registerFactory(
     () => AuthBloc(
       login: sl(),
+      saveSession: sl(),
       register: sl(),
       logout: sl(),
       getCurrentUser: sl(),

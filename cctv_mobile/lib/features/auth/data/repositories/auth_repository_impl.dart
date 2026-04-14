@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../../../core/error/failures.dart';
+import '../../domain/entities/company_entity.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/entities/role_entity.dart';
 import '../../domain/entities/permission_entity.dart';
@@ -18,8 +19,14 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<Either<Failure, ({UserEntity user, String token})>> login({
-    required String tenantId,
+  Future<
+    Either<
+      Failure,
+      ({UserEntity user, String token, List<CompanyEntity> companies})
+    >
+  >
+  login({
+    String? tenantId,
     required String email,
     required String password,
   }) async {
@@ -30,12 +37,11 @@ class AuthRepositoryImpl implements AuthRepository {
         password: password,
       );
 
-      await localDataSource.saveToken(result.token);
-      await localDataSource.saveUserId(result.user.id);
-      await localDataSource.saveTenantId(result.user.tenantId);
-      await localDataSource.setLoggedIn(true);
-
-      return Right((user: result.user, token: result.token));
+      return Right((
+        user: result.user,
+        token: result.token,
+        companies: result.companies,
+      ));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } on AuthException catch (e) {
@@ -45,6 +51,17 @@ class AuthRepositoryImpl implements AuthRepository {
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
+  }
+
+  @override
+  Future<void> saveSession({
+    required String token,
+    required UserEntity user,
+  }) async {
+    await localDataSource.saveToken(token);
+    await localDataSource.saveUserId(user.id);
+    await localDataSource.saveTenantId(user.tenantId);
+    await localDataSource.setLoggedIn(true);
   }
 
   @override
@@ -96,6 +113,7 @@ class AuthRepositoryImpl implements AuthRepository {
         UserEntity user,
         List<RoleEntity> roles,
         List<PermissionEntity> permissions,
+        List<CompanyEntity> companies,
       })
     >
   >
@@ -106,6 +124,7 @@ class AuthRepositoryImpl implements AuthRepository {
         user: result.user,
         roles: result.roles,
         permissions: result.permissions,
+        companies: result.companies,
       ));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

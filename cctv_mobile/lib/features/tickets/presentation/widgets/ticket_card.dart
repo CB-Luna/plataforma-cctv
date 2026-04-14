@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../domain/entities/ticket.dart';
+import '../../domain/entities/ticket_catalog.dart';
 
 class TicketCard extends StatelessWidget {
   final Ticket ticket;
@@ -11,20 +12,21 @@ class TicketCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final priorityColor = _priorityColor(ticket.priority);
+    final statusColor = _statusColor(ticket.status);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: _getPriorityColor(ticket.priority).withValues(alpha: 0.3),
-          width: 1,
+          color: priorityColor.withValues(alpha: 0.25),
         ),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -34,53 +36,44 @@ class TicketCard extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: 10,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _getPriorityColor(
-                        ticket.priority,
-                      ).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      color: priorityColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       ticket.ticketNumber,
                       style: theme.textTheme.labelMedium?.copyWith(
-                        color: _getPriorityColor(ticket.priority),
-                        fontWeight: FontWeight.bold,
+                        color: priorityColor,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _buildPriorityBadge(ticket.priority),
+                  _buildPill(
+                    label: ticket.priorityLabel,
+                    color: priorityColor,
+                    icon: _priorityIcon(ticket.priority),
+                  ),
                   const Spacer(),
-                  if (ticket.slaStatus != null) ...[
-                    _buildMiniBadge(
-                      _getSlaLabel(ticket.slaStatus!),
-                      _getSlaColor(ticket.slaStatus!),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  if (ticket.coverageStatus != null) ...[
-                    _buildMiniBadge(
-                      _getCoverageLabel(ticket.coverageStatus!),
-                      _getCoverageColor(ticket.coverageStatus!),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                  _buildStatusBadge(ticket.status, theme),
+                  _buildPill(
+                    label: ticket.statusLabel,
+                    color: statusColor,
+                  ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Text(
                 ticket.title,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (ticket.description != null) ...[
+              if (ticket.description != null && ticket.description!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   ticket.description!,
@@ -91,85 +84,90 @@ class TicketCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
-              const SizedBox(height: 12),
-              Row(
+              const SizedBox(height: 14),
+              Wrap(
+                runSpacing: 8,
+                spacing: 12,
                 children: [
-                  Icon(
-                    Icons.business,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  _buildInlineInfo(
+                    context,
+                    icon: Icons.business_outlined,
+                    text: ticket.clientName ?? 'Cliente no definido',
                   ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      ticket.clientName ?? 'Sin cliente',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  _buildInlineInfo(
+                    context,
+                    icon: Icons.location_on_outlined,
+                    text: ticket.siteName ?? 'Sitio no definido',
                   ),
-                  Icon(
-                    Icons.access_time,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  _buildInlineInfo(
+                    context,
+                    icon: Icons.schedule_outlined,
+                    text: timeago.format(ticket.updatedAt, locale: 'es'),
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    timeago.format(ticket.createdAt, locale: 'es'),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                  _buildInlineInfo(
+                    context,
+                    icon: _typeIcon(ticket.type),
+                    text: ticket.typeLabel,
                   ),
                 ],
               ),
-              if (ticket.siteName != null) ...[
-                const SizedBox(height: 4),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.45,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      ticket.isClosed ? Icons.check_circle_outline : Icons.play_circle_outline,
+                      color: ticket.isClosed ? Colors.green : theme.colorScheme.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        ticket.nextActionLabel,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (ticket.slaStatus != null)
+                      _buildPill(
+                        label: _slaLabel(ticket.slaStatus!),
+                        color: _slaColor(ticket.slaStatus!),
+                      ),
+                  ],
+                ),
+              ),
+              if (ticket.assignedToName != null && ticket.assignedToName!.isNotEmpty) ...[
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Icon(
-                      Icons.location_on,
+                      Icons.badge_outlined,
                       size: 16,
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: theme.colorScheme.primary,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        ticket.siteName!,
+                        'Asignado a ${ticket.assignedToName}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const Icon(Icons.chevron_right_rounded),
                   ],
                 ),
               ],
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _buildTypeBadge(ticket.type, theme),
-                  const Spacer(),
-                  if (ticket.assignedToName != null)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.person,
-                          size: 16,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          ticket.assignedToName!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
             ],
           ),
         ),
@@ -177,100 +175,70 @@ class TicketCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPriorityBadge(String priority) {
-    final color = _getPriorityColor(priority);
-    IconData icon;
-
-    switch (priority) {
-      case 'urgent':
-        icon = Icons.warning_amber_rounded;
-        break;
-      case 'high':
-        icon = Icons.arrow_upward;
-        break;
-      case 'medium':
-        icon = Icons.remove;
-        break;
-      case 'low':
-        icon = Icons.arrow_downward;
-        break;
-      default:
-        icon = Icons.remove;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Icon(icon, size: 16, color: color),
-    );
-  }
-
-  Widget _buildStatusBadge(String status, ThemeData theme) {
-    final color = _getStatusColor(status);
-    final label = _getStatusLabel(status);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTypeBadge(String type, ThemeData theme) {
-    final label = _getTypeLabel(type);
-    final icon = _getTypeIcon(type);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+  Widget _buildInlineInfo(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+  }) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 140,
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildMiniBadge(String text, Color color) {
+  Widget _buildPill({
+    required String label,
+    required Color color,
+    IconData? icon,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 11,
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Color _getPriorityColor(String priority) {
-    switch (priority) {
-      case 'urgent':
+  Color _priorityColor(String value) {
+    switch (TicketCatalog.canonicalPriority(value)) {
+      case 'critical':
         return Colors.red;
       case 'high':
-        return Colors.orange;
+        return Colors.deepOrange;
       case 'medium':
         return Colors.blue;
       case 'low':
@@ -280,19 +248,20 @@ class TicketCard extends StatelessWidget {
     }
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
+  Color _statusColor(String value) {
+    switch (TicketCatalog.canonicalStatus(value)) {
       case 'open':
         return Colors.blue;
       case 'assigned':
-        return Colors.purple;
+        return Colors.indigo;
       case 'in_progress':
         return Colors.orange;
       case 'pending_parts':
+      case 'pending_approval':
       case 'pending_client':
-        return Colors.amber;
-      case 'resolved':
-        return Colors.teal;
+      case 'on_hold':
+        return Colors.amber.shade800;
+      case 'completed':
       case 'closed':
         return Colors.green;
       case 'cancelled':
@@ -302,30 +271,20 @@ class TicketCard extends StatelessWidget {
     }
   }
 
-  String _getStatusLabel(String status) {
-    switch (status) {
-      case 'open':
-        return 'Abierto';
-      case 'assigned':
-        return 'Asignado';
-      case 'in_progress':
-        return 'En Progreso';
-      case 'pending_parts':
-        return 'Esp. Partes';
-      case 'pending_client':
-        return 'Esp. Cliente';
-      case 'resolved':
-        return 'Resuelto';
-      case 'closed':
-        return 'Cerrado';
-      case 'cancelled':
-        return 'Cancelado';
+  Color _slaColor(String value) {
+    switch (value) {
+      case 'ok':
+        return Colors.green;
+      case 'at_risk':
+        return Colors.orange;
+      case 'breached':
+        return Colors.red;
       default:
-        return status;
+        return Colors.grey;
     }
   }
 
-  String _getSlaLabel(String value) {
+  String _slaLabel(String value) {
     switch (value) {
       case 'ok':
         return 'SLA OK';
@@ -334,76 +293,39 @@ class TicketCard extends StatelessWidget {
       case 'breached':
         return 'SLA Vencido';
       default:
-        return 'SLA N/A';
+        return 'SLA';
     }
   }
 
-  Color _getSlaColor(String value) {
-    switch (value) {
-      case 'ok':
-        return Colors.green;
-      case 'at_risk':
-        return Colors.orange;
-      case 'breached':
-        return Colors.red;
+  IconData _priorityIcon(String value) {
+    switch (TicketCatalog.canonicalPriority(value)) {
+      case 'critical':
+        return Icons.priority_high_rounded;
+      case 'high':
+        return Icons.arrow_upward_rounded;
+      case 'medium':
+        return Icons.remove_rounded;
+      case 'low':
+        return Icons.arrow_downward_rounded;
       default:
-        return Colors.grey;
+        return Icons.circle_outlined;
     }
   }
 
-  String _getCoverageLabel(String value) {
+  IconData _typeIcon(String value) {
     switch (value) {
-      case 'covered':
-        return 'Cubierto';
-      case 'partial':
-        return 'Parcial';
-      case 'not_covered':
-        return 'No cubierto';
-      default:
-        return 'Sin cobertura';
-    }
-  }
-
-  Color _getCoverageColor(String value) {
-    switch (value) {
-      case 'covered':
-        return Colors.green;
-      case 'partial':
-        return Colors.orange;
-      case 'not_covered':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getTypeLabel(String type) {
-    switch (type) {
       case 'corrective':
-        return 'Correctivo';
+        return Icons.build_outlined;
       case 'preventive':
-        return 'Preventivo';
+        return Icons.event_repeat_outlined;
+      case 'emergency':
+        return Icons.crisis_alert_outlined;
       case 'installation':
-        return 'Instalación';
-      case 'consultation':
-        return 'Consulta';
+        return Icons.construction_outlined;
+      case 'inspection':
+        return Icons.fact_check_outlined;
       default:
-        return type;
-    }
-  }
-
-  IconData _getTypeIcon(String type) {
-    switch (type) {
-      case 'corrective':
-        return Icons.build;
-      case 'preventive':
-        return Icons.schedule;
-      case 'installation':
-        return Icons.add_box;
-      case 'consultation':
-        return Icons.help_outline;
-      default:
-        return Icons.work;
+        return Icons.work_outline;
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../domain/entities/ticket_catalog.dart';
 
 class TicketStatusBadge extends StatelessWidget {
   final String status;
@@ -12,8 +13,8 @@ class TicketStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getStatusColor(status);
-    final label = _getStatusLabel(status);
+    final color = _statusColor(status);
+    final label = TicketCatalog.statusLabel(status);
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -23,7 +24,7 @@ class TicketStatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(large ? 16 : 12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -38,7 +39,7 @@ class TicketStatusBadge extends StatelessWidget {
             label,
             style: TextStyle(
               color: color,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               fontSize: large ? 14 : 12,
             ),
           ),
@@ -47,48 +48,26 @@ class TicketStatusBadge extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
+  Color _statusColor(String value) {
+    switch (TicketCatalog.canonicalStatus(value)) {
       case 'open':
         return Colors.blue;
       case 'assigned':
-        return Colors.purple;
+        return Colors.indigo;
       case 'in_progress':
         return Colors.orange;
       case 'pending_parts':
+      case 'pending_approval':
       case 'pending_client':
-        return Colors.amber.shade700;
-      case 'resolved':
-        return Colors.teal;
+      case 'on_hold':
+        return Colors.amber.shade800;
+      case 'completed':
       case 'closed':
         return Colors.green;
       case 'cancelled':
         return Colors.grey;
       default:
         return Colors.grey;
-    }
-  }
-
-  String _getStatusLabel(String status) {
-    switch (status) {
-      case 'open':
-        return 'Abierto';
-      case 'assigned':
-        return 'Asignado';
-      case 'in_progress':
-        return 'En Progreso';
-      case 'pending_parts':
-        return 'Esperando Partes';
-      case 'pending_client':
-        return 'Esperando Cliente';
-      case 'resolved':
-        return 'Resuelto';
-      case 'closed':
-        return 'Cerrado';
-      case 'cancelled':
-        return 'Cancelado';
-      default:
-        return status;
     }
   }
 }
@@ -105,15 +84,15 @@ class PriorityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getPriorityColor(priority);
-    final label = _getPriorityLabel(priority);
-    final icon = _getPriorityIcon(priority);
+    final color = _priorityColor(priority);
+    final label = TicketCatalog.priorityLabel(priority);
+    final icon = _priorityIcon(priority);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -125,7 +104,7 @@ class PriorityBadge extends StatelessWidget {
               label,
               style: TextStyle(
                 color: color,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 fontSize: 12,
               ),
             ),
@@ -135,12 +114,12 @@ class PriorityBadge extends StatelessWidget {
     );
   }
 
-  Color _getPriorityColor(String priority) {
-    switch (priority) {
-      case 'urgent':
+  Color _priorityColor(String value) {
+    switch (TicketCatalog.canonicalPriority(value)) {
+      case 'critical':
         return Colors.red;
       case 'high':
-        return Colors.orange;
+        return Colors.deepOrange;
       case 'medium':
         return Colors.blue;
       case 'low':
@@ -150,33 +129,18 @@ class PriorityBadge extends StatelessWidget {
     }
   }
 
-  String _getPriorityLabel(String priority) {
-    switch (priority) {
-      case 'urgent':
-        return 'Urgente';
+  IconData _priorityIcon(String value) {
+    switch (TicketCatalog.canonicalPriority(value)) {
+      case 'critical':
+        return Icons.priority_high_rounded;
       case 'high':
-        return 'Alta';
+        return Icons.arrow_upward_rounded;
       case 'medium':
-        return 'Media';
+        return Icons.remove_rounded;
       case 'low':
-        return 'Baja';
+        return Icons.arrow_downward_rounded;
       default:
-        return priority;
-    }
-  }
-
-  IconData _getPriorityIcon(String priority) {
-    switch (priority) {
-      case 'urgent':
-        return Icons.warning_amber_rounded;
-      case 'high':
-        return Icons.arrow_upward;
-      case 'medium':
-        return Icons.remove;
-      case 'low':
-        return Icons.arrow_downward;
-      default:
-        return Icons.remove;
+        return Icons.circle_outlined;
     }
   }
 }

@@ -76,11 +76,11 @@ Al terminar cualquier fase:
 | Fase | Nombre | Prioridad | Estado |
 |------|--------|-----------|--------|
 | F0 | Definicion funcional y contrato movil | Critica | Pendiente |
-| F1 | Base tecnica ejecutable y saneamiento del proyecto Flutter | Critica | Pendiente |
-| F2 | Auth multiempresa y branding por tenant | Critica | Pendiente |
-| F3 | Shell operativa y Home orientada a accion | Alta | Pendiente |
-| F4 | Tickets operativos reales | Critica | Pendiente |
-| F5 | Ejecucion de trabajo en campo | Critica | Pendiente |
+| F1 | Base tecnica ejecutable y saneamiento del proyecto Flutter | Critica | Completada |
+| F2 | Auth multiempresa y branding por tenant | Critica | En progreso |
+| F3 | Shell operativa y Home orientada a accion | Alta | Completada |
+| F4 | Tickets operativos reales | Critica | Completada |
+| F5 | Ejecucion de trabajo en campo | Critica | En progreso |
 | F6 | Equipos y modulos operativos | Alta | Pendiente |
 | F7 | Sitios, planos y contexto visual | Alta | Pendiente |
 | F8 | Resiliencia movil y trabajo con mala conectividad | Alta | Pendiente |
@@ -112,6 +112,15 @@ Al terminar cualquier fase:
 
 **Objetivo:** convertir `cctv_mobile` en una base realmente corrible y mantenible.
 
+**Estado actual:** Completada el 14 de abril de 2026.
+
+**Avance realizado:**
+
+- se genero la plataforma `android/`
+- la app ya compila e instala en emulador Android
+- `flutter analyze` quedo limpio
+- se corrigio la resolucion de `baseUrl` para emulador Android (`10.0.2.2`) y para host local (`127.0.0.1`)
+
 **Checklist inicial:**
 
 - generar y validar plataforma Android si falta
@@ -131,6 +140,22 @@ Al terminar cualquier fase:
 ## F2 - Auth multiempresa y branding por tenant
 
 **Objetivo:** alinear login movil con la arquitectura real multi-tenant.
+
+**Estado actual:** En progreso al 14 de abril de 2026.
+
+**Avance realizado:**
+
+- login ya consume `companies` del backend
+- si el usuario pertenece a varias empresas, la app ahora solicita seleccion explicita
+- se agrego `activeCompany` al estado de autenticacion
+- home y perfil ya muestran la empresa activa
+- se elimino la dependencia del login al `defaultTenantId` fijo
+
+**Pendiente para cerrar la fase:**
+
+- persistir branding visual completo por tenant en tema y shell
+- revisar si el flujo de auto registro debe quedarse o salir de la app
+- definir restauracion de sesion y entrada directa al tenant activo
 
 **Trabajo esperado:**
 
@@ -152,6 +177,16 @@ Al terminar cualquier fase:
 
 **Objetivo:** reemplazar la home tipo prototipo por una home de trabajo.
 
+**Estado actual:** Completada el 14 de abril de 2026.
+
+**Avance realizado:**
+
+- la home ya muestra identidad operativa del tenant y contexto del tecnico
+- se reemplazo el dashboard inflado por un bloque principal de `proxima accion`
+- la navegacion inferior quedo estable en `Inicio`, `Tickets` y `Perfil`
+- los estados vacios y de error ya no rompen la pantalla
+- se agregaron accesos operativos directos a cola de tickets, detalle prioritario, evidencia y perfil
+
 **Trabajo esperado:**
 
 - header con identidad del tenant y estado del tecnico
@@ -170,6 +205,17 @@ Al terminar cualquier fase:
 
 **Objetivo:** cerrar el corazon de la app.
 
+**Estado actual:** Completada el 14 de abril de 2026.
+
+**Avance realizado:**
+
+- la lista de tickets ahora se presenta como `cola operativa`
+- se agregaron vistas rapidas por `Todos`, `Criticos`, `En curso`, `En espera` y `Completados`
+- las cards ahora priorizan numero, prioridad, estado, cliente, sitio, SLA y siguiente paso
+- el detalle del ticket quedo reorganizado en `Resumen`, `Bitacora` y `Comentarios`
+- el detalle ya expone ubicacion con apertura de ruta externa, equipo, contactos, SLA, cobertura y resolucion existente
+- los catálogos moviles de prioridad/estado/tipo quedaron alineados con el backend actual, tolerando valores legacy
+
 **Trabajo esperado:**
 
 - lista de tickets asignados con filtros utiles
@@ -186,6 +232,21 @@ Al terminar cualquier fase:
 ## F5 - Ejecucion de trabajo en campo
 
 **Objetivo:** permitir que la app no solo vea tickets, sino que los opere.
+
+**Estado actual:** En progreso al 14 de abril de 2026.
+
+**Avance realizado:**
+
+- ya se puede iniciar ticket desde home y desde detalle
+- el detalle ya permite cambios de estado compatibles con backend (`pending_parts`, `pending_approval`, `on_hold`, `cancelled`)
+- los comentarios operativos ahora soportan marca `interno`
+- el cierre movil ya permite captura de resolucion, evidencia fotografica y firma
+- la evidencia y firma se suben al backend real de storage
+- al completar desde movil, se agrega comentario operativo interno con la trazabilidad del cierre y luego se marca el ticket como `completed`
+
+**GAP actual para cerrar la fase por completo:**
+
+- el endpoint actual `PATCH /tickets/:id/status` no persiste todavia el payload extendido de cierre (`resolution`, `signature`, `evidence`) como contrato nativo del ticket; por eso la app conserva esa informacion via upload + comentario operativo
 
 **Trabajo esperado:**
 

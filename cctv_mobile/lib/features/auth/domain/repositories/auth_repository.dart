@@ -1,12 +1,19 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/error/failures.dart';
+import '../entities/company_entity.dart';
 import '../entities/user_entity.dart';
 import '../entities/role_entity.dart';
 import '../entities/permission_entity.dart';
 
 abstract class AuthRepository {
-  Future<Either<Failure, ({UserEntity user, String token})>> login({
-    required String tenantId,
+  Future<
+    Either<
+      Failure,
+      ({UserEntity user, String token, List<CompanyEntity> companies})
+    >
+  >
+  login({
+    String? tenantId,
     required String email,
     required String password,
   });
@@ -22,6 +29,8 @@ abstract class AuthRepository {
 
   Future<Either<Failure, void>> logout();
 
+  Future<void> saveSession({required String token, required UserEntity user});
+
   Future<
     Either<
       Failure,
@@ -29,6 +38,7 @@ abstract class AuthRepository {
         UserEntity user,
         List<RoleEntity> roles,
         List<PermissionEntity> permissions,
+        List<CompanyEntity> companies,
       })
     >
   >

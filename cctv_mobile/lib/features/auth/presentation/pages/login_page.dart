@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../domain/entities/company_entity.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -27,16 +28,69 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _onLogin() {
+  void _onLogin({String? tenantId}) {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
         LoginRequested(
-          tenantId: AppConstants.defaultTenantId,
+          tenantId: tenantId,
           email: _emailController.text.trim(),
           password: _passwordController.text,
         ),
       );
     }
+  }
+
+  Future<void> _showCompanyPicker(List<CompanyEntity> companies) async {
+    final selectedCompanyId = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Selecciona tu empresa',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tu usuario existe en varias empresas. Elige en cuál quieres trabajar.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 420),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: companies.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final company = companies[index];
+                    return _CompanyTile(
+                      company: company,
+                      onTap: () => Navigator.pop(context, company.id),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!mounted || selectedCompanyId == null) {
+      return;
+    }
+
+    _onLogin(tenantId: selectedCompanyId);
   }
 
   @override
@@ -46,6 +100,8 @@ class _LoginPageState extends State<LoginPage> {
         listener: (context, state) {
           if (state.status == AuthStatus.authenticated) {
             context.go('/home');
+          } else if (state.status == AuthStatus.companySelectionRequired) {
+            _showCompanyPicker(state.companies);
           } else if (state.status == AuthStatus.error) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -56,6 +112,8 @@ class _LoginPageState extends State<LoginPage> {
           }
         },
         builder: (context, state) {
+          final isLoading = state.status == AuthStatus.loading;
+
           return SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -66,12 +124,20 @@ class _LoginPageState extends State<LoginPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        Icons.videocam_rounded,
-                        size: 80,
-                        color: AppColors.primary,
+                      Container(
+                        width: 96,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.support_agent_rounded,
+                          size: 44,
+                          color: AppColors.primary,
+                        ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       Text(
                         AppConstants.appName,
                         textAlign: TextAlign.center,
@@ -83,7 +149,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Inicia sesión para continuar',
+                        'Acceso operativo para atención en campo',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: AppColors.textSecondary,
@@ -96,7 +162,7 @@ class _LoginPageState extends State<LoginPage> {
                         textInputAction: TextInputAction.next,
                         decoration: const InputDecoration(
                           labelText: 'Correo electrónico',
-                          hintText: 'ejemplo@correo.com',
+                          hintText: 'ejemplo@empresa.com',
                           prefixIcon: Icon(Icons.email_outlined),
                         ),
                         validator: (value) {
@@ -148,10 +214,8 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: state.status == AuthStatus.loading
-                              ? null
-                              : _onLogin,
-                          child: state.status == AuthStatus.loading
+                          onPressed: isLoading ? null : _onLogin,
+                          child: isLoading
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
@@ -161,7 +225,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 )
                               : const Text(
-                                  'Iniciar Sesión',
+                                  'Iniciar sesión',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -170,10 +234,16 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      const Text(
+                        'Si tu usuario pertenece a varias empresas, podrás seleccionarla después de validar tus credenciales.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('¿No tienes cuenta?'),
+                          const Text('¿Tu empresa habilitó auto registro?'),
                           TextButton(
                             onPressed: () => context.push('/register'),
                             child: const Text('Regístrate'),
@@ -189,5 +259,53 @@ class _LoginPageState extends State<LoginPage> {
         },
       ),
     );
+  }
+}
+
+class _CompanyTile extends StatelessWidget {
+  final CompanyEntity company;
+  final VoidCallback onTap;
+
+  const _CompanyTile({required this.company, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: _CompanyAvatar(company: company),
+        title: Text(company.name),
+        subtitle: company.slug != null ? Text(company.slug!) : null,
+        trailing: const Icon(Icons.chevron_right),
+      ),
+    );
+  }
+}
+
+class _CompanyAvatar extends StatelessWidget {
+  final CompanyEntity company;
+
+  const _CompanyAvatar({required this.company});
+
+  @override
+  Widget build(BuildContext context) {
+    if (company.logoUrl != null && company.logoUrl!.isNotEmpty) {
+      return CircleAvatar(
+        backgroundColor: Colors.white,
+        child: ClipOval(
+          child: Image.network(
+            company.logoUrl!,
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => Text(company.initials),
+          ),
+        ),
+      );
+    }
+
+    return CircleAvatar(child: Text(company.initials));
   }
 }
