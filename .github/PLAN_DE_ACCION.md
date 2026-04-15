@@ -33,7 +33,7 @@ Al terminar cualquier fase:
 | F11 | Portal Tenant: logo de empresa en sidebar | **Media** | **Completada** |
 | F12 | Chatbot IA: conectar endpoint real /intelligence/chat | **Media** | **Completada** |
 | F13 | Gemini Embedding: test de reindexacion + busqueda en settings | **Media** | **Completada** |
-| F14 | IA Avanzada: documentos por modelo, specs desde PDF, asistente tecnico | **Alta** | Pendiente |
+| F14 | IA Avanzada: documentos por modelo, specs desde PDF, asistente tecnico | **Alta** | Pendiente | 
 
 ---
 
