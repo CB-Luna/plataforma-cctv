@@ -2,10 +2,24 @@
 
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Info, Upload, X, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Download,
+  FileSpreadsheet,
+  Info,
+  Loader2,
+  Upload,
+  X,
+} from "lucide-react";
 import { createCamera } from "@/lib/api/cameras";
-import { createNvr } from "@/lib/api/nvrs";
-import type { CreateCameraRequest, CreateNvrRequest } from "@/types/api";
+import {
+  createImportBatch,
+  getImportBatch,
+  getImportBatchErrors,
+  processImportBatch,
+} from "@/lib/api/imports";
+import type { CreateCameraRequest } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,57 +44,109 @@ interface QuickInventoryImportDialogProps {
   siteId: string | null | undefined;
   siteLabel: string;
   onImported: (type: "cameras" | "nvrs", count: number) => void;
-  /** Si se pasa, el dialogo arranca con ese tipo pre-seleccionado */
   defaultType?: "cameras" | "nvrs";
 }
 
 type TargetType = "cameras" | "nvrs";
 
-/* ── Mapeo: header del Excel (español o ingles) → campo API real ── */
-
 const CAMERA_HEADER_TO_API: Record<string, string> = {
-  nombre: "name", name: "name",
-  codigo: "code", code: "code",
-  tipo: "camera_type", camera_type: "camera_type",
-  modelo: "camera_model_name", camera_model_name: "camera_model_name",
-  generacion: "generation", generation: "generation",
-  ip: "ip_address", ip_address: "ip_address",
-  mac: "mac_address", mac_address: "mac_address",
-  resolucion: "resolution", resolution: "resolution",
-  megapixeles: "megapixels", megapixels: "megapixels",
+  nombre: "name",
+  name: "name",
+  codigo: "code",
+  code: "code",
+  tipo: "camera_type",
+  camera_type: "camera_type",
+  modelo: "camera_model_name",
+  camera_model_name: "camera_model_name",
+  generacion: "generation",
+  generation: "generation",
+  ip: "ip_address",
+  ip_address: "ip_address",
+  mac: "mac_address",
+  mac_address: "mac_address",
+  resolucion: "resolution",
+  resolution: "resolution",
+  megapixeles: "megapixels",
+  megapixels: "megapixels",
   area: "area",
-  zona: "zone", zone: "zone",
-  ubicacion: "location_description", location_description: "location_description",
-  serie: "serial_number", serial_number: "serial_number",
-  estado: "status", status: "status",
-  notas: "notes", notes: "notes",
+  zona: "zone",
+  zone: "zone",
+  ubicacion: "location_description",
+  location_description: "location_description",
+  serie: "serial_number",
+  serial_number: "serial_number",
+  estado: "status",
+  status: "status",
+  notas: "notes",
+  notes: "notes",
 };
 
 const NVR_HEADER_TO_API: Record<string, string> = {
-  nombre: "name", name: "name",
-  codigo: "code", code: "code",
-  modelo: "model", model: "model",
-  ip: "ip_address", ip_address: "ip_address",
-  mac: "mac_address", mac_address: "mac_address",
-  canales_camara: "camera_channels", channels: "camera_channels", camera_channels: "camera_channels",
-  almacenamiento_tb: "total_storage_tb", storage_tb: "total_storage_tb", total_storage_tb: "total_storage_tb",
-  dias_grabacion: "recording_days", recording_days: "recording_days",
-  procesador: "processor", processor: "processor",
-  ram_gb: "ram_gb", ram: "ram_gb",
-  sistema_operativo: "os_name", os: "os_name", os_name: "os_name",
+  nombre: "name",
+  name: "name",
+  codigo: "code",
+  code: "code",
+  modelo: "model",
+  model: "model",
+  ip: "ip_address",
+  ip_address: "ip_address",
+  mac: "mac_address",
+  mac_address: "mac_address",
+  canales_camara: "camera_channels",
+  channels: "camera_channels",
+  camera_channels: "camera_channels",
+  almacenamiento_tb: "total_storage_tb",
+  storage_tb: "total_storage_tb",
+  total_storage_tb: "total_storage_tb",
+  dias_grabacion: "recording_days",
+  recording_days: "recording_days",
+  procesador: "processor",
+  processor: "processor",
+  ram_gb: "ram_gb",
+  ram: "ram_gb",
+  sistema_operativo: "os_name",
+  os: "os_name",
+  os_name: "os_name",
   service_tag: "service_tag",
-  estado: "status", status: "status",
-  notas: "notes", notes: "notes",
+  estado: "status",
+  status: "status",
+  notas: "notes",
+  notes: "notes",
 };
 
 const CAMERA_DISPLAY_COLUMNS = [
-  "nombre", "codigo", "tipo", "modelo", "generacion", "ip", "mac",
-  "resolucion", "megapixeles", "area", "zona", "ubicacion", "serie", "estado", "notas",
+  "nombre",
+  "codigo",
+  "tipo",
+  "modelo",
+  "generacion",
+  "ip",
+  "mac",
+  "resolucion",
+  "megapixeles",
+  "area",
+  "zona",
+  "ubicacion",
+  "serie",
+  "estado",
+  "notas",
 ];
+
 const NVR_DISPLAY_COLUMNS = [
-  "nombre", "codigo", "modelo", "ip", "mac", "canales_camara",
-  "almacenamiento_tb", "dias_grabacion", "procesador", "ram_gb",
-  "sistema_operativo", "service_tag", "estado", "notas",
+  "nombre",
+  "codigo",
+  "modelo",
+  "ip",
+  "mac",
+  "canales_camara",
+  "almacenamiento_tb",
+  "dias_grabacion",
+  "procesador",
+  "ram_gb",
+  "sistema_operativo",
+  "service_tag",
+  "estado",
+  "notas",
 ];
 
 function getHeaderMap(type: TargetType) {
@@ -91,48 +157,42 @@ function getDisplayColumns(type: TargetType) {
   return type === "cameras" ? CAMERA_DISPLAY_COLUMNS : NVR_DISPLAY_COLUMNS;
 }
 
-/** Valida columnas del Excel contra las esperadas. Retorna matched y unmatched. */
 function validateColumns(headers: string[], type: TargetType) {
   const headerMap = getHeaderMap(type);
   const matched: string[] = [];
   const unmatched: string[] = [];
 
-  for (const h of headers) {
-    const normalized = h.toLowerCase().trim();
+  for (const header of headers) {
+    const normalized = header.toLowerCase().trim();
     if (headerMap[normalized]) {
-      matched.push(h);
+      matched.push(header);
     } else {
-      unmatched.push(h);
+      unmatched.push(header);
     }
   }
+
   return { matched, unmatched };
 }
 
-/** Convierte una fila del Excel a un objeto con claves API normalizadas. */
 function normalizeRow(row: Record<string, unknown>, type: TargetType): Record<string, unknown> {
   const headerMap = getHeaderMap(type);
   const normalized: Record<string, unknown> = {};
+
   for (const [key, value] of Object.entries(row)) {
     const apiField = headerMap[key.toLowerCase().trim()];
-    if (apiField) {
-      normalized[apiField] = value;
-    }
+    if (apiField) normalized[apiField] = value;
   }
+
   return normalized;
 }
 
 function generateTemplateExcel(type: TargetType): void {
   import("xlsx").then((XLSX) => {
-    const cols = getDisplayColumns(type);
-    // Crear hoja con una fila vacia que solo tenga los encabezados
-    const ws = XLSX.utils.aoa_to_sheet([cols]);
+    const columns = getDisplayColumns(type);
+    const ws = XLSX.utils.aoa_to_sheet([columns]);
     const wb = XLSX.utils.book_new();
-    const sheetName = type === "cameras" ? "Camaras" : "NVR Servers";
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    const fileName = type === "cameras"
-      ? "plantilla-camaras.xlsx"
-      : "plantilla-nvr.xlsx";
-    XLSX.writeFile(wb, fileName);
+    XLSX.utils.book_append_sheet(wb, ws, type === "cameras" ? "Camaras" : "NVR Servers");
+    XLSX.writeFile(wb, type === "cameras" ? "plantilla-camaras.xlsx" : "plantilla-nvr.xlsx");
   });
 }
 
@@ -145,6 +205,8 @@ export function QuickInventoryImportDialog({
   onImported,
   defaultType,
 }: QuickInventoryImportDialogProps) {
+  void tenantId;
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [targetType, setTargetType] = useState<TargetType>(defaultType ?? "cameras");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -156,7 +218,6 @@ export function QuickInventoryImportDialog({
     unmatched: string[];
     sampleRows: Record<string, unknown>[];
   } | null>(null);
-
   const [importProgress, setImportProgress] = useState<{ done: number; total: number; errors: number } | null>(null);
 
   const reset = useCallback(() => {
@@ -171,56 +232,62 @@ export function QuickInventoryImportDialog({
     reset();
     setTargetType(defaultType ?? "cameras");
     onOpenChange(false);
-  }, [reset, onOpenChange, defaultType]);
+  }, [defaultType, onOpenChange, reset]);
 
-  const handleFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setSelectedFile(file);
-      setIsParsing(true);
-      setPreview(null);
+  const handleFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-      try {
-        const XLSX = await import("xlsx");
-        const arrayBuffer = await file.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: "array" });
-        const firstSheet = workbook.SheetNames[0];
-        if (!firstSheet) {
-          toast.error("El archivo no tiene hojas de datos");
-          reset();
-          return;
-        }
-        const ws = workbook.Sheets[firstSheet];
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
-          defval: "",
-          raw: false,
-        });
-        const headers = rows.length > 0 ? Object.keys(rows[0] ?? {}) : [];
-        const { matched, unmatched } = validateColumns(headers, targetType);
+    setSelectedFile(file);
+    setIsParsing(true);
+    setPreview(null);
 
-        if (matched.length === 0) {
-          toast.error(
-            `Ninguna columna del archivo coincide con las esperadas para ${targetType === "cameras" ? "camaras" : "NVR"}. Revisa los encabezados.`,
-          );
-          reset();
-          return;
-        }
+    try {
+      const XLSX = await import("xlsx");
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const firstSheet = workbook.SheetNames[0];
 
-        const sampleRows = rows.slice(0, 5);
-        setPreview({ headers, count: rows.length, matched, unmatched, sampleRows });
-      } catch {
-        toast.error("No se pudo leer el archivo. Verifica que sea un Excel o CSV valido.");
+      if (!firstSheet) {
+        toast.error("El archivo no tiene hojas de datos");
         reset();
-      } finally {
-        setIsParsing(false);
+        return;
       }
-    },
-    [reset, targetType],
-  );
+
+      const worksheet = workbook.Sheets[firstSheet];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
+        defval: "",
+        raw: false,
+      });
+      const headers = rows.length > 0 ? Object.keys(rows[0] ?? {}) : [];
+      const { matched, unmatched } = validateColumns(headers, targetType);
+
+      if (matched.length === 0) {
+        toast.error(
+          `Ninguna columna del archivo coincide con las esperadas para ${targetType === "cameras" ? "camaras" : "NVR"}.`,
+        );
+        reset();
+        return;
+      }
+
+      setPreview({
+        headers,
+        count: rows.length,
+        matched,
+        unmatched,
+        sampleRows: rows.slice(0, 5),
+      });
+    } catch {
+      toast.error("No se pudo leer el archivo. Verifica que sea un Excel o CSV valido.");
+      reset();
+    } finally {
+      setIsParsing(false);
+    }
+  }, [reset, targetType]);
 
   const handleImport = useCallback(async () => {
     if (!selectedFile || !preview) return;
+
     setIsParsing(true);
     setImportProgress(null);
 
@@ -229,14 +296,14 @@ export function QuickInventoryImportDialog({
       const arrayBuffer = await selectedFile.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: "array" });
       const firstSheet = workbook.SheetNames[0];
-      const ws = workbook.Sheets[firstSheet!];
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+      const worksheet = workbook.Sheets[firstSheet];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
         defval: "",
         raw: false,
       });
 
       const dataRows = rows.filter((row) =>
-        Object.values(row).some((v) => String(v ?? "").trim() !== ""),
+        Object.values(row).some((value) => String(value ?? "").trim() !== ""),
       );
 
       if (dataRows.length === 0) {
@@ -244,76 +311,99 @@ export function QuickInventoryImportDialog({
         return;
       }
 
-      // Normalizar headers del Excel al formato de la API
       const normalizedRows = dataRows.map((row) => normalizeRow(row, targetType));
-
-      let done = 0;
-      let errors = 0;
       const total = normalizedRows.length;
       setImportProgress({ done: 0, total, errors: 0 });
 
-      // Enviar cada fila al backend (en lotes de 5 para no saturar)
-      const BATCH_SIZE = 5;
-      for (let i = 0; i < normalizedRows.length; i += BATCH_SIZE) {
-        const batch = normalizedRows.slice(i, i + BATCH_SIZE);
+      if (targetType === "nvrs") {
+        const contextualRows = normalizedRows.map((row) => ({
+          ...row,
+          import_source: selectedFile.name,
+          sheet_name: "quick_inventory",
+        }));
+        const columnMapping = Object.fromEntries(
+          Object.keys(contextualRows[0] ?? {}).map((key) => [key, key]),
+        );
+
+        const batch = await createImportBatch({
+          batch_name: `Importacion rapida ${selectedFile.name.replace(/\.[^.]+$/, "")}`,
+          source_type: selectedFile.name.toLowerCase().endsWith(".csv") ? "csv" : "excel",
+          source_filename: selectedFile.name,
+          target_table: "nvr_servers",
+          column_mapping: columnMapping,
+          data: contextualRows,
+        });
+
+        await processImportBatch(batch.id);
+
+        const [{ batch: processedBatch }, errorRows] = await Promise.all([
+          getImportBatch(batch.id),
+          getImportBatchErrors(batch.id),
+        ]);
+
+        const errors = processedBatch.error_rows ?? errorRows.length;
+        const success = processedBatch.success_rows ?? Math.max(total - errors, 0);
+        setImportProgress({ done: total, total, errors });
+
+        if (errors === 0) {
+          toast.success(`${success} servidores NVR importados correctamente al servidor`);
+        } else {
+          const firstError = errorRows[0]?.error_message;
+          toast.warning(
+            `${success} de ${total} servidores NVR importados. ${errors} fallaron${firstError ? `: ${firstError}` : ""}.`,
+          );
+        }
+
+        onImported(targetType, success);
+        handleClose();
+        return;
+      }
+
+      let done = 0;
+      let errors = 0;
+      const batchSize = 5;
+
+      for (let index = 0; index < normalizedRows.length; index += batchSize) {
+        const batch = normalizedRows.slice(index, index + batchSize);
         const results = await Promise.allSettled(
-          batch.map((normalized) => {
-            if (targetType === "cameras") {
-              const req: CreateCameraRequest = {
-                name: String(normalized.name || `Camara ${done + 1}`),
-                code: normalized.code ? String(normalized.code) : undefined,
-                camera_type: normalized.camera_type ? String(normalized.camera_type) : undefined,
-                camera_model_name: normalized.camera_model_name ? String(normalized.camera_model_name) : undefined,
-                generation: normalized.generation ? String(normalized.generation) : undefined,
-                ip_address: normalized.ip_address ? String(normalized.ip_address) : undefined,
-                mac_address: normalized.mac_address ? String(normalized.mac_address) : undefined,
-                resolution: normalized.resolution ? String(normalized.resolution) : undefined,
-                megapixels: normalized.megapixels ? Number(normalized.megapixels) : undefined,
-                area: normalized.area ? String(normalized.area) : undefined,
-                zone: normalized.zone ? String(normalized.zone) : undefined,
-                location_description: normalized.location_description ? String(normalized.location_description) : undefined,
-                serial_number: normalized.serial_number ? String(normalized.serial_number) : undefined,
-                status: normalized.status ? String(normalized.status) : "active",
-                notes: normalized.notes ? String(normalized.notes) : undefined,
-                site_id: siteId || undefined,
-              };
-              return createCamera(req);
-            } else {
-              const req: CreateNvrRequest = {
-                name: String(normalized.name || `NVR ${done + 1}`),
-                code: normalized.code ? String(normalized.code) : undefined,
-                model: normalized.model ? String(normalized.model) : undefined,
-                ip_address: normalized.ip_address ? String(normalized.ip_address) : undefined,
-                mac_address: normalized.mac_address ? String(normalized.mac_address) : undefined,
-                camera_channels: normalized.camera_channels ? Number(normalized.camera_channels) : undefined,
-                total_storage_tb: normalized.total_storage_tb ? Number(normalized.total_storage_tb) : undefined,
-                recording_days: normalized.recording_days ? Number(normalized.recording_days) : undefined,
-                processor: normalized.processor ? String(normalized.processor) : undefined,
-                ram_gb: normalized.ram_gb ? Number(normalized.ram_gb) : undefined,
-                os_name: normalized.os_name ? String(normalized.os_name) : undefined,
-                service_tag: normalized.service_tag ? String(normalized.service_tag) : undefined,
-                status: normalized.status ? String(normalized.status) : "active",
-                notes: normalized.notes ? String(normalized.notes) : undefined,
-                site_id: siteId || undefined,
-              };
-              return createNvr(req);
-            }
+          batch.map((normalized, batchIndex) => {
+            const request: CreateCameraRequest = {
+              name: String(normalized.name || `Camara ${index + batchIndex + 1}`),
+              code: normalized.code ? String(normalized.code) : undefined,
+              camera_type: normalized.camera_type ? String(normalized.camera_type) : undefined,
+              camera_model_name: normalized.camera_model_name ? String(normalized.camera_model_name) : undefined,
+              generation: normalized.generation ? String(normalized.generation) : undefined,
+              ip_address: normalized.ip_address ? String(normalized.ip_address) : undefined,
+              mac_address: normalized.mac_address ? String(normalized.mac_address) : undefined,
+              resolution: normalized.resolution ? String(normalized.resolution) : undefined,
+              megapixels: normalized.megapixels ? Number(normalized.megapixels) : undefined,
+              area: normalized.area ? String(normalized.area) : undefined,
+              zone: normalized.zone ? String(normalized.zone) : undefined,
+              location_description: normalized.location_description ? String(normalized.location_description) : undefined,
+              serial_number: normalized.serial_number ? String(normalized.serial_number) : undefined,
+              status: normalized.status ? String(normalized.status) : "active",
+              notes: normalized.notes ? String(normalized.notes) : undefined,
+              site_id: siteId || undefined,
+            };
+
+            return createCamera(request);
           }),
         );
 
-        for (const r of results) {
-          done++;
-          if (r.status === "rejected") errors++;
+        for (const result of results) {
+          done += 1;
+          if (result.status === "rejected") errors += 1;
         }
+
         setImportProgress({ done, total, errors });
       }
 
-      const label = targetType === "cameras" ? "cámaras" : "servidores NVR";
       if (errors === 0) {
-        toast.success(`${done} ${label} importados correctamente al servidor`);
+        toast.success(`${done} camaras importadas correctamente al servidor`);
       } else {
-        toast.warning(`${done - errors} de ${done} ${label} importados. ${errors} fallaron.`);
+        toast.warning(`${done - errors} de ${done} camaras importadas. ${errors} fallaron.`);
       }
+
       onImported(targetType, done - errors);
       handleClose();
     } catch {
@@ -321,27 +411,30 @@ export function QuickInventoryImportDialog({
     } finally {
       setIsParsing(false);
     }
-  }, [selectedFile, preview, targetType, siteId, onImported, handleClose]);
+  }, [handleClose, onImported, preview, selectedFile, siteId, targetType]);
 
-  const displayCols = getDisplayColumns(targetType);
+  const displayColumns = getDisplayColumns(targetType);
   const typeLabel = targetType === "cameras" ? "camaras" : "servidores NVR";
+  const showsPersistedSiteContext = Boolean(siteId && siteLabel);
+  const nvrImportWarning = targetType === "nvrs"
+    ? "La importacion rapida de NVR usa el flujo de lotes del backend. Hoy se guarda a nivel empresa y no persiste site_id."
+    : null;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Importar {typeLabel} desde Excel</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Tipo de datos */}
           <div className="space-y-1.5">
             <Label>Tipo de inventario</Label>
             <Select
               value={targetType}
-              onValueChange={(v) => {
-                setTargetType(v as TargetType);
-                reset(); // limpiar preview al cambiar tipo
+              onValueChange={(value) => {
+                setTargetType(value as TargetType);
+                reset();
               }}
             >
               <SelectTrigger>
@@ -354,18 +447,16 @@ export function QuickInventoryImportDialog({
             </Select>
           </div>
 
-          {/* Columnas esperadas */}
           <div className="rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/30">
             <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-blue-700 dark:text-blue-400">
               <Info className="h-3.5 w-3.5" />
               Columnas esperadas para {typeLabel}
             </div>
             <p className="text-xs text-blue-600 dark:text-blue-300">
-              {displayCols.join(", ")}
+              {displayColumns.join(", ")}
             </p>
           </div>
 
-          {/* Descarga de plantilla (solo la relevante) */}
           <Button
             type="button"
             variant="outline"
@@ -377,7 +468,6 @@ export function QuickInventoryImportDialog({
             Descargar plantilla {typeLabel}
           </Button>
 
-          {/* Area de carga */}
           <div
             className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 px-6 py-8 text-center transition-colors hover:bg-muted/40"
             onClick={() => fileInputRef.current?.click()}
@@ -387,17 +477,17 @@ export function QuickInventoryImportDialog({
                 <FileSpreadsheet className="h-8 w-8 text-green-600" />
                 <div className="text-left">
                   <p className="text-sm font-medium">{selectedFile.name}</p>
-                  {preview && (
+                  {preview ? (
                     <p className="text-xs text-muted-foreground">
-                      {preview.count} filas detectadas — {preview.matched.length} columnas reconocidas
+                      {preview.count} filas detectadas / {preview.matched.length} columnas reconocidas
                     </p>
-                  )}
+                  ) : null}
                 </div>
                 <button
                   type="button"
                   className="ml-2 rounded-full p-1 text-muted-foreground hover:bg-muted"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                  onClick={(event) => {
+                    event.stopPropagation();
                     reset();
                   }}
                 >
@@ -421,90 +511,96 @@ export function QuickInventoryImportDialog({
             onChange={handleFileChange}
           />
 
-          {/* Resultado de validacion de columnas */}
-          {preview && (
+          {preview ? (
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400">
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 {preview.matched.length} columnas reconocidas: {preview.matched.join(", ")}
               </div>
-              {preview.unmatched.length > 0 && (
+
+              {preview.unmatched.length > 0 ? (
                 <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="h-3.5 w-3.5" />
                   {preview.unmatched.length} columnas ignoradas: {preview.unmatched.join(", ")}
                 </div>
-              )}
-              {/* Preview de filas */}
-              {preview.sampleRows.length > 0 && (
+              ) : null}
+
+              {preview.sampleRows.length > 0 ? (
                 <div className="max-h-72 overflow-auto rounded border text-xs" style={{ maxWidth: "100%" }}>
                   <table className="min-w-max">
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-muted/50">
-                        {preview.matched.map((h) => (
-                          <th key={h} className="whitespace-nowrap px-3 py-1.5 text-left font-medium">{h}</th>
+                        {preview.matched.map((header) => (
+                          <th key={header} className="whitespace-nowrap px-3 py-1.5 text-left font-medium">
+                            {header}
+                          </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {preview.sampleRows.map((row, i) => (
-                        <tr key={i} className="border-t">
-                          {preview.matched.map((h) => (
-                            <td key={h} className="whitespace-nowrap px-3 py-1.5">
-                              {String(row[h] ?? "—")}
+                      {preview.sampleRows.map((row, index) => (
+                        <tr key={index} className="border-t">
+                          {preview.matched.map((header) => (
+                            <td key={header} className="whitespace-nowrap px-3 py-1.5">
+                              {String(row[header] ?? "-")}
                             </td>
                           ))}
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {preview.count > preview.sampleRows.length && (
-                    <p className="px-3 py-1.5 text-muted-foreground">... y {preview.count - preview.sampleRows.length} filas mas</p>
-                  )}
+                  {preview.count > preview.sampleRows.length ? (
+                    <p className="px-3 py-1.5 text-muted-foreground">
+                      ... y {preview.count - preview.sampleRows.length} filas mas
+                    </p>
+                  ) : null}
                 </div>
-              )}
+              ) : null}
             </div>
-          )}
+          ) : null}
 
-          {/* Contexto */}
-          {siteId && siteLabel ? (
+          {showsPersistedSiteContext ? (
             <p className="text-xs text-muted-foreground">
               Los datos se guardaran en el servidor para: <span className="font-medium">{siteLabel}</span>
             </p>
           ) : (
             <div className="flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              No hay sucursal seleccionada. Las cámaras/NVRs se crearán sin asignar a una sucursal.
+              No hay sucursal persistida seleccionada. Los registros se crearan sin asignar a una sucursal del servidor.
             </div>
           )}
 
-          {/* Progreso */}
-          {importProgress && (
+          {nvrImportWarning ? (
+            <div className="flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              {nvrImportWarning}
+            </div>
+          ) : null}
+
+          {importProgress ? (
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 text-xs">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Importando: {importProgress.done} de {importProgress.total}
-                {importProgress.errors > 0 && (
+                {importProgress.errors > 0 ? (
                   <span className="text-red-600"> ({importProgress.errors} errores)</span>
-                )}
+                ) : null}
               </div>
-              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-primary transition-all"
                   style={{ width: `${(importProgress.done / importProgress.total) * 100}%` }}
                 />
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
             Cancelar
           </Button>
-          <Button
-            onClick={handleImport}
-            disabled={!selectedFile || !preview || isParsing}
-          >
+          <Button onClick={handleImport} disabled={!selectedFile || !preview || isParsing}>
             {isParsing ? (
               <>
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

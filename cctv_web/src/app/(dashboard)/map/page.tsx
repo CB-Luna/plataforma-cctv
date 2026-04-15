@@ -1,19 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import { listSites } from "@/lib/api/sites";
-import { listLocalSitesForCompany, type LocalSite } from "@/lib/sites/local-sites-store";
-import type { SiteListItem } from "@/types/api";
-import { Building2, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useSiteStore } from "@/stores/site-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useAllSites } from "@/hooks/use-all-sites";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { SiteContextBanner } from "@/components/context/site-context-banner";
-import { Card, CardContent } from "@/components/ui/card";
 
 const BranchMap = dynamic(() => import("@/components/map/branch-map"), {
   ssr: false,
@@ -33,56 +28,11 @@ export default function MapPage() {
   const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";
 
-  const { data: apiSites = [] } = useQuery({
-    queryKey: ["sites", currentCompany?.id],
-    queryFn: listSites,
-    enabled: !isPlatformAdmin || !!currentCompany,
-  });
-
-  // Fusionar sitios de la API con sitios locales (GAP-01)
-  const sites = useMemo<SiteListItem[]>(() => {
-    const localSites = listLocalSitesForCompany(currentCompany?.id);
-    const localAsSiteList: SiteListItem[] = localSites.map((ls: LocalSite) => ({
-      id: ls.id,
-      name: ls.name,
-      client_name: ls.client_name,
-      address: ls.address,
-      city: ls.city,
-      state: ls.state,
-      camera_count: ls.camera_count ?? 0,
-      nvr_count: ls.nvr_count ?? 0,
-      has_floor_plan: false,
-    }));
-    return [...apiSites, ...localAsSiteList];
-  }, [apiSites, currentCompany?.id]);
-
-  const [filterClient, setFilterClient] = useState("");
-
-  const clientNames = useMemo(() => {
-    const set = new Set<string>();
-    sites.forEach((s) => {
-      if (s.client_name) set.add(s.client_name);
-    });
-    return Array.from(set).sort();
-  }, [sites]);
+  const { sites } = useAllSites({ enabled: true });
 
   const visibleSites = currentSite
     ? sites.filter((site) => site.id === currentSite.id)
-    : filterClient
-      ? sites.filter((site) => site.client_name === filterClient)
-      : sites;
-
-  if (isPlatformAdmin && !currentCompany) {
-    return (
-      <div className="flex h-[calc(100vh-8rem)] items-center justify-center">
-        <EmptyState
-          icon={Building2}
-          title="Selecciona una empresa"
-          description="Para ver el mapa de sucursales, primero selecciona una empresa desde Configuracion."
-        />
-      </div>
-    );
-  }
+    : sites;
 
   if (sites.length === 0) {
     return (
@@ -119,29 +69,22 @@ export default function MapPage() {
             {visibleSites.length} sucursal{visibleSites.length !== 1 ? "es" : ""} en el mapa
           </p>
         </div>
-        {!currentSite && (
-          <select
-            value={filterClient}
-            onChange={(e) => setFilterClient(e.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          >
-            <option value="">Todas las empresas</option>
-            {clientNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        )}
+        <p className="text-xs text-muted-foreground">
+          {currentSite
+            ? "Vista acotada al sitio activo."
+            : currentCompany
+              ? `Contexto: ${currentCompany.name}`
+              : "Contexto: Todas las empresas"}
+        </p>
       </div>
 
       {/* Map container */}
       <div className="relative flex-1 overflow-hidden rounded-xl border border-gray-200 shadow-sm dark:border-gray-800">
         <BranchMap
           sites={visibleSites}
-          filterClient={currentSite ? "" : filterClient}
+          filterClient=""
           companyLogo={currentCompany?.logo_url ?? null}
-          companyName={currentCompany?.name ?? null}
+          companyName={currentCompany?.name ?? (isPlatformAdmin ? "Todas las empresas" : null)}
         />
       </div>
     </div>

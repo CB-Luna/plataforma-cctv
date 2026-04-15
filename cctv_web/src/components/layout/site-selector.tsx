@@ -6,6 +6,7 @@ import { useTenantStore } from "@/stores/tenant-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAllSites } from "@/hooks/use-all-sites";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
+import { getSiteCompanyLabel } from "@/lib/site-context";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,9 +32,7 @@ export function SiteSelector() {
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";
 
   const { sites } = useAllSites();
-
   const [search, setSearch] = useState("");
-  // Para admin: empresa expandida en el selector
   const [expandedCompany, setExpandedCompany] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,56 +40,48 @@ export function SiteSelector() {
     reconcileSite(sites);
   }, [reconcileSite, sites]);
 
-  // Cuando hay empresa seleccionada en el header, filtrar sitios por esa empresa
-  const companySites = useMemo(() => {
-    if (!currentCompany) return sites;
-    const companyName = currentCompany.name.toLowerCase();
-    return sites.filter(
-      (s) => s.client_name?.toLowerCase() === companyName,
-    );
-  }, [sites, currentCompany]);
+  const companySites = useMemo(() => sites, [sites]);
 
-  // Agrupar sitios por empresa (client_name) para admin del sistema (solo si NO hay empresa seleccionada)
   const groupedByCompany = useMemo(() => {
     if (!isPlatformAdmin || currentCompany) return null;
+
     const groups = new Map<string, SiteListItem[]>();
     for (const site of companySites) {
-      const key = site.client_name?.trim() || "Sin empresa";
+      const key = getSiteCompanyLabel(site);
       const arr = groups.get(key) ?? [];
       arr.push(site);
       groups.set(key, arr);
     }
-    // Ordenar alfabeticamente
-    return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [companySites, isPlatformAdmin, currentCompany]);
 
-  // Filtrar por busqueda
+    return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [companySites, currentCompany, isPlatformAdmin]);
+
   const filteredFlat = useMemo(() => {
     if (!search.trim()) return companySites;
+
     const q = search.toLowerCase();
-    return companySites.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.client_name?.toLowerCase().includes(q) ||
-        s.city?.toLowerCase().includes(q) ||
-        s.state?.toLowerCase().includes(q),
+    return companySites.filter((site) =>
+      site.name.toLowerCase().includes(q)
+      || getSiteCompanyLabel(site).toLowerCase().includes(q)
+      || site.city?.toLowerCase().includes(q)
+      || site.state?.toLowerCase().includes(q),
     );
   }, [companySites, search]);
 
   const filteredGrouped = useMemo(() => {
     if (!groupedByCompany || !search.trim()) return groupedByCompany;
+
     const q = search.toLowerCase();
     return groupedByCompany
       .map(([company, companySites]) => {
-        // Si la empresa coincide, mostrar todas sus sucursales
         if (company.toLowerCase().includes(q)) return [company, companySites] as const;
-        // Si no, filtrar sucursales individuales
-        const filtered = companySites.filter(
-          (s) =>
-            s.name.toLowerCase().includes(q) ||
-            s.city?.toLowerCase().includes(q) ||
-            s.state?.toLowerCase().includes(q),
+
+        const filtered = companySites.filter((site) =>
+          site.name.toLowerCase().includes(q)
+          || site.city?.toLowerCase().includes(q)
+          || site.state?.toLowerCase().includes(q),
         );
+
         return filtered.length > 0 ? ([company, filtered] as const) : null;
       })
       .filter(Boolean) as [string, SiteListItem[]][];
@@ -113,17 +104,23 @@ export function SiteSelector() {
   }
 
   return (
-    <DropdownMenu onOpenChange={(open) => { if (!open) { setSearch(""); setExpandedCompany(null); } }}>
+    <DropdownMenu
+      onOpenChange={(open) => {
+        if (!open) {
+          setSearch("");
+          setExpandedCompany(null);
+        }
+      }}
+    >
       <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm transition-colors hover:bg-accent">
         <MapPin className="h-4 w-4 text-muted-foreground" />
         <span className="max-w-[220px] truncate">
-          {currentSite
-            ? currentSite.name
-            : "Todas las sucursales"}
+          {currentSite ? currentSite.name : "Todas las sucursales"}
         </span>
         <ChevronDown className="h-3 w-3 text-muted-foreground" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-[420px] overflow-y-auto">
+
+      <DropdownMenuContent align="end" className="max-h-[420px] w-80 overflow-y-auto">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Sucursales</DropdownMenuLabel>
           <p className="px-2 pb-2 text-xs text-muted-foreground">
@@ -133,7 +130,6 @@ export function SiteSelector() {
           </p>
         </DropdownMenuGroup>
 
-        {/* Buscador */}
         {showSearch && (
           <>
             <div className="px-2 pb-2">
@@ -143,9 +139,9 @@ export function SiteSelector() {
                   className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                   placeholder={isPlatformAdmin ? "Buscar empresa o sucursal..." : "Buscar sucursal..."}
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => event.stopPropagation()}
                 />
               </div>
             </div>
@@ -153,7 +149,6 @@ export function SiteSelector() {
           </>
         )}
 
-        {/* Opcion: Todas las sucursales */}
         <DropdownMenuItem onClick={handleClearSite}>
           <div className="flex flex-col">
             <span className="font-medium">Todas las sucursales</span>
@@ -164,7 +159,6 @@ export function SiteSelector() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
 
-        {/* Vista agrupada por empresa (Admin del Sistema) */}
         {isPlatformAdmin && filteredGrouped ? (
           filteredGrouped.length === 0 ? (
             <p className="px-3 py-4 text-center text-sm text-muted-foreground">
@@ -172,26 +166,28 @@ export function SiteSelector() {
             </p>
           ) : (
             filteredGrouped.map(([company, companySites]) => {
-              const isExpanded = expandedCompany === company || !!search.trim();
+              const isExpanded = expandedCompany === company || search.trim().length > 0;
+
               return (
                 <div key={company}>
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm hover:bg-accent rounded-sm transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
+                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
                       setExpandedCompany(expandedCompany === company ? null : company);
                     }}
                   >
                     <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="flex-1 font-medium truncate">{company}</span>
+                    <span className="flex-1 truncate font-medium">{company}</span>
                     <span className="text-xs text-muted-foreground">{companySites.length}</span>
                     <ChevronRight
                       className={`h-3 w-3 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`}
                     />
                   </button>
-                  {isExpanded && (
+
+                  {isExpanded ? (
                     <div className="pl-4">
                       {companySites.map((site) => (
                         <DropdownMenuItem
@@ -199,50 +195,50 @@ export function SiteSelector() {
                           onClick={() => handleSiteClick(site)}
                           className="flex items-center gap-2"
                         >
-                          <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <div className="flex-1 min-w-0">
+                          <MapPin className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          <div className="min-w-0 flex-1">
                             <span className="block truncate text-sm">{site.name}</span>
                             <span className="block truncate text-xs text-muted-foreground">
                               {[site.city, site.state].filter(Boolean).join(", ") || "Sin ubicacion"}
                             </span>
                           </div>
-                          <span className="text-xs text-muted-foreground shrink-0">
+                          <span className="shrink-0 text-xs text-muted-foreground">
                             {site.camera_count} cam
                           </span>
                         </DropdownMenuItem>
                       ))}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               );
             })
           )
+        ) : filteredFlat.length === 0 ? (
+          <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+            Sin resultados para &quot;{search}&quot;
+          </p>
         ) : (
-          /* Vista plana (Tenant Admin) */
-          filteredFlat.length === 0 ? (
-            <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-              Sin resultados para &quot;{search}&quot;
-            </p>
-          ) : (
-            filteredFlat.map((site) => (
-              <DropdownMenuItem key={site.id} onClick={() => handleSiteClick(site)}>
-                <div className="flex flex-col">
-                  <span className="font-medium">{site.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {[site.client_name, [site.city, site.state].filter(Boolean).join(", ")]
-                      .filter(Boolean)
-                      .join(" · ") || "Sin referencia adicional"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {site.has_floor_plan ? "Con plano" : "Sin plano"} · {site.nvr_count} NVR
-                  </span>
-                </div>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {site.camera_count} cam
+          filteredFlat.map((site) => (
+            <DropdownMenuItem key={site.id} onClick={() => handleSiteClick(site)}>
+              <div className="flex flex-col">
+                <span className="font-medium">{site.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {[
+                    [site.city, site.state].filter(Boolean).join(", "),
+                    site.is_local && !site.server_site_id ? "Solo local" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" / ") || "Sin referencia adicional"}
                 </span>
-              </DropdownMenuItem>
-            ))
-          )
+                <span className="text-xs text-muted-foreground">
+                  {getSiteCompanyLabel(site)} / {site.nvr_count} NVR
+                </span>
+              </div>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {site.camera_count} cam
+              </span>
+            </DropdownMenuItem>
+          ))
         )}
       </DropdownMenuContent>
     </DropdownMenu>

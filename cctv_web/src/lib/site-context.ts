@@ -12,6 +12,38 @@ function normalizeValue(value?: string | null): string {
     .toLowerCase();
 }
 
+function compactWhitespace(value?: string | null): string {
+  return normalizeValue(value).replace(/\s+/g, " ").trim();
+}
+
+export function getSiteCompanyLabel(site?: Pick<SiteListItem, "company_name" | "client_name"> | null): string {
+  return site?.company_name?.trim() || site?.client_name?.trim() || "Sin empresa";
+}
+
+export function buildSiteSignature(site?: Pick<SiteListItem, "name" | "address" | "city" | "state"> | null): string {
+  if (!site) return "";
+
+  return [
+    compactWhitespace(site.name),
+    compactWhitespace(site.city),
+    compactWhitespace(site.state),
+    compactWhitespace(site.address),
+  ]
+    .filter(Boolean)
+    .join("|");
+}
+
+export function resolvePersistedSiteId(site?: Pick<SiteListItem, "id" | "server_site_id"> | null): string | null {
+  if (!site) return null;
+
+  const explicitId = site.server_site_id?.trim();
+  if (explicitId) return explicitId;
+
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(site.id)
+    ? site.id
+    : null;
+}
+
 export function matchSiteToClient(site: SiteListItem, client?: Client | null): boolean {
   if (!client) return true;
 
@@ -38,8 +70,7 @@ export function filterByActiveSite<T extends SiteScopedRecord>(
 
 export function describeSiteContext(site: SiteListItem): string {
   const location = [site.city, site.state].filter(Boolean).join(", ");
-  const context = [site.client_name, location].filter(Boolean).join(" · ");
+  const context = [getSiteCompanyLabel(site), location].filter(Boolean).join(" / ");
 
   return context || "Sitio operativo activo";
 }
-

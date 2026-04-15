@@ -254,11 +254,19 @@ export interface CreateClientRequest {
 
 export interface SiteListItem {
   id: string;
+  tenant_id?: string;
+  company_id?: string;
+  company_name?: string;
+  company_logo_url?: string | null;
   name: string;
   client_name?: string;
   address?: string;
   city?: string;
   state?: string;
+  lat?: number;
+  lng?: number;
+  server_site_id?: string | null;
+  is_local?: boolean;
   camera_count: number;
   nvr_count: number;
   has_floor_plan: boolean;

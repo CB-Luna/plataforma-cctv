@@ -1,15 +1,15 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { getCityCoords } from "@/lib/map/city-coordinates";
-import type { SiteListItem } from "@/types/api";
-import { Camera, Server, Building2 } from "lucide-react";
 import { createElement } from "react";
 import Link from "next/link";
+import L from "leaflet";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import { Building2, Camera, Server } from "lucide-react";
+import { getCityCoords } from "@/lib/map/city-coordinates";
+import { getSiteCompanyLabel } from "@/lib/site-context";
+import type { SiteListItem } from "@/types/api";
 
-// Fix Leaflet default marker icon in Next.js
 const defaultIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -36,98 +36,100 @@ interface BranchMapProps {
 
 export default function BranchMap({ sites, filterClient, companyLogo, companyName }: BranchMapProps) {
   const sitesWithCoords: SiteWithCoords[] = sites
-    .filter((s) => !filterClient || s.client_name === filterClient)
-    .map((site, idx) => {
+    .filter((site) => !filterClient || getSiteCompanyLabel(site) === filterClient)
+    .map((site, index) => {
+      if (typeof site.lat === "number" && typeof site.lng === "number") {
+        return { ...site, lat: site.lat, lng: site.lng };
+      }
+
       const coords = getCityCoords(site.city, site.state);
       if (coords) return { ...site, ...coords };
+
       return {
         ...site,
-        lat: 25.6866 + (idx % 5) * 0.05 - 0.1,
-        lng: -100.3161 + Math.floor(idx / 5) * 0.05 - 0.1,
+        lat: 25.6866 + (index % 5) * 0.05 - 0.1,
+        lng: -100.3161 + Math.floor(index / 5) * 0.05 - 0.1,
       };
     });
 
-  const center: [number, number] =
-    sitesWithCoords.length > 0
-      ? [sitesWithCoords[0].lat, sitesWithCoords[0].lng]
-      : [24.5, -102.0];
-
+  const center: [number, number] = sitesWithCoords.length > 0
+    ? [sitesWithCoords[0].lat, sitesWithCoords[0].lng]
+    : [24.5, -102.0];
   const zoom = sitesWithCoords.length <= 1 ? 12 : 6;
 
   return (
-    <MapContainer
-      center={center}
-      zoom={zoom}
-      className="h-full w-full rounded-xl"
-      scrollWheelZoom={true}
-    >
+    <MapContainer center={center} zoom={zoom} className="h-full w-full rounded-xl" scrollWheelZoom>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {sitesWithCoords.map((site) => (
-        <Marker key={site.id} position={[site.lat, site.lng]}>
-          <Popup minWidth={240}>
-            <div className="space-y-2 text-sm">
-              {/* Logo de la empresa o icono generico */}
-              <div className="flex items-center gap-2">
-                {companyLogo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={companyLogo}
-                    alt={companyName ?? "Empresa"}
-                    className="h-8 w-8 shrink-0 rounded-lg border border-gray-200 object-cover"
-                  />
-                ) : (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
-                    {createElement(Building2, { className: "h-4 w-4" })}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <p className="truncate text-base font-bold leading-tight">{site.name}</p>
-                  {site.client_name && (
-                    <p className="truncate text-xs text-gray-500">{site.client_name}</p>
+
+      {sitesWithCoords.map((site) => {
+        const popupCompanyName = site.company_name ?? companyName ?? getSiteCompanyLabel(site);
+        const popupCompanyLogo = site.company_logo_url ?? companyLogo;
+
+        return (
+          <Marker key={site.id} position={[site.lat, site.lng]}>
+            <Popup minWidth={240}>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  {popupCompanyLogo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={popupCompanyLogo}
+                      alt={popupCompanyName ?? "Empresa"}
+                      className="h-8 w-8 shrink-0 rounded-lg border border-gray-200 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600">
+                      {createElement(Building2, { className: "h-4 w-4" })}
+                    </div>
                   )}
+
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-bold leading-tight">{site.name}</p>
+                    {popupCompanyName ? (
+                      <p className="truncate text-xs text-gray-500">{popupCompanyName}</p>
+                    ) : null}
+                  </div>
+                </div>
+
+                {(site.address || site.city) ? (
+                  <p className="text-xs text-gray-400">
+                    {[site.address, site.city, site.state].filter(Boolean).join(", ")}
+                  </p>
+                ) : null}
+
+                <p className="rounded bg-amber-50 px-2 py-1 text-[11px] text-amber-800">
+                  Posicion referencial por ciudad; no representa coordenadas exactas del predio.
+                </p>
+
+                <div className="flex gap-4 border-t pt-2 text-xs">
+                  <span className="flex items-center gap-1">
+                    {createElement(Camera, { className: "h-3 w-3" })}
+                    {site.camera_count} camaras
+                  </span>
+                  <span className="flex items-center gap-1">
+                    {createElement(Server, { className: "h-3 w-3" })}
+                    {site.nvr_count} NVRs
+                  </span>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  {site.has_floor_plan ? (
+                    <Link href={`/floor-plans/${site.id}`} className="text-xs font-medium text-blue-600 hover:underline">
+                      Ver plano
+                    </Link>
+                  ) : null}
+                  <Link href="/inventory" className="text-xs font-medium text-blue-600 hover:underline">
+                    Ver inventario
+                  </Link>
                 </div>
               </div>
-              {(site.address || site.city) && (
-                <p className="text-xs text-gray-400">
-                  {[site.address, site.city, site.state].filter(Boolean).join(", ")}
-                </p>
-              )}
-              <p className="rounded bg-amber-50 px-2 py-1 text-[11px] text-amber-800">
-                Posicion referencial por ciudad; no representa coordenadas exactas del predio.
-              </p>
-              <div className="flex gap-4 border-t pt-2 text-xs">
-                <span className="flex items-center gap-1">
-                  {createElement(Camera, { className: "h-3 w-3" })}
-                  {site.camera_count} cámaras
-                </span>
-                <span className="flex items-center gap-1">
-                  {createElement(Server, { className: "h-3 w-3" })}
-                  {site.nvr_count} NVRs
-                </span>
-              </div>
-              <div className="flex gap-2 pt-1">
-                {site.has_floor_plan && (
-                  <Link
-                    href={`/floor-plans/${site.id}`}
-                    className="text-xs font-medium text-blue-600 hover:underline"
-                  >
-                    Ver plano
-                  </Link>
-                )}
-                <Link
-                  href="/inventory"
-                  className="text-xs font-medium text-blue-600 hover:underline"
-                >
-                  Ver inventario
-                </Link>
-              </div>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
+            </Popup>
+          </Marker>
+        );
+      })}
     </MapContainer>
   );
 }

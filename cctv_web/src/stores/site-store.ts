@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { SiteListItem } from "@/types/api";
+import { buildSiteSignature, resolvePersistedSiteId } from "@/lib/site-context";
 
 const SITE_ID_STORAGE_KEY = "site_id";
 const SITE_SNAPSHOT_STORAGE_KEY = "site_snapshot";
@@ -45,7 +46,13 @@ export const useSiteStore = create<SiteContextState>((set) => ({
     set((state) => {
       if (!state.currentSite) return state;
 
-      const refreshedSite = sites.find((site) => site.id === state.currentSite?.id);
+      const persistedSiteId = resolvePersistedSiteId(state.currentSite);
+      const currentSignature = buildSiteSignature(state.currentSite);
+      const refreshedSite = sites.find((site) =>
+        site.id === state.currentSite?.id
+        || (persistedSiteId ? site.id === persistedSiteId : false)
+        || (currentSignature !== "" && buildSiteSignature(site) === currentSignature),
+      );
       if (!refreshedSite) {
         localStorage.removeItem(SITE_ID_STORAGE_KEY);
         localStorage.removeItem(SITE_SNAPSHOT_STORAGE_KEY);

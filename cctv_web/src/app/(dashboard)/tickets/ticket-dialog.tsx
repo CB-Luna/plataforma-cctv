@@ -117,7 +117,7 @@ export function TicketDialog({
 
   const { data: sites = [] } = useQuery({
     queryKey: ["sites", "ticket-form"],
-    queryFn: listSites,
+    queryFn: () => listSites(),
     staleTime: 5 * 60 * 1000,
     enabled: open,
   });

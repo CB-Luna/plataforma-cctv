@@ -33,6 +33,10 @@ export function CompanySelector() {
   const queryClient = useQueryClient();
   const { isSystemAdmin } = usePermissions();
 
+  function refreshContextData() {
+    void queryClient.invalidateQueries();
+  }
+
   // Admin del sistema: fetch empresas via API (se actualiza cuando se invalida ["tenants"])
   const { data: apiTenants } = useQuery<Tenant[]>({
     queryKey: ["tenants"],
@@ -71,21 +75,19 @@ export function CompanySelector() {
       if (isSystemAdmin) {
         clearCompany();
         clearSite();
-        void queryClient.invalidateQueries({ queryKey: ["sites"] });
-        void queryClient.invalidateQueries({ queryKey: ["cameras"] });
-        void queryClient.invalidateQueries({ queryKey: ["nvrs"] });
-        void queryClient.invalidateQueries({ queryKey: ["inventory"] });
-        void queryClient.invalidateQueries({ queryKey: ["tickets"] });
+        refreshContextData();
       }
       return;
     }
     setCompany(company);
     clearSite();
-    void queryClient.invalidateQueries({ queryKey: ["sites"] });
-    void queryClient.invalidateQueries({ queryKey: ["cameras"] });
-    void queryClient.invalidateQueries({ queryKey: ["nvrs"] });
-    void queryClient.invalidateQueries({ queryKey: ["inventory"] });
-    void queryClient.invalidateQueries({ queryKey: ["tickets"] });
+    refreshContextData();
+  }
+
+  function handleSelectAllCompanies() {
+    clearCompany();
+    clearSite();
+    refreshContextData();
   }
 
   return (
@@ -118,6 +120,28 @@ export function CompanySelector() {
           </p>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        {isSystemAdmin ? (
+          <>
+            <DropdownMenuItem
+              onClick={handleSelectAllCompanies}
+              className="flex items-center gap-2.5"
+            >
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                <Building2 className="h-3.5 w-3.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">Todas las empresas</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  Quita el foco de una empresa especifica
+                </p>
+              </div>
+              {!currentCompany ? (
+                <Check className="h-4 w-4 shrink-0 text-primary" />
+              ) : null}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
         {companies.map((company) => {
           const isSelected = company.id === currentCompany?.id;
           return (

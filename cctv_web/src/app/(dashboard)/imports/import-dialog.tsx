@@ -127,44 +127,41 @@ export function ImportDialog({ open, onOpenChange, onSubmit, isLoading }: Import
       setAnalysis(null);
       return;
     }
+    setColumnMapping(buildFallbackMapping(headers, targetTable));
+    setAnalysis(null);
+    setValidation(null);
+  }, [form, headers, rows, sheetNames, targetTable]);
 
-    let cancelled = false;
-    const fallback = buildFallbackMapping(headers, targetTable);
-
-    async function runAssistant() {
-      setIsAnalyzing(true);
-      try {
-        const assistant = await analyzeImportSource({
-          source_filename: form.getValues("source_filename"),
-          source_type: form.getValues("source_type"),
-          sheet_names: sheetNames,
-          headers,
-          sample_data: rows.slice(0, 5),
-        });
-
-        if (cancelled) return;
-
-        setAnalysis(assistant);
-        setColumnMapping(
-          mergeImportMappings(assistant.recommended_mappings?.[targetTable], fallback, targetTable),
-        );
-      } catch {
-        if (cancelled) return;
-        setAnalysis(null);
-        setColumnMapping(fallback);
-      } finally {
-        if (!cancelled) {
-          setIsAnalyzing(false);
-        }
-      }
+  async function handleAnalyze() {
+    if (!headers.length) {
+      toast.error("Carga un archivo valido antes de ejecutar el analisis");
+      return;
     }
 
-    runAssistant();
+    const fallback = buildFallbackMapping(headers, targetTable);
+    setIsAnalyzing(true);
+    try {
+      const assistant = await analyzeImportSource({
+        source_filename: form.getValues("source_filename"),
+        source_type: form.getValues("source_type"),
+        sheet_names: sheetNames,
+        headers,
+        sample_data: rows.slice(0, 5),
+      });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [form, headers, rows, sheetNames, targetTable]);
+      setAnalysis(assistant);
+      setColumnMapping(
+        mergeImportMappings(assistant.recommended_mappings?.[targetTable], fallback, targetTable),
+      );
+      toast.success("Analisis completado");
+    } catch {
+      setAnalysis(null);
+      setColumnMapping(fallback);
+      toast.error("No se pudo analizar el archivo");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
 
   async function parseFile(file: File) {
     setIsParsing(true);
@@ -358,7 +355,7 @@ export function ImportDialog({ open, onOpenChange, onSubmit, isLoading }: Import
             <Card className="border-sky-200 bg-sky-50/80">
               <CardContent className="flex items-center gap-3 py-4 text-sm text-sky-950">
                 <Loader2 className="h-4 w-4 animate-spin text-sky-700" />
-                {isParsing ? "Leyendo archivo y detectando hojas..." : "Analizando headers y preparando mapeo recomendado..."}
+                {isParsing ? "Leyendo archivo y detectando hojas..." : "Analizando archivo bajo demanda..."}
               </CardContent>
             </Card>
           )}
@@ -451,6 +448,26 @@ export function ImportDialog({ open, onOpenChange, onSubmit, isLoading }: Import
                   </CardContent>
                 </Card>
               ) : null}
+
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Asistente de importacion</p>
+                    <p className="text-xs text-muted-foreground">
+                      La IA ya no se ejecuta automaticamente al cargar el archivo. Solo corre cuando tu la pides.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing || isParsing || !rows.length}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {isAnalyzing ? "Analizando..." : "Analizar archivo"}
+                  </Button>
+                </CardContent>
+              </Card>
 
               <div className="space-y-3">
                 <div>

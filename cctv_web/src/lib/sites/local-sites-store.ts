@@ -6,6 +6,7 @@
  */
 
 const STORAGE_KEY = "cctv_local_sites_v1";
+export const LOCAL_SITES_CHANGED_EVENT = "cctv-local-sites-changed";
 
 export interface LocalSite {
   id: string;
@@ -39,6 +40,7 @@ function writeAll(sites: LocalSite[]): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sites));
+    window.dispatchEvent(new Event(LOCAL_SITES_CHANGED_EVENT));
   } catch {
     /* silencioso */
   }

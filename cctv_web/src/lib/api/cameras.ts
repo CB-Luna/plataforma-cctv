@@ -1,15 +1,22 @@
 import { api } from "./client";
 import type { Camera, CreateCameraRequest, CameraStats } from "@/types/api";
 
-export async function listCameras(params?: { limit?: number; offset?: number }): Promise<Camera[]> {
+export async function listCameras(params?: {
+  limit?: number;
+  offset?: number;
+  tenantId?: string | null;
+}): Promise<Camera[]> {
   const searchParams: Record<string, string> = {};
   if (params?.limit) searchParams.limit = String(params.limit);
   if (params?.offset) searchParams.offset = String(params.offset);
+  if (params?.tenantId) searchParams.tenant_id = params.tenantId;
   return api.get("inventory/cameras", { searchParams }).json<Camera[]>();
 }
 
-export async function getCamera(id: string): Promise<Camera> {
-  return api.get(`inventory/cameras/${id}`).json<Camera>();
+export async function getCamera(id: string, tenantId?: string | null): Promise<Camera> {
+  const searchParams: Record<string, string> = {};
+  if (tenantId) searchParams.tenant_id = tenantId;
+  return api.get(`inventory/cameras/${id}`, { searchParams }).json<Camera>();
 }
 
 export async function createCamera(data: CreateCameraRequest): Promise<Camera> {
@@ -30,9 +37,14 @@ export async function getCameraStats(tenantId?: string | null): Promise<CameraSt
   return api.get("inventory/cameras/stats", { searchParams }).json<CameraStats>();
 }
 
-export async function searchCameras(q: string, params?: { limit?: number; offset?: number }): Promise<Camera[]> {
+export async function searchCameras(q: string, params?: {
+  limit?: number;
+  offset?: number;
+  tenantId?: string | null;
+}): Promise<Camera[]> {
   const searchParams: Record<string, string> = { q };
   if (params?.limit) searchParams.limit = String(params.limit);
   if (params?.offset) searchParams.offset = String(params.offset);
+  if (params?.tenantId) searchParams.tenant_id = params.tenantId;
   return api.get("inventory/cameras/search", { searchParams }).json<Camera[]>();
 }

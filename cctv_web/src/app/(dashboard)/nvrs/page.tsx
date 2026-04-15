@@ -11,7 +11,7 @@ import { useSiteStore } from "@/stores/site-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
-import { filterByActiveSite } from "@/lib/site-context";
+import { filterByActiveSite, resolvePersistedSiteId } from "@/lib/site-context";
 import { getLocalInventory } from "@/lib/inventory/local-store";
 import { getColumns } from "./columns";
 import { safeStatus } from "@/lib/safe-field";
@@ -32,25 +32,26 @@ export default function NvrsPage() {
   const { permissions, roles } = usePermissions();
   const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";
+  const persistedSiteId = resolvePersistedSiteId(currentSite);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingNvr, setEditingNvr] = useState<NvrServer | null>(null);
 
   const { data: nvrs = [], isLoading } = useQuery({
     queryKey: ["nvrs", currentCompany?.id],
-    queryFn: listNvrs,
+    queryFn: () => listNvrs({ tenantId: currentCompany?.id }),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: stats } = useQuery({
     queryKey: ["nvrs", "stats", currentCompany?.id],
-    queryFn: () => getNvrStats(),
+    queryFn: () => getNvrStats(currentCompany?.id),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: sites = [] } = useQuery({
     queryKey: ["sites", currentCompany?.id],
-    queryFn: listSites,
+    queryFn: () => listSites({ tenantId: currentCompany?.id }),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
@@ -97,8 +98,8 @@ export default function NvrsPage() {
   );
 
   const scopedNvrs = useMemo(
-    () => filterByActiveSite(nvrs, currentSite?.id),
-    [currentSite?.id, nvrs],
+    () => filterByActiveSite(nvrs, persistedSiteId),
+    [nvrs, persistedSiteId],
   );
 
   // Fusionar datos importados localmente (Excel) con datos del API
@@ -114,7 +115,7 @@ export default function NvrsPage() {
   }, [scopedNvrs, localData]);
 
   const displayStats = useMemo(() => {
-    if (!currentSite) return stats;
+    if (!persistedSiteId) return stats;
 
     const activeServers = scopedNvrs.filter((nvr) => {
       const status = safeStatus(nvr.status, nvr.is_active);
@@ -128,7 +129,7 @@ export default function NvrsPage() {
       total_cameras: scopedNvrs.reduce((acc, nvr) => acc + (nvr.camera_channels ?? 0), 0),
       total_storage_tb: scopedNvrs.reduce((acc, nvr) => acc + (nvr.total_storage_tb ?? 0), 0),
     };
-  }, [currentSite, scopedNvrs, stats]);
+  }, [persistedSiteId, scopedNvrs, stats]);
 
   const exportRows = useMemo(() => allNvrs.map((nvr) => ({
     ...nvr,

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Building2, FileCheck, FileWarning, Loader2, Upload } from "lucide-react";
+import { AlertTriangle, Building2, FileCheck, FileWarning, Loader2, Upload } from "lucide-react";
 import type { ImportBatch } from "@/types/api";
 import {
   cancelImportBatch,
@@ -20,6 +20,7 @@ import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTenantStore } from "@/stores/tenant-store";
+import { useSiteStore } from "@/stores/site-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -29,6 +30,7 @@ export default function ImportsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailBatch, setDetailBatch] = useState<ImportBatch | null>(null);
   const currentCompany = useTenantStore((s) => s.currentCompany);
+  const currentSite = useSiteStore((s) => s.currentSite);
   const { permissions, roles } = usePermissions();
   const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";
@@ -188,6 +190,22 @@ export default function ImportsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {currentSite ? (
+        <Card className="border-amber-200 bg-amber-50/80">
+          <CardContent className="flex items-start gap-3 py-4 text-sm text-amber-950">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+            <div>
+              <p className="font-medium">Importacion a nivel empresa</p>
+              <p className="text-xs text-amber-900">
+                El contrato actual de `inventory/import/batches` no persiste `site_id`. Aunque tengas una sucursal activa,
+                este flujo sigue importando a nivel tenant. Para una carga realmente amarrada a sucursal, usa el flujo operativo
+                de inventario con una sesion tenant real.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <DataTable
         columns={columns}

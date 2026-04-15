@@ -7,7 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { NvrServer } from "@/types/api";
 import { listSites } from "@/lib/api/sites";
+import { resolvePersistedSiteId } from "@/lib/site-context";
 import { useSiteStore } from "@/stores/site-store";
+import { useTenantStore } from "@/stores/tenant-store";
 import {
   Dialog,
   DialogContent,
@@ -82,11 +84,13 @@ export function NvrDialog({
   isSubmitting,
 }: NvrDialogProps) {
   const currentSite = useSiteStore((state) => state.currentSite);
+  const currentCompany = useTenantStore((state) => state.currentCompany);
   const isEdit = Boolean(nvr);
+  const currentServerSiteId = resolvePersistedSiteId(currentSite);
 
   const { data: sites = [] } = useQuery({
-    queryKey: ["sites"],
-    queryFn: listSites,
+    queryKey: ["sites", "nvr-dialog", currentCompany?.id ?? "current"],
+    queryFn: () => listSites({ tenantId: currentCompany?.id }),
     enabled: open,
   });
 
@@ -100,14 +104,14 @@ export function NvrDialog({
   } = useForm<NvrFormInput, unknown, NvrFormValues>({
     resolver: zodResolver(nvrSchema),
     defaultValues: {
-      site_id: currentSite?.id ?? "",
+      site_id: currentServerSiteId ?? "",
     },
   });
 
   useEffect(() => {
     if (nvr) {
       reset({
-        site_id: nvr.site_id ?? currentSite?.id ?? "",
+        site_id: nvr.site_id ?? currentServerSiteId ?? "",
         name: nvr.name,
         code: nvr.code ?? "",
         vms_server_id: nvr.vms_server_id ?? "",
@@ -130,7 +134,7 @@ export function NvrDialog({
     }
 
     reset({
-      site_id: currentSite?.id ?? "",
+      site_id: currentServerSiteId ?? "",
       name: "",
       code: "",
       vms_server_id: "",
@@ -149,11 +153,11 @@ export function NvrDialog({
       system_type: "",
       notes: "",
     });
-  }, [currentSite?.id, nvr, reset]);
+  }, [currentServerSiteId, nvr, reset]);
 
   const handleOpenChange = (value: boolean) => {
     if (!value) {
-      reset({ site_id: currentSite?.id ?? "" });
+      reset({ site_id: currentServerSiteId ?? "" });
     }
     onOpenChange(value);
   };

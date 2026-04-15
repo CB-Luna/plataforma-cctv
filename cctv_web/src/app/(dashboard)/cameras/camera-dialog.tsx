@@ -8,7 +8,9 @@ import { z } from "zod";
 import type { Camera } from "@/types/api";
 import { listSites } from "@/lib/api/sites";
 import { listNvrs } from "@/lib/api/nvrs";
+import { resolvePersistedSiteId } from "@/lib/site-context";
 import { useSiteStore } from "@/stores/site-store";
+import { useTenantStore } from "@/stores/tenant-store";
 import {
   Dialog,
   DialogContent,
@@ -83,17 +85,19 @@ export function CameraDialog({
   isSubmitting,
 }: CameraDialogProps) {
   const currentSite = useSiteStore((state) => state.currentSite);
+  const currentCompany = useTenantStore((state) => state.currentCompany);
   const isEdit = Boolean(camera);
+  const currentServerSiteId = resolvePersistedSiteId(currentSite);
 
   const { data: sites = [] } = useQuery({
-    queryKey: ["sites"],
-    queryFn: listSites,
+    queryKey: ["sites", "camera-dialog", currentCompany?.id ?? "current"],
+    queryFn: () => listSites({ tenantId: currentCompany?.id }),
     enabled: open,
   });
 
   const { data: nvrs = [] } = useQuery({
-    queryKey: ["nvrs"],
-    queryFn: listNvrs,
+    queryKey: ["nvrs", "camera-dialog", currentCompany?.id ?? "current"],
+    queryFn: () => listNvrs({ tenantId: currentCompany?.id }),
     enabled: open,
   });
 
@@ -107,7 +111,7 @@ export function CameraDialog({
   } = useForm<CameraFormInput, unknown, CameraFormValues>({
     resolver: zodResolver(cameraSchema),
     defaultValues: {
-      site_id: currentSite?.id ?? "",
+      site_id: currentServerSiteId ?? "",
       nvr_server_id: "",
       has_counting: false,
       counting_enabled: false,
@@ -117,7 +121,7 @@ export function CameraDialog({
   useEffect(() => {
     if (camera) {
       reset({
-        site_id: camera.site_id ?? currentSite?.id ?? "",
+        site_id: camera.site_id ?? currentServerSiteId ?? "",
         nvr_server_id: camera.nvr_server_id ?? "",
         name: camera.name,
         code: camera.code ?? "",
@@ -140,7 +144,7 @@ export function CameraDialog({
     }
 
     reset({
-      site_id: currentSite?.id ?? "",
+      site_id: currentServerSiteId ?? "",
       nvr_server_id: "",
       name: "",
       code: "",
@@ -159,7 +163,7 @@ export function CameraDialog({
       notes: "",
       comments: "",
     });
-  }, [camera, currentSite?.id, reset]);
+  }, [camera, currentServerSiteId, reset]);
 
   const selectedSiteId = watch("site_id") ?? "";
   const availableNvrs = useMemo(() => {
@@ -170,7 +174,7 @@ export function CameraDialog({
   const handleOpenChange = (value: boolean) => {
     if (!value) {
       reset({
-        site_id: currentSite?.id ?? "",
+        site_id: currentServerSiteId ?? "",
         nvr_server_id: "",
         has_counting: false,
         counting_enabled: false,

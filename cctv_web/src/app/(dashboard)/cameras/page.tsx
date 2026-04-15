@@ -14,7 +14,7 @@ import { useSiteStore } from "@/stores/site-store";
 import { useTenantStore } from "@/stores/tenant-store";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getWorkspaceExperience } from "@/lib/auth/workspace-experience";
-import { filterByActiveSite } from "@/lib/site-context";
+import { filterByActiveSite, resolvePersistedSiteId } from "@/lib/site-context";
 import { getLocalInventory } from "@/lib/inventory/local-store";
 import { safeString, safeStatus } from "@/lib/safe-field";
 import { CameraDialog, type CameraFormValues } from "./camera-dialog";
@@ -38,6 +38,7 @@ export default function CamerasPage() {
   const { permissions, roles } = usePermissions();
   const experience = getWorkspaceExperience({ permissions, roles, company: currentCompany });
   const isPlatformAdmin = experience.mode === "hybrid_backoffice";
+  const persistedSiteId = resolvePersistedSiteId(currentSite);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -47,25 +48,25 @@ export default function CamerasPage() {
 
   const { data: cameras = [], isLoading } = useQuery({
     queryKey: ["cameras", currentCompany?.id],
-    queryFn: () => listCameras({ limit: 200 }),
+    queryFn: () => listCameras({ limit: 200, tenantId: currentCompany?.id }),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: stats } = useQuery({
     queryKey: ["cameras", "stats", currentCompany?.id],
-    queryFn: () => getCameraStats(),
+    queryFn: () => getCameraStats(currentCompany?.id),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: sites = [] } = useQuery({
     queryKey: ["sites", currentCompany?.id],
-    queryFn: listSites,
+    queryFn: () => listSites({ tenantId: currentCompany?.id }),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: nvrs = [] } = useQuery({
     queryKey: ["nvrs", currentCompany?.id],
-    queryFn: listNvrs,
+    queryFn: () => listNvrs({ tenantId: currentCompany?.id }),
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
@@ -103,8 +104,8 @@ export default function CamerasPage() {
   );
 
   const scopedCameras = useMemo(
-    () => filterByActiveSite(cameras, currentSite?.id),
-    [cameras, currentSite?.id],
+    () => filterByActiveSite(cameras, persistedSiteId),
+    [cameras, persistedSiteId],
   );
 
   // Fusionar datos importados localmente (Excel) con datos del API
@@ -116,13 +117,13 @@ export default function CamerasPage() {
 
   const displayData = useMemo(() => {
     const baseData = searchResults ?? cameras;
-    const filtered = filterByActiveSite(baseData, currentSite?.id);
+    const filtered = filterByActiveSite(baseData, persistedSiteId);
     const localCameras = (localData?.cameras ?? []) as Camera[];
     return [...filtered, ...localCameras];
-  }, [cameras, currentSite?.id, searchResults, localData]);
+  }, [cameras, localData, persistedSiteId, searchResults]);
 
   const displayStats = useMemo(() => {
-    if (!currentSite) return stats;
+    if (!persistedSiteId) return stats;
 
     const activeCameras = scopedCameras.filter((camera) => {
       const status = safeStatus(camera.status, camera.is_active);
@@ -138,7 +139,7 @@ export default function CamerasPage() {
       ptz_cameras: scopedCameras.filter((camera) => safeString(camera.camera_type, "").toLowerCase().includes("ptz")).length,
       counting_enabled: scopedCameras.filter((camera) => camera.counting_enabled).length,
     };
-  }, [currentSite, scopedCameras, stats]);
+  }, [persistedSiteId, scopedCameras, stats]);
 
   const exportRows = useMemo(() => displayData.map((camera) => ({
     ...camera,

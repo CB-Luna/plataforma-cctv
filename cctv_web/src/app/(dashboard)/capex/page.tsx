@@ -112,14 +112,14 @@ export default function CapexPage() {
 
   const { data: nvrs = [], isLoading: nvrLoading, isError: nvrError } = useQuery({
     queryKey: ["nvrs", currentCompany?.id],
-    queryFn: listNvrs,
+    queryFn: () => listNvrs({ tenantId: currentCompany?.id }),
     retry: 1,
     enabled: !isPlatformAdmin || !!currentCompany,
   });
 
   const { data: cameras = [], isLoading: camLoading, isError: camError } = useQuery({
     queryKey: ["cameras", "all", currentCompany?.id],
-    queryFn: () => listCameras({ limit: 1000 }),
+    queryFn: () => listCameras({ limit: 1000, tenantId: currentCompany?.id }),
     retry: 1,
     enabled: !isPlatformAdmin || !!currentCompany,
   });

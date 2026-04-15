@@ -72,7 +72,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   const { data: nvrs = [] } = useQuery({
     queryKey: ["nvrs", "policy-assets"],
-    queryFn: listNvrs,
+    queryFn: () => listNvrs(),
     staleTime: 5 * 60 * 1000,
   });
 
